@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZTC Pathway Mapper</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React and ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Export Libraries -->
+  <!-- jsPDF for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF-AutoTable for tables in PDFs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <!-- SheetJS for Excel generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- html2canvas for PNG export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* Modal animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .animate-scaleIn {
+      animation: scaleIn 0.2s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // Simple SVG icon components
+    const Icons = {
+      Upload: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+      ),
+      Download: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+      ),
+      Save: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      ),
+      FolderOpen: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          <path d="M2 8l5.5 8.5a2 2 0 0 0 2.5.5l11-6.5"></path>
+        </svg>
+      ),
+      Search: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      ),
+      X: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      ),
+      CheckCircle: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      ),
+      AlertCircle: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      ),
+      FileText: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      ),
+      BarChart3: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M3 3v18h18"></path>
+          <path d="M18 17V9"></path>
+          <path d="M13 17V5"></path>
+          <path d="M8 17v-3"></path>
+        </svg>
+      ),
+      Sun: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      ),
+      Moon: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      ),
+      FileSpreadsheet: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <path d="M8 13h2"></path>
+          <path d="M8 17h2"></path>
+          <path d="M14 13h2"></path>
+          <path d="M14 17h2"></path>
+        </svg>
+      ),
+      Image: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      ),
+      Package: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M16.5 9.4 7.55 4.24"></path>
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      ),
+      Trash2: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      )
+    };
+
+    const ZTCPathwayMapper = () => {
+      // State management
+      const [projects, setProjects] = useState([]);
+      const [currentProject, setCurrentProject] = useState(null);
+      const [courses, setCourses] = useState([]);
+      const [pathways, setPathways] = useState([]);
+      const [selectedPathway, setSelectedPathway] = useState(null);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+      const [termFilter, setTermFilter] = useState('all');
+      const [ztcFilter, setZtcFilter] = useState('all');
+      const [showMapping, setShowMapping] = useState(false);
+      const [showProjectManager, setShowProjectManager] = useState(false);
+      const [showExportModal, setShowExportModal] = useState(false);
+      const [selectedCourse, setSelectedCourse] = useState(null); // For course detail drill-down
+      const [darkMode, setDarkMode] = useState(true); // Default to dark mode
+      const [areaSortOrder, setAreaSortOrder] = useState('default'); // Sort order for area summary cards
+      const [columnMapping, setColumnMapping] = useState({
+        course: '',
+        title: '',
+        term: '',
+        ztcStatus: '',
+        pathways: []
+      });
+      const [csvHeaders, setCsvHeaders] = useState([]);
+      const [pendingCSVData, setPendingCSVData] = useState(null); // Replace window.tempCSVData
+
+      // Load theme preference from localStorage on mount
+      useEffect(() => {
+        const savedTheme = localStorage.getItem('ztc-theme');
+        if (savedTheme !== null) {
+          setDarkMode(savedTheme === 'dark');
+        }
+      }, []);
+
+      // Save theme preference to localStorage whenever it changes
+      useEffect(() => {
+        localStorage.setItem('ztc-theme', darkMode ? 'dark' : 'light');
+      }, [darkMode]);
+
+      // Load a project
+      const loadProject = (project) => {
+        setCourses(project.courses || []);
+        setPathways(project.pathways || []);
+        setSelectedPathway(project.pathways?.[0]?.name || null);
+        setColumnMapping(project.columnMapping || columnMapping);
+        setCurrentProject(project);
+        setShowProjectManager(false);
+      };
+
+      // Load projects from localStorage on mount
+      useEffect(() => {
+        const saved = localStorage.getItem('ztc-projects');
+        if (saved) {
+          try {
+            const loaded = JSON.parse(saved);
+            setProjects(loaded);
+            if (loaded.length > 0) {
+              loadProject(loaded[0]);
+            }
+          } catch (err) {
+            console.error('Error loading projects:', err);
+          }
+        }
+      }, []);
+
+      // Save projects to localStorage whenever they change
+      useEffect(() => {
+        if (projects.length > 0) {
+          localStorage.setItem('ztc-projects', JSON.stringify(projects));
+        }
+      }, [projects]);
+
+      // Parse CSV with proper quote handling
+      const parseCSV = (text) => {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          const nextChar = text[i + 1];
+          
+          if (inQuotes) {
+            if (char === '"' && nextChar === '"') {
+              currentField += '"';
+              i++;
+            } else if (char === '"') {
+              inQuotes = false;
+            } else {
+              currentField += char;
+            }
+          } else {
+            if (char === '"') {
+              inQuotes = true;
+            } else if (char === ',') {
+              currentRow.push(currentField.trim());
+              currentField = '';
+            } else if (char === '\n') {
+              currentRow.push(currentField.trim());
+              if (currentRow.some(f => f !== '')) {
+                rows.push(currentRow);
+              }
+              currentRow = [];
+              currentField = '';
+            } else if (char !== '\r') {
+              currentField += char;
+            }
+          }
+        }
+        
+        if (currentField || currentRow.length > 0) {
+          currentRow.push(currentField.trim());
+          rows.push(currentRow);
+        }
+        
+        return rows;
+      };
+
+      // Auto-detect column mapping
+      const autoDetectMapping = (headers) => {
+        const findColumn = (patterns) => {
+          return headers.find(h => 
+            patterns.some(p => h.toLowerCase().includes(p.toLowerCase()))
+          ) || '';
+        };
+
+        return {
+          course: findColumn(['course code', 'course']),
+          title: findColumn(['course title', 'title', 'name']),
+          term: findColumn(['sec term', 'term', 'semester']),
+          ztcStatus: findColumn(['ztc percent term', 'ztc percent', 'ztc %']),
+          pathways: headers.filter(h => 
+            h.toLowerCase().includes('getc') || 
+            h.toLowerCase().includes('pathway') ||
+            h.toLowerCase().includes('comm') ||
+            h.toLowerCase().includes('studies') ||
+            h.toLowerCase().includes('lists') ||
+            h.toLowerCase().includes('area')
+          )
+        };
+      };
+
+      // Handle CSV file upload
+      const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          const rows = parseCSV(text);
+          
+          if (rows.length < 2) {
+            alert('CSV file appears to be empty or invalid');
+            return;
+          }
+
+          const headers = rows[0];
+          setCsvHeaders(headers);
+          
+          const mapping = autoDetectMapping(headers);
+          setColumnMapping(mapping);
+          setShowMapping(true);
+          
+          // Store raw data for processing after mapping
+          setPendingCSVData(rows);
+        };
+
+        reader.readAsText(file);
+        event.target.value = '';
+      };
+
+      // Process mapped CSV data
+      const processCSVData = () => {
+        const rows = pendingCSVData;
+        if (!rows) return;
+
+        const headers = rows[0];
+        const data = rows.slice(1);
+
+        const processedCourses = [];
+        const pathwaySet = new Set();
+
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          const course = {
+            id: `course-${i}`,
+            code: row[headers.indexOf(columnMapping.course)] || '',
+            title: row[headers.indexOf(columnMapping.title)] || '',
+            term: row[headers.indexOf(columnMapping.term)] || '',
+            pathways: {},
+            // Store all ZTC metric percentages for drill-down
+            ztcPercentage: row[headers.indexOf(columnMapping.ztcStatus)] || '',
+            ztcaPercentage: row[headers.indexOf('Oer Ztca Percent Term')] || '',
+            ztccPercentage: row[headers.indexOf('Oer Ztcc Percent Term')] || '',
+            ztcePercentage: row[headers.indexOf('Oer Ztce Percent Term')] || '',
+            ztcfPercentage: row[headers.indexOf('Oer Ztcf Percent Term')] || '',
+            ztcgPercentage: row[headers.indexOf('Oer Ztcg Percent Term')] || '',
+            lctPercentage: row[headers.indexOf('Lct Percent Term')] || '',
+            // Store section counts for drill-down
+            ztcSections: row[headers.indexOf('Ztc Sections Term')] || '',
+            totalSections: row[headers.indexOf('Total Sections Term')] || ''
+          };
+
+          // Determine ZTC status from the value
+          course.ztcStatus = determineZTCStatus(course.ztcPercentage);
+
+          // Process pathway columns
+          columnMapping.pathways.forEach(pathwayCol => {
+            const value = row[headers.indexOf(pathwayCol)];
+            if (value && value.trim() !== '') {
+              // Split multiple areas (if comma-separated or similar)
+              const areas = value.split(/[;,]/).map(a => a.trim()).filter(a => a);
+              
+              areas.forEach(area => {
+                // Skip areas that indicate "not in pathway"
+                if (area.toLowerCase().includes('not in')) return;
+                
+                if (!course.pathways[pathwayCol]) {
+                  course.pathways[pathwayCol] = [];
+                }
+                course.pathways[pathwayCol].push(area);
+                pathwaySet.add(`${pathwayCol}::${area}`);
+              });
+            }
+          });
+
+          if (course.code) {
+            processedCourses.push(course);
+          }
+        }
+
+        // Build pathway structure
+        const pathwayList = Array.from(pathwaySet).map(p => {
+          const [name, area] = p.split('::');
+          return { name, area };
+        });
+
+        // Group by pathway name
+        const pathwayGroups = {};
+        pathwayList.forEach(({ name, area }) => {
+          if (!pathwayGroups[name]) {
+            pathwayGroups[name] = { name, areas: [] };
+          }
+          pathwayGroups[name].areas.push(area);
+        });
+
+        // Sort areas within each pathway
+        Object.values(pathwayGroups).forEach(pathway => {
+          pathway.areas.sort((a, b) => {
+            // Special handling for "List X" patterns (List A, List B, List C, etc.)
+            const aListMatch = a.match(/List\s+([A-Z])/i);
+            const bListMatch = b.match(/List\s+([A-Z])/i);
+            
+            if (aListMatch && bListMatch) {
+              // Both are "List X" format, sort by the letter
+              return aListMatch[1].localeCompare(bListMatch[1]);
+            }
+            
+            // Special handling for "Required Core" - always put it first
+            if (a.toLowerCase().includes('required') || a.toLowerCase().includes('core')) return -1;
+            if (b.toLowerCase().includes('required') || b.toLowerCase().includes('core')) return 1;
+            
+            // Handle GETC/Area patterns (e.g., "Area A", "GETC-1A")
+            const aMatch = a.match(/([A-Z]+)\s*[-:]?\s*([A-Z]?\d*)/i);
+            const bMatch = b.match(/([A-Z]+)\s*[-:]?\s*([A-Z]?\d*)/i);
+            
+            if (aMatch && bMatch) {
+              // Compare the prefix first (e.g., "Area", "GETC")
+              if (aMatch[1] !== bMatch[1]) {
+                return aMatch[1].localeCompare(bMatch[1]);
+              }
+              // Then compare the suffix (letter or number)
+              if (aMatch[2] && bMatch[2]) {
+                return aMatch[2].localeCompare(bMatch[2]);
+              }
+            }
+            
+            // Default: alphabetical comparison
+            return a.localeCompare(b);
+          });
+        });
+
+        setCourses(processedCourses);
+        setPathways(Object.values(pathwayGroups));
+        setSelectedPathway(Object.values(pathwayGroups)[0]?.name || null);
+        setShowMapping(false);
+        setPendingCSVData(null); // Clear pending data
+
+        // Prompt to save as project
+        const projectName = prompt('Save as project name:', 'My ZTC Project');
+        if (projectName) {
+          saveProject(projectName, processedCourses, Object.values(pathwayGroups));
+        }
+      };
+
+      // Determine ZTC status from value
+      // Thresholds: 0-50% = Not ZTC, 51-74% = Partial, 75-100% = ZTC
+      const determineZTCStatus = (value) => {
+        if (!value || value === '') return 'unknown';
+        
+        const val = value.toLowerCase().trim();
+        
+        // Handle text-based status indicators
+        if (val.includes('ztc') || val.includes('zero')) {
+          return 'ztc';
+        } else if (val.includes('low') || val.includes('partial')) {
+          return 'partial';
+        } else if (val.includes('no') || val.includes('not') || val.includes('high')) {
+          return 'not-ztc';
+        }
+        
+        // Try to parse as percentage or number
+        // Remove %, $, and commas, then parse
+        const num = parseFloat(value.replace(/[%$,]/g, ''));
+        if (!isNaN(num)) {
+          // Apply new thresholds
+          if (num >= 75) return 'ztc';          // 75-100% is ZTC
+          if (num >= 51) return 'partial';      // 51-74% is Partial
+          if (num >= 0) return 'not-ztc';       // 0-50% is Not ZTC
+        }
+        
+        return 'unknown';
+      };
+
+      // Save current state as a project
+      const saveProject = (name, coursesData = courses, pathwaysData = pathways) => {
+        const project = {
+          id: Date.now(),
+          name,
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          courses: coursesData,
+          pathways: pathwaysData,
+          columnMapping
+        };
+
+        setProjects(prev => {
+          const existing = prev.findIndex(p => p.name === name);
+          if (existing >= 0) {
+            const updated = [...prev];
+            updated[existing] = { ...updated[existing], ...project, lastModified: new Date().toISOString() };
+            return updated;
+          }
+          return [...prev, project];
+        });
+
+        setCurrentProject(project);
+      };
+
+      // Delete a project
+      const deleteProject = (projectId) => {
+        if (confirm('Are you sure you want to delete this project?')) {
+          setProjects(prev => prev.filter(p => p.id !== projectId));
+          if (currentProject?.id === projectId) {
+            setCurrentProject(null);
+            setCourses([]);
+            setPathways([]);
+          }
+        }
+      };
+
+      // Clear datasource - reset everything
+      const clearDatasource = () => {
+        if (confirm('Are you sure you want to clear all data? This will remove all courses, pathways, and reset filters.')) {
+          setCourses([]);
+          setPathways([]);
+          setSelectedPathway(null);
+          setSearchQuery('');
+          setTermFilter('all');
+          setZtcFilter('all');
+          setCurrentProject(null);
+          setColumnMapping({
+            course: '',
+            title: '',
+            term: '',
+            ztcStatus: '',
+            pathways: []
+          });
+          setCsvHeaders([]);
+          setPendingCSVData(null);
+        }
+      };
+
+      // Export current view
+      const exportAnalysis = () => {
+        setShowExportModal(true); // Open export modal
+      };
+
+      // ========================================
+      // COMPREHENSIVE EXPORT SYSTEM
+      // ========================================
+
+      // Helper: Create chart as data URL for PDF embedding
+      const createChartDataURL = (pathway, stats) => {
+        return new Promise((resolve) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 400;
+          canvas.height = 200;
+          
+          const ctx = canvas.getContext('2d');
+          
+          const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['ZTC', 'Partial', 'Not ZTC'],
+              datasets: [{
+                data: [stats.ztcCount, stats.partialCount, stats.notZtcCount],
+                backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'bottom',
+                  labels: {
+                    color: '#1e293b',
+                    font: { size: 11 }
+                  }
+                }
+              }
+            }
+          });
+          
+          setTimeout(() => {
+            const imageURL = canvas.toDataURL('image/png');
+            chart.destroy();
+            resolve(imageURL);
+          }, 500);
+        });
+      };
+
+      // Export to CSV - NOW RESPECTS FILTERS
+      const exportToCSV = (pathwayName = null) => {
+        const pathway = pathwayName ? pathways.find(p => p.name === pathwayName) : pathways.find(p => p.name === selectedPathway);
+        if (!pathway) return;
+
+        // Collect all courses for this pathway - USING FILTERED COURSES
+        const allCourses = [];
+        pathway.areas.forEach(area => {
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          areaCourses.forEach(course => {
+            allCourses.push({
+              Area: area,
+              'Course Code': course.code,
+              'Course Title': course.title,
+              'Term': course.term || '',
+              'ZTC Status': course.ztcStatus === 'ztc' ? 'ZTC' : course.ztcStatus === 'partial' ? 'Partial' : 'Not ZTC',
+              'ZTC Percentage': course.ztcPercentage || ''
+            });
+          });
+        });
+
+        // Convert to CSV
+        const headers = Object.keys(allCourses[0] || {});
+        let csv = headers.join(',') + '\n';
+        
+        allCourses.forEach(row => {
+          const values = headers.map(header => {
+            const val = row[header] || '';
+            return `"${String(val).replace(/"/g, '""')}"`;
+          });
+          csv += values.join(',') + '\n';
+        });
+
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ztc-${pathway.name.replace(/\s+/g, '-')}-${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      // Export to Excel with multiple sheets
+      const exportToExcel = async (pathwayName = null) => {
+        const pathway = pathwayName ? pathways.find(p => p.name === pathwayName) : pathways.find(p => p.name === selectedPathway);
+        if (!pathway) return;
+
+        const workbook = XLSX.utils.book_new();
+
+        // Summary Sheet
+        const summaryData = [
+          ['ZTC Pathway Analysis'],
+          ['Pathway', pathway.name],
+          ['Generated', new Date().toLocaleString()],
+          [],
+          ['Overall Statistics'],
+          ['Metric', 'Value'],
+        ];
+
+        const stats = pathwayName ? calculatePathwayStats(pathway) : calculateFilteredPathwayStats(pathway);
+        summaryData.push(['Total Courses', stats.totalCourses]);
+        summaryData.push(['ZTC Courses', stats.ztcCount]);
+        summaryData.push(['ZTC Percentage', `${stats.ztcPercentage}%`]);
+        summaryData.push([]);
+        summaryData.push(['Area Breakdown']);
+        summaryData.push(['Area', 'Total', 'ZTC', 'ZTC %']);
+
+        pathway.areas.forEach(area => {
+          const areaStats = pathwayName ? calculateAreaStats(area) : calculateFilteredAreaStats(area);
+          summaryData.push([area, areaStats.totalCourses, areaStats.ztcCount, `${areaStats.ztcPercentage}%`]);
+        });
+
+        const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+        
+        // Set column widths
+        summarySheet['!cols'] = [{ wch: 20 }, { wch: 15 }];
+        
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+        // Course Details Sheet
+        const courseData = [['Area', 'Course Code', 'Course Title', 'Term', 'ZTC Status', 'ZTC %']];
+        
+        pathway.areas.forEach(area => {
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          areaCourses.forEach(course => {
+            courseData.push([
+              area,
+              course.code,
+              course.title,
+              course.term || '',
+              course.ztcStatus === 'ztc' ? 'ZTC' : course.ztcStatus === 'partial' ? 'Partial' : 'Not ZTC',
+              course.ztcPercentage || ''
+            ]);
+          });
+        });
+
+        const courseSheet = XLSX.utils.aoa_to_sheet(courseData);
+        courseSheet['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 10 }];
+        
+        XLSX.utils.book_append_sheet(workbook, courseSheet, 'Course Details');
+
+        // Area-by-Area Sheets
+        pathway.areas.slice(0, 10).forEach(area => { // Limit to 10 areas for performance
+          const areaData = [['Course Code', 'Course Title', 'Term', 'ZTC Status', 'ZTC %']];
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          
+          areaCourses.forEach(course => {
+            areaData.push([
+              course.code,
+              course.title,
+              course.term || '',
+              course.ztcStatus === 'ztc' ? 'ZTC' : course.ztcStatus === 'partial' ? 'Partial' : 'Not ZTC',
+              course.ztcPercentage || ''
+            ]);
+          });
+
+          const areaSheet = XLSX.utils.aoa_to_sheet(areaData);
+          areaSheet['!cols'] = [{ wch: 15 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 10 }];
+          
+          // Sanitize sheet name (Excel limits: 31 chars, no special chars)
+          const sheetName = area.substring(0, 31).replace(/[:\\/?*\[\]]/g, '');
+          XLSX.utils.book_append_sheet(workbook, areaSheet, sheetName);
+        });
+
+        // Write file
+        XLSX.writeFile(workbook, `ztc-${pathway.name.replace(/\s+/g, '-')}-${Date.now()}.xlsx`);
+      };
+
+      // Export to PDF with charts and professional styling - NOW RESPECTS FILTERS
+      const exportToPDF = async (pathwayName = null) => {
+        const pathway = pathwayName ? pathways.find(p => p.name === pathwayName) : pathways.find(p => p.name === selectedPathway);
+        if (!pathway) return;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        const stats = pathwayName ? calculatePathwayStats(pathway) : calculateFilteredPathwayStats(pathway);
+        
+        // Header
+        doc.setFillColor(30, 58, 138); // Blue
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.text('ZTC Pathway Analysis', 105, 15, { align: 'center' });
+        
+        doc.setFontSize(14);
+        doc.text(pathway.name, 105, 25, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 33, { align: 'center' });
+        
+        // Reset text color
+        doc.setTextColor(0, 0, 0);
+        
+        let yPos = 50;
+        
+        // Overall Statistics Box
+        doc.setFillColor(240, 240, 240);
+        doc.rect(15, yPos, 180, 35, 'F');
+        
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Overall Progress', 20, yPos + 8);
+        
+        doc.setFontSize(32);
+        doc.setTextColor(stats.ztcPercentage >= 75 ? 34 : stats.ztcPercentage >= 50 ? 245 : 239, 
+                        stats.ztcPercentage >= 75 ? 197 : stats.ztcPercentage >= 50 ? 158 : 68,
+                        stats.ztcPercentage >= 75 ? 94 : stats.ztcPercentage >= 50 ? 11 : 68);
+        doc.text(`${stats.ztcPercentage}%`, 105, yPos + 25, { align: 'center' });
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.text(`${stats.ztcCount} of ${stats.totalCourses} courses are ZTC`, 105, yPos + 32, { align: 'center' });
+        
+        yPos += 45;
+        
+        // Create and embed chart
+        try {
+          const chartURL = await createChartDataURL(pathway, stats);
+          doc.addImage(chartURL, 'PNG', 75, yPos, 60, 30);
+          yPos += 40;
+        } catch (err) {
+          console.error('Chart generation error:', err);
+          yPos += 10;
+        }
+        
+        // Area Breakdown Table
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Area Breakdown', 15, yPos);
+        yPos += 8;
+        
+        const tableData = pathway.areas.map(area => {
+          const areaStats = pathwayName ? calculateAreaStats(area) : calculateFilteredAreaStats(area);
+          return [
+            area,
+            areaStats.totalCourses.toString(),
+            areaStats.ztcCount.toString(),
+            `${areaStats.ztcPercentage}%`
+          ];
+        });
+        
+        doc.autoTable({
+          startY: yPos,
+          head: [['Area', 'Total', 'ZTC', 'ZTC %']],
+          body: tableData,
+          theme: 'striped',
+          headStyles: { fillColor: [30, 58, 138] },
+          styles: { fontSize: 10 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 30, halign: 'center' },
+            2: { cellWidth: 30, halign: 'center' },
+            3: { cellWidth: 25, halign: 'center' }
+          }
+        });
+        
+        yPos = doc.lastAutoTable.finalY + 10;
+        
+        // Course Details (if space allows, otherwise new page)
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Course Details by Area', 15, yPos);
+        yPos += 8;
+        
+        // Add courses for each area
+        pathway.areas.forEach(area => {
+          if (yPos > 260) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          if (areaCourses.length === 0) return;
+          
+          const courseTableData = areaCourses.map(course => [
+            course.code,
+            course.title.length > 50 ? course.title.substring(0, 47) + '...' : course.title,
+            course.ztcStatus === 'ztc' ? 'ZTC' : course.ztcStatus === 'partial' ? 'Partial' : 'Not ZTC'
+          ]);
+          
+          doc.autoTable({
+            startY: yPos,
+            head: [[{ content: area, colSpan: 3, styles: { halign: 'left', fillColor: [71, 85, 105] } }]],
+            body: courseTableData,
+            theme: 'plain',
+            styles: { fontSize: 9 },
+            columnStyles: {
+              0: { cellWidth: 35 },
+              1: { cellWidth: 115 },
+              2: { cellWidth: 35, halign: 'center' }
+            },
+            headStyles: { fontSize: 11, fontStyle: 'bold' }
+          });
+          
+          yPos = doc.lastAutoTable.finalY + 5;
+        });
+        
+        // Footer on all pages
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text(`ZTC Pathway Mapper • Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+        }
+        
+        // Save
+        doc.save(`ztc-${pathway.name.replace(/\s+/g, '-')}-${Date.now()}.pdf`);
+      };
+
+      // NEW: Export to PNG (screenshot of current dashboard)
+      const exportToPNG = async () => {
+        const pathway = pathways.find(p => p.name === selectedPathway);
+        if (!pathway) return;
+
+        try {
+          // Find the main content area to capture
+          const mainElement = document.querySelector('main');
+          if (!mainElement) {
+            alert('Unable to capture dashboard view');
+            return;
+          }
+
+          // Use html2canvas to capture the view
+          const canvas = await html2canvas(mainElement, {
+            backgroundColor: darkMode ? '#020617' : '#f9fafb',
+            scale: 2, // Higher quality
+            logging: false,
+            useCORS: true
+          });
+
+          // Convert canvas to blob and download
+          canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ztc-${pathway.name.replace(/\s+/g, '-')}-dashboard-${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }, 'image/png');
+
+        } catch (err) {
+          console.error('PNG export error:', err);
+          alert('Failed to export as PNG. Please try again.');
+        }
+      };
+
+      // Batch export all pathways
+      const exportAllPathways = async (format) => {
+        if (pathways.length === 0) {
+          alert('No pathways to export!');
+          return;
+        }
+
+        for (const pathway of pathways) {
+          switch (format) {
+            case 'csv':
+              exportToCSV(pathway.name);
+              break;
+            case 'excel':
+              await exportToExcel(pathway.name);
+              break;
+            case 'pdf':
+              await exportToPDF(pathway.name);
+              break;
+          }
+          
+          // Small delay between exports to prevent browser throttling
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        alert(`Successfully exported ${pathways.length} pathway(s) as ${format.toUpperCase()}!`);
+      };
+
+      // ========================================
+      // END EXPORT SYSTEM
+      // ========================================
+
+      // Get courses for a specific pathway area
+      const getCoursesForArea = (pathwayName, area) => {
+        return courses.filter(course => 
+          course.pathways[pathwayName]?.includes(area)
+        );
+      };
+
+      // Calculate stats for an area
+      const calculateAreaStats = (area) => {
+        const areaCourses = getCoursesForArea(selectedPathway, area);
+        const ztcCount = areaCourses.filter(c => c.ztcStatus === 'ztc').length;
+        const totalCourses = areaCourses.length;
+        const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
+        
+        return { ztcCount, totalCourses, ztcPercentage };
+      };
+
+      // Calculate stats for an area based on filtered courses
+      const calculateFilteredAreaStats = (area) => {
+        const areaCourses = getFilteredCourses(area);
+        const ztcCount = areaCourses.filter(c => c.ztcStatus === 'ztc').length;
+        const totalCourses = areaCourses.length;
+        const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
+        
+        return { ztcCount, totalCourses, ztcPercentage };
+      };
+
+      // Calculate overall pathway stats
+      const calculatePathwayStats = (pathway) => {
+        if (!pathway) return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0 };
+        
+        const allCourses = new Set();
+        pathway.areas.forEach(area => {
+          getCoursesForArea(pathway.name, area).forEach(c => allCourses.add(c.id));
+        });
+        
+        const uniqueCourses = Array.from(allCourses).map(id => courses.find(c => c.id === id)).filter(Boolean);
+        const ztcCount = uniqueCourses.filter(c => c.ztcStatus === 'ztc').length;
+        const partialCount = uniqueCourses.filter(c => c.ztcStatus === 'partial').length;
+        const notZtcCount = uniqueCourses.filter(c => c.ztcStatus === 'not-ztc').length;
+        const totalCourses = uniqueCourses.length;
+        const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
+        
+        return { ztcCount, partialCount, notZtcCount, totalCourses, ztcPercentage };
+      };
+
+      // Calculate pathway stats based on FILTERED courses (respects search and filters)
+      const calculateFilteredPathwayStats = (pathway) => {
+        if (!pathway) return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0, partialCount: 0, notZtcCount: 0 };
+        
+        const allFilteredCourses = new Set();
+        pathway.areas.forEach(area => {
+          getFilteredCourses(area).forEach(c => allFilteredCourses.add(c.id));
+        });
+        
+        const uniqueCourses = Array.from(allFilteredCourses).map(id => courses.find(c => c.id === id)).filter(Boolean);
+        const ztcCount = uniqueCourses.filter(c => c.ztcStatus === 'ztc').length;
+        const partialCount = uniqueCourses.filter(c => c.ztcStatus === 'partial').length;
+        const notZtcCount = uniqueCourses.filter(c => c.ztcStatus === 'not-ztc').length;
+        const totalCourses = uniqueCourses.length;
+        const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
+        
+        return { ztcCount, partialCount, notZtcCount, totalCourses, ztcPercentage };
+      };
+
+      // Filter courses based on search and filters
+      const getFilteredCourses = (area) => {
+        let filtered = getCoursesForArea(selectedPathway, area);
+
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filtered = filtered.filter(c => 
+            c.code.toLowerCase().includes(query) ||
+            c.title.toLowerCase().includes(query)
+          );
+        }
+
+        if (termFilter !== 'all') {
+          filtered = filtered.filter(c => c.term === termFilter);
+        }
+
+        if (ztcFilter !== 'all') {
+          filtered = filtered.filter(c => c.ztcStatus === ztcFilter);
+        }
+
+        return filtered;
+      };
+
+      // Get unique terms from courses
+      const availableTerms = useMemo(() => {
+        return Array.from(new Set(courses.map(c => c.term).filter(Boolean))).sort();
+      }, [courses]);
+
+      // Theme configuration
+      const theme = darkMode ? {
+        // Dark mode
+        bg: 'bg-slate-950',
+        text: 'text-slate-100',
+        textMuted: 'text-slate-400',
+        header: 'bg-slate-900/95',
+        headerBorder: 'border-slate-800',
+        card: 'bg-slate-800/50',
+        cardHover: 'hover:bg-slate-800/70',
+        cardBorder: 'border-slate-700/50',
+        modal: 'bg-slate-900',  // Solid background for modals (better readability)
+        modalBorder: 'border-slate-700',  // Stronger border for modals
+        input: 'bg-slate-800 border-slate-700',
+        inputFocus: 'focus:ring-blue-500',
+        button: 'bg-slate-800 hover:bg-slate-700',
+        dashboard: 'from-slate-800/80 to-slate-900/80',
+        areaCol: 'bg-slate-900/50',
+        divider: 'bg-slate-700',
+        emptyText: 'text-slate-500',
+        scrollbarTrack: '#1e293b',
+        scrollbarThumb: '#475569',
+        scrollbarThumbHover: '#64748b'
+      } : {
+        // Light mode - Improved readability
+        bg: 'bg-gray-50',
+        text: 'text-gray-900',
+        textMuted: 'text-gray-700',  // Darker for better readability (was text-gray-600)
+        header: 'bg-white',  // Solid white instead of transparent
+        headerBorder: 'border-gray-300',  // Stronger border (was border-gray-200)
+        card: 'bg-white',
+        cardHover: 'hover:bg-gray-100',  // More visible hover (was hover:bg-gray-50)
+        cardBorder: 'border-gray-300',  // Stronger borders (was border-gray-200)
+        modal: 'bg-white',  // Solid background for modals
+        modalBorder: 'border-gray-300',  // Border for modals
+        input: 'bg-gray-100 border-gray-500',  // Enhanced contrast for inputs/dropdowns (darker bg and border)
+        inputFocus: 'focus:ring-blue-500',
+        button: 'bg-gray-200 hover:bg-gray-300',  // Darker buttons for visibility (was bg-gray-100)
+        dashboard: 'from-blue-50/50 to-gray-100/50',  // Subtle color for distinction (was from-gray-100/80)
+        areaCol: 'bg-white',
+        divider: 'bg-gray-400',  // Darker divider (was bg-gray-300)
+        emptyText: 'text-gray-500',  // Darker for readability (was text-gray-400)
+        scrollbarTrack: '#e2e8f0',  // Slightly darker track
+        scrollbarThumb: '#94a3b8',  // Darker thumb (was #cbd5e1)
+        scrollbarThumbHover: '#64748b'  // Darker hover (was #94a3b8)
+      };
+
+      // ZTC Status badge component
+      const ZTCBadge = ({ status }) => {
+        const config = {
+          'ztc': { bg: 'bg-green-500/20', border: 'border-green-500/50', text: 'text-green-400', label: 'ZTC', showIcon: true },
+          'partial': { bg: 'bg-amber-500/20', border: 'border-amber-500/50', text: 'text-amber-400', label: 'Partial', showIcon: true },
+          'not-ztc': { bg: 'bg-red-500/20', border: 'border-red-500/50', text: 'text-red-400', label: 'Not ZTC', showIcon: false },
+          'unknown': { bg: 'bg-gray-500/20', border: 'border-gray-500/50', text: 'text-gray-400', label: 'Unknown', showIcon: false }
+        };
+
+        const style = config[status] || config.unknown;
+
+        return (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${style.bg} ${style.border} ${style.text}`}>
+            {status === 'ztc' && <Icons.CheckCircle className="w-3 h-3" />}
+            {status === 'partial' && <Icons.AlertCircle className="w-3 h-3" />}
+            {style.label}
+          </span>
+        );
+      };
+
+      // Course card component
+      const CourseCard = ({ course }) => {
+        const statusColors = {
+          'ztc': 'border-l-green-500',
+          'partial': 'border-l-amber-500',
+          'not-ztc': 'border-l-red-500',
+          'unknown': 'border-l-gray-500'
+        };
+
+        return (
+          <div 
+            onClick={() => setSelectedCourse(course)}
+            className={`${theme.card} border ${theme.cardBorder} rounded-lg p-3 border-l-4 ${statusColors[course.ztcStatus]} ${theme.cardHover} transition-all cursor-pointer`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className={`font-bold text-sm ${theme.text} truncate`}>{course.code}</div>
+                <div className={`text-xs ${theme.textMuted} line-clamp-2`}>{course.title}</div>
+              </div>
+              <ZTCBadge status={course.ztcStatus} />
+            </div>
+            {course.term && (
+              <div className={`text-xs ${theme.emptyText} mt-1`}>
+                {course.term}
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      // Course Detail Modal Component
+      const CourseDetailModal = ({ course, onClose }) => {
+        if (!course) return null;
+
+        // Parse percentage values and handle different formats
+        const parsePercentage = (value) => {
+          if (!value || value === '') return null;
+          // Remove % sign if present and parse as float
+          const numValue = parseFloat(String(value).replace('%', ''));
+          return isNaN(numValue) ? null : numValue;
+        };
+
+        // Get color based on percentage value (for OVERALL ZTC only)
+        const getPercentageColor = (pct) => {
+          if (pct === null) return 'text-gray-400';
+          if (pct >= 75) return 'text-green-400';
+          if (pct >= 51) return 'text-amber-400';
+          return 'text-red-400';
+        };
+
+        // Get background color for metric cards (for OVERALL ZTC only)
+        const getMetricBg = (pct) => {
+          if (pct === null) return 'bg-gray-500/10 border-gray-500/30';
+          if (pct >= 75) return 'bg-green-500/10 border-green-500/30';
+          if (pct >= 51) return 'bg-amber-500/10 border-amber-500/30';
+          return 'bg-red-500/10 border-red-500/30';
+        };
+
+        // Neutral colors for ZTC type breakdown (not threshold-based)
+        const getNeutralColor = () => {
+          return darkMode ? 'text-slate-300' : 'text-gray-700';
+        };
+
+        const getNeutralBg = () => {
+          return darkMode ? 'bg-slate-700/30 border-slate-600/50' : 'bg-blue-50 border-blue-200/50';
+        };
+
+        const ztcPct = parsePercentage(course.ztcPercentage);
+        const ztcaPct = parsePercentage(course.ztcaPercentage);
+        const ztccPct = parsePercentage(course.ztccPercentage);
+        const ztcePct = parsePercentage(course.ztcePercentage);
+        const ztcfPct = parsePercentage(course.ztcfPercentage);
+        const ztcgPct = parsePercentage(course.ztcgPercentage);
+        const lctPct = parsePercentage(course.lctPercentage);
+
+        // Metric definitions with icons
+        const metrics = [
+          { label: 'ZTC-A', value: ztcaPct, description: 'Zero Textbook Cost - A', icon: '📚' },
+          { label: 'ZTC-C', value: ztccPct, description: 'Zero Textbook Cost - C', icon: '📖' },
+          { label: 'ZTC-E', value: ztcePct, description: 'Zero Textbook Cost - E', icon: '📝' },
+          { label: 'ZTC-F', value: ztcfPct, description: 'Zero Textbook Cost - F', icon: '📄' },
+          { label: 'ZTC-G', value: ztcgPct, description: 'Zero Textbook Cost - G', icon: '📃' },
+          { label: 'LCT', value: lctPct, description: 'Low Cost Textbook', icon: '💵' }
+        ].filter(m => m.value !== null); // Only show metrics that have values
+
+        return (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+            <div 
+              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn`}
+              style={{ animation: 'scaleIn 0.2s ease-out' }}
+            >
+              <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold mb-1">{course.code}</h2>
+                      <p className={`text-sm ${theme.textMuted}`}>{course.title}</p>
+                      {course.term && (
+                        <p className={`text-xs ${theme.emptyText} mt-1`}>Term: {course.term}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className={`p-2 ${theme.cardHover} rounded-lg transition-colors flex-shrink-0`}
+                      aria-label="Close course details"
+                    >
+                      <Icons.X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Overall ZTC Percentage - Big and Prominent */}
+                  <div className={`${getMetricBg(ztcPct)} border-2 rounded-xl p-6 mb-6 text-center`}>
+                    <div className={`text-xs font-semibold ${theme.textMuted} uppercase tracking-wider mb-2`}>
+                      Overall ZTC Status
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`text-6xl font-bold ${getPercentageColor(ztcPct)}`}>
+                          {ztcPct !== null ? `${ztcPct}%` : 'N/A'}
+                        </div>
+                        <ZTCBadge status={course.ztcStatus} />
+                      </div>
+                      {/* Section counts */}
+                      {course.ztcSections && course.totalSections && (
+                        <div className={`text-lg font-semibold ${theme.textMuted}`}>
+                          ({parseInt(course.ztcSections, 10)} / {parseInt(course.totalSections, 10)} sections)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                {/* ZTC Type Breakdown */}
+                {metrics.length > 0 && (
+                  <>
+                    <div className={`text-sm font-semibold ${theme.textMuted} uppercase tracking-wider mb-3`}>
+                      ZTC Type Breakdown
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                      {metrics.map((metric) => (
+                        <div
+                          key={metric.label}
+                          className={`${getNeutralBg()} border rounded-lg p-4 transition-all hover:scale-105`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-2xl">{metric.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-xs font-semibold ${theme.text}`}>{metric.label}</div>
+                              <div className={`text-xs ${theme.textMuted} truncate`} title={metric.description}>
+                                {metric.description}
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`text-3xl font-bold ${getNeutralColor()}`}>
+                            {metric.value}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Associated Pathways */}
+                <div className="mb-6">
+                  <div className={`text-sm font-semibold ${theme.textMuted} uppercase tracking-wider mb-3`}>
+                    Associated Pathways
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(course.pathways).map(([pathway, areas]) => (
+                      <div key={pathway} className={`${theme.card} border ${theme.cardBorder} rounded-lg p-3`}>
+                        <div className={`text-xs font-semibold ${theme.text} mb-2`}>{pathway}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {areas.map((area, idx) => (
+                            <span key={idx} className={`px-2 py-1 ${theme.input} rounded text-xs`}>
+                              {area}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* View in Course Catalog Button */}
+                <a
+                  href={`https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=${encodeURIComponent(course.code)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold mb-4"
+                >
+                  <Icons.FileText className="w-4 h-4" />
+                  View in Course Catalog
+                </a>
+
+                {/* Info Note */}
+                <div className={`${theme.card} border ${theme.cardBorder} rounded-lg p-4`}>
+                  <div className="flex items-start gap-3">
+                    <Icons.AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className={`text-xs ${theme.textMuted}`}>
+                      <p className="font-semibold text-blue-400 mb-1">About These Metrics</p>
+                      <p>These percentages show the breakdown of different ZTC categories for this course. The overall ZTC status (Green/Amber/Red badge) is determined by the overall ZTC percentage using 75%/51%/0% thresholds.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Area column component
+      const AreaColumn = ({ area }) => {
+        const filteredCourses = getFilteredCourses(area);
+        const stats = calculateFilteredAreaStats(area);
+        
+        // Color coding based on new thresholds: >=75% = green, 51-74% = amber, <=50% = red
+        const statusColor = stats.ztcPercentage >= 75 ? 'text-green-400' : 
+                           stats.ztcPercentage >= 51 ? 'text-amber-400' : 'text-red-400';
+
+        return (
+          <div className={`${theme.areaCol} rounded-xl border ${theme.cardBorder} p-4 flex flex-col`} style={{width: '320px', flexShrink: 0}}>
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-sm text-blue-400 uppercase tracking-wide">{area}</h3>
+                {stats.ztcPercentage >= 75 && <Icons.CheckCircle className="w-4 h-4 text-green-400" />}
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className={`font-semibold ${statusColor}`}>{stats.ztcPercentage}% ZTC</span>
+                <span className={theme.emptyText}>({stats.ztcCount}/{stats.totalCourses})</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2 flex-1 overflow-y-auto max-h-[600px]" style={{ margin: '1px', borderRadius: '0.75rem', paddingRight: '8px' }}>
+              {filteredCourses.length === 0 ? (
+                <div className={`${theme.emptyText} text-sm text-center py-8`}>
+                  No courses match filters
+                </div>
+              ) : (
+                filteredCourses.map(course => (
+                  <CourseCard key={course.id} course={course} />
+                ))
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      // Progress dashboard component
+      const ProgressDashboard = () => {
+        if (!selectedPathway) return null;
+        
+        const pathway = pathways.find(p => p.name === selectedPathway);
+        if (!pathway) return null;
+        
+        const stats = calculateFilteredPathwayStats(pathway);
+        
+        // Determine if filters are active
+        const hasActiveFilters = searchQuery || termFilter !== 'all' || ztcFilter !== 'all';
+        
+        return (
+          <div className={`mb-6 bg-gradient-to-br ${theme.dashboard} backdrop-blur-sm border ${theme.cardBorder} rounded-xl p-6`}>
+            {/* Pathway title with Filtered View badge */}
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-2xl font-bold">{pathway.name}</h2>
+              {hasActiveFilters && (
+                <span className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded text-xs font-semibold">
+                  Filtered View
+                </span>
+              )}
+            </div>
+
+            {/* Stats row - matching v1 layout */}
+            <div className="flex items-center gap-6 mb-4 flex-wrap">
+              {/* Main percentage */}
+              <div className="flex items-baseline gap-2">
+                <div className="text-5xl font-bold">{stats.ztcPercentage}%</div>
+                <div className={`text-sm ${theme.textMuted}`}>ZTC Complete</div>
+              </div>
+
+              {/* Divider */}
+              <div className={`hidden lg:block w-px h-12 ${theme.divider}`}></div>
+
+              {/* Individual stats */}
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-400">{stats.ztcCount}</div>
+                  <div className={`text-xs ${theme.textMuted}`}>ZTC Courses</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-400">{stats.partialCount}</div>
+                  <div className={`text-xs ${theme.textMuted}`}>Partial</div>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-red-400">{stats.notZtcCount}</div>
+                  <div className={`text-xs ${theme.textMuted}`}>Not ZTC</div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className={`hidden lg:block w-px h-12 ${theme.divider}`}></div>
+
+              {/* Total shown */}
+              <div className="text-center">
+                <div className="text-3xl font-bold">{stats.totalCourses}</div>
+                <div className={`text-xs ${theme.textMuted}`}>Total Shown</div>
+              </div>
+
+              {/* Spacer to push Export button to the right */}
+              <div className="flex-1"></div>
+
+              {/* Export button */}
+              <button
+                onClick={exportAnalysis}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold whitespace-nowrap"
+              >
+                <Icons.Download className="w-4 h-4" />
+                Export
+              </button>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden mb-6">
+              <div 
+                className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500 transition-all duration-500"
+                style={{ width: `${stats.ztcPercentage}%` }}
+              ></div>
+            </div>
+
+            {/* Area Summary Cards with Sorting - matching v1 layout */}
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <h3 className={`text-sm font-semibold ${theme.textMuted} uppercase tracking-wider`}>Area Summary</h3>
+                <select
+                  value={areaSortOrder}
+                  onChange={(e) => setAreaSortOrder(e.target.value)}
+                  className={`px-2 py-1 ${theme.input} rounded text-xs font-medium focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                  title="Sort areas by..."
+                >
+                  <option value="default">Default Order</option>
+                  <option value="percentage-desc">% High to Low</option>
+                  <option value="percentage-asc">% Low to High</option>
+                  <option value="count-desc">Count High to Low</option>
+                  <option value="count-asc">Count Low to High</option>
+                  <option value="color-green">Green First</option>
+                  <option value="color-red">Red First</option>
+                  <option value="name-asc">Name A-Z</option>
+                  <option value="name-desc">Name Z-A</option>
+                </select>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+              {(() => {
+                // Calculate stats for each area
+                const areasWithStats = pathway.areas.map(area => ({
+                  name: area,
+                  stats: calculateFilteredAreaStats(area)
+                }));
+                
+                // Sort based on selected order
+                let sortedAreas = [...areasWithStats];
+                if (areaSortOrder === 'percentage-desc') {
+                  sortedAreas.sort((a, b) => b.stats.ztcPercentage - a.stats.ztcPercentage);
+                } else if (areaSortOrder === 'percentage-asc') {
+                  sortedAreas.sort((a, b) => a.stats.ztcPercentage - b.stats.ztcPercentage);
+                } else if (areaSortOrder === 'count-desc') {
+                  sortedAreas.sort((a, b) => b.stats.ztcCount - a.stats.ztcCount);
+                } else if (areaSortOrder === 'count-asc') {
+                  sortedAreas.sort((a, b) => a.stats.ztcCount - b.stats.ztcCount);
+                } else if (areaSortOrder === 'color-green') {
+                  sortedAreas.sort((a, b) => {
+                    const getPriority = (pct) => pct === 100 ? 0 : (pct >= 50 ? 1 : 2);
+                    return getPriority(a.stats.ztcPercentage) - getPriority(b.stats.ztcPercentage);
+                  });
+                } else if (areaSortOrder === 'color-red') {
+                  sortedAreas.sort((a, b) => {
+                    const getPriority = (pct) => pct < 50 ? 0 : (pct < 100 ? 1 : 2);
+                    return getPriority(a.stats.ztcPercentage) - getPriority(b.stats.ztcPercentage);
+                  });
+                } else if (areaSortOrder === 'name-asc') {
+                  sortedAreas.sort((a, b) => a.name.localeCompare(b.name));
+                } else if (areaSortOrder === 'name-desc') {
+                  sortedAreas.sort((a, b) => b.name.localeCompare(a.name));
+                }
+                
+                return sortedAreas.map(({ name: area, stats: areaStats }) => {
+                  const areaColor = areaStats.ztcPercentage === 100 ? 'border-green-500/50 bg-green-500/10' :
+                                   areaStats.ztcPercentage >= 50 ? 'border-amber-500/50 bg-amber-500/10' :
+                                   'border-red-500/50 bg-red-500/10';
+                  
+                  return (
+                    <div key={area} className={`border ${areaColor} rounded-lg p-2`} style={{flex: '0 0 auto', width: '180px'}}>
+                      <div className={`text-xs font-semibold ${theme.text} mb-1`}>{area}</div>
+                      <div className="flex items-baseline gap-1">
+                        <span className={`text-sm font-bold ${theme.text}`}>{areaStats.ztcPercentage}%</span>
+                        <span className={`text-xs ${theme.textMuted}`}>({areaStats.ztcCount}/{areaStats.totalCourses})</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <>
+          {/* Dynamic scrollbar styling based on theme */}
+          <style>{`
+            ::-webkit-scrollbar {
+              width: 8px;
+              height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+              background: ${theme.scrollbarTrack};
+            }
+            ::-webkit-scrollbar-thumb {
+              background: ${theme.scrollbarThumb};
+              border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+              background: ${theme.scrollbarThumbHover};
+            }
+          `}</style>
+          
+          <div className={`min-h-screen ${theme.bg} ${theme.text}`}>
+          {/* Header */}
+          <header className={`sticky top-0 z-50 ${theme.header} backdrop-blur-sm border-b ${theme.headerBorder}`}>
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Icons.BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold">ZTC Pathway Mapper</h1>
+                    <p className={`text-xs ${theme.textMuted}`}>
+                      {currentProject ? currentProject.name : 'No project loaded'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className={`flex items-center gap-2 px-3 py-2 ${theme.button} rounded-lg cursor-pointer transition-colors`}>
+                    <Icons.Upload className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Upload CSV</span>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    onClick={() => setShowProjectManager(true)}
+                    className={`flex items-center gap-2 px-3 py-2 ${theme.button} rounded-lg transition-colors`}
+                  >
+                    <Icons.FolderOpen className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Projects</span>
+                  </button>
+
+                  {currentProject && (
+                    <>
+                      <button
+                        onClick={() => saveProject(currentProject.name)}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                      >
+                        <Icons.Save className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Save</span>
+                      </button>
+                      
+                      <button
+                        onClick={clearDatasource}
+                        className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                        title="Clear all data and reset dashboard"
+                      >
+                        <Icons.Trash2 className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Clear Datasource</span>
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Theme toggle button */}
+                  <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className={`flex items-center gap-2 px-3 py-2 ${theme.button} rounded-lg transition-colors`}
+                    title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                    aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                  >
+                    {darkMode ? <Icons.Sun className="w-4 h-4" /> : <Icons.Moon className="w-4 h-4" />}
+                    <span className="text-sm font-semibold hidden sm:inline">
+                      {darkMode ? "Light" : "Dark"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters and pathway selector */}
+            {courses.length > 0 && (
+              <div className={`px-4 py-3 border-t ${theme.headerBorder} ${theme.card}`}>
+                <div className="flex flex-col lg:flex-row gap-3">
+                  {/* Pathway selector */}
+                  <div className="flex items-center gap-2">
+                    <label className={`text-sm font-semibold ${theme.textMuted}`}>Pathway:</label>
+                    <select
+                      value={selectedPathway || ''}
+                      onChange={(e) => setSelectedPathway(e.target.value)}
+                      className={`px-3 py-1.5 ${theme.input} rounded-lg text-sm font-medium focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                    >
+                      {pathways.map(p => (
+                        <option key={p.name} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Search */}
+                  <div className="flex-1 relative">
+                    <Icons.Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${theme.textMuted}`} />
+                    <input
+                      type="text"
+                      placeholder="Search courses..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setShowSearchSuggestions(e.target.value.length > 0);
+                      }}
+                      onFocus={() => {
+                        if (searchQuery.length > 0) {
+                          setShowSearchSuggestions(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Delay hiding to allow clicking on suggestions
+                        setTimeout(() => setShowSearchSuggestions(false), 200);
+                      }}
+                      className={`w-full pl-9 pr-3 py-1.5 ${theme.input} rounded-lg text-sm focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                    />
+                    
+                    {/* Search Suggestions Dropdown */}
+                    {showSearchSuggestions && searchQuery.length > 0 && (() => {
+                      // Get unique course codes and titles that match the search query
+                      const query = searchQuery.toLowerCase();
+                      const suggestions = courses
+                        .filter(course => 
+                          course.code.toLowerCase().includes(query) || 
+                          course.title.toLowerCase().includes(query)
+                        )
+                        .slice(0, 8) // Limit to 8 suggestions
+                        .map(course => ({
+                          code: course.code,
+                          title: course.title
+                        }));
+                      
+                      // Remove duplicates by course code
+                      const uniqueSuggestions = [];
+                      const seenCodes = new Set();
+                      suggestions.forEach(suggestion => {
+                        if (!seenCodes.has(suggestion.code)) {
+                          seenCodes.add(suggestion.code);
+                          uniqueSuggestions.push(suggestion);
+                        }
+                      });
+                      
+                      if (uniqueSuggestions.length === 0) return null;
+                      
+                      return (
+                        <div className={`absolute top-full left-0 right-0 mt-1 ${theme.modal} border ${theme.modalBorder} rounded-lg shadow-lg max-h-64 overflow-y-auto z-50`}>
+                          {uniqueSuggestions.map((suggestion, index) => (
+                            <div
+                              key={`${suggestion.code}-${index}`}
+                              onClick={() => {
+                                setSearchQuery(suggestion.code);
+                                setShowSearchSuggestions(false);
+                              }}
+                              className={`px-3 py-2 cursor-pointer ${theme.cardHover} transition-colors border-b ${theme.cardBorder} last:border-b-0`}
+                            >
+                              <div className={`text-sm font-semibold ${theme.text}`}>{suggestion.code}</div>
+                              <div className={`text-xs ${theme.textMuted} line-clamp-1`}>{suggestion.title}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Term filter */}
+                  <select
+                    value={termFilter}
+                    onChange={(e) => setTermFilter(e.target.value)}
+                    className={`px-3 py-1.5 ${theme.input} rounded-lg text-sm font-medium focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                  >
+                    <option value="all">All Terms</option>
+                    {availableTerms.map(term => (
+                      <option key={term} value={term}>{term}</option>
+                    ))}
+                  </select>
+
+                  {/* ZTC filter */}
+                  <select
+                    value={ztcFilter}
+                    onChange={(e) => setZtcFilter(e.target.value)}
+                    className={`px-3 py-1.5 ${theme.input} rounded-lg text-sm font-medium focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="ztc">ZTC Only</option>
+                    <option value="partial">Partial Only</option>
+                    <option value="not-ztc">Not ZTC Only</option>
+                  </select>
+
+                  {/* Clear filters */}
+                  {(searchQuery || termFilter !== 'all' || ztcFilter !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setTermFilter('all');
+                        setZtcFilter('all');
+                      }}
+                      className={`flex items-center gap-1 px-3 py-1.5 ${theme.button} border ${theme.cardBorder} rounded-lg text-sm transition-colors`}
+                    >
+                      <Icons.X className="w-3.5 h-3.5" />
+                      Clear
+                    </button>
+                  )}
+                </div>
+                
+                {/* ZTC Threshold Legend */}
+                <div className={`mt-3 flex items-center gap-2 text-xs ${theme.card} border ${theme.cardBorder} rounded-lg px-3 py-2`}>
+                  <Icons.AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  <span className={theme.textMuted}>
+                    <span className={`font-semibold ${theme.text}`}>ZTC Thresholds:</span>
+                    <span className="text-red-400 ml-2">0-50% = Not ZTC</span>
+                    <span className="text-slate-600 mx-1">•</span>
+                    <span className="text-amber-400">51-74% = Partial</span>
+                    <span className="text-slate-600 mx-1">•</span>
+                    <span className="text-green-400">75-100% = ZTC</span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </header>
+
+          {/* Main content */}
+          <main className="p-4">
+            {courses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+                <div className={`w-16 h-16 ${theme.card} border ${theme.cardBorder} rounded-full flex items-center justify-center mb-4`}>
+                  <Icons.FileText className={`w-8 h-8 ${theme.textMuted}`} />
+                </div>
+                <h2 className={`text-xl font-bold ${theme.text} mb-2`}>No Data Loaded</h2>
+                <p className={`${theme.textMuted} mb-6 max-w-md`}>
+                  Upload a CSV file to start mapping your ZTC pathways, or open an existing project.
+                </p>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition-colors">
+                    <Icons.Upload className="w-4 h-4" />
+                    <span className="font-semibold">Upload CSV</span>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {projects.length > 0 && (
+                    <button
+                      onClick={() => setShowProjectManager(true)}
+                      className={`flex items-center gap-2 px-4 py-2 ${theme.button} rounded-lg transition-colors`}
+                    >
+                      <Icons.FolderOpen className="w-4 h-4" />
+                      <span className="font-semibold">Open Project</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <ProgressDashboard />
+                
+                {/* Area columns */}
+                {selectedPathway && (
+                  <div className="overflow-x-auto pb-4">
+                    <div className="flex gap-4 min-w-min">
+                      {pathways.find(p => p.name === selectedPathway)?.areas.map(area => (
+                        <AreaColumn key={area} area={area} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </main>
+
+          {/* Column Mapping Modal */}
+          {showMapping && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col`}>
+                <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Map CSV Columns</h2>
+                    <button
+                      onClick={() => {
+                        setShowMapping(false);
+                        setPendingCSVData(null);
+                      }}
+                      className={`p-2 ${theme.cardHover} rounded-lg transition-colors`}
+                      aria-label="Close column mapping"
+                    >
+                      <Icons.X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <p className={`text-sm ${theme.textMuted} mb-6`}>
+                    Match your CSV columns to the required fields. We've auto-detected some mappings for you.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Course code */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Course Code *</label>
+                      <select
+                        value={columnMapping.course}
+                        onChange={(e) => setColumnMapping({...columnMapping, course: e.target.value})}
+                        className={`w-full px-3 py-2 ${theme.input} rounded-lg focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                      >
+                        <option value="">Select column...</option>
+                        {csvHeaders.map(h => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Course title */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Course Title *</label>
+                      <select
+                        value={columnMapping.title}
+                        onChange={(e) => setColumnMapping({...columnMapping, title: e.target.value})}
+                        className={`w-full px-3 py-2 ${theme.input} rounded-lg focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                      >
+                        <option value="">Select column...</option>
+                        {csvHeaders.map(h => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Term */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Term (Optional)</label>
+                      <select
+                        value={columnMapping.term}
+                        onChange={(e) => setColumnMapping({...columnMapping, term: e.target.value})}
+                        className={`w-full px-3 py-2 ${theme.input} rounded-lg focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                      >
+                        <option value="">Select column...</option>
+                        {csvHeaders.map(h => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* ZTC Status */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">ZTC Status *</label>
+                      <select
+                        value={columnMapping.ztcStatus}
+                        onChange={(e) => setColumnMapping({...columnMapping, ztcStatus: e.target.value})}
+                        className={`w-full px-3 py-2 ${theme.input} rounded-lg focus:outline-none focus:ring-2 ${theme.inputFocus}`}
+                      >
+                        <option value="">Select column...</option>
+                        {csvHeaders.map(h => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Pathway columns */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Pathway Columns *</label>
+                      <div className={`${theme.card} border ${theme.cardBorder} rounded-lg p-3 max-h-48 overflow-y-auto`}>
+                        {csvHeaders.map(h => (
+                          <label key={h} className="flex items-center gap-2 py-1">
+                            <input
+                              type="checkbox"
+                              checked={columnMapping.pathways.includes(h)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setColumnMapping({
+                                    ...columnMapping,
+                                    pathways: [...columnMapping.pathways, h]
+                                  });
+                                } else {
+                                  setColumnMapping({
+                                    ...columnMapping,
+                                    pathways: columnMapping.pathways.filter(p => p !== h)
+                                  });
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{h}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex gap-3">
+                    <button
+                      onClick={processCSVData}
+                      disabled={!columnMapping.course || !columnMapping.title || !columnMapping.ztcStatus || columnMapping.pathways.length === 0}
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                    >
+                      Process Data
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMapping(false);
+                        setPendingCSVData(null);
+                      }}
+                      className={`flex-1 px-4 py-2 ${theme.button} rounded-lg transition-colors`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Project Manager Modal */}
+          {showProjectManager && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+              <div className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn`}>
+                <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold">Project Manager</h2>
+                    <button
+                      onClick={() => setShowProjectManager(false)}
+                      className={`p-2 ${theme.cardHover} rounded-lg transition-colors`}
+                      aria-label="Close project manager"
+                    >
+                      <Icons.X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {projects.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Icons.FolderOpen className={`w-16 h-16 ${theme.textMuted} mx-auto mb-4`} />
+                      <p className={`text-lg font-semibold ${theme.text}`}>No projects yet</p>
+                      <p className={`text-sm ${theme.emptyText} mt-2`}>Upload a CSV to create your first project.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {projects.map(project => (
+                        <div
+                          key={project.id}
+                          className={`${theme.card} border ${theme.cardBorder} rounded-lg p-4 ${theme.cardHover} transition-colors`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="font-bold text-lg mb-1">{project.name}</h3>
+                              <div className={`flex items-center gap-3 text-sm ${theme.textMuted}`}>
+                                <span>{project.pathways?.length || 0} pathways</span>
+                                <span>•</span>
+                                <span>{project.courses?.length || 0} courses</span>
+                                <span>•</span>
+                                <span>Modified {new Date(project.lastModified).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => loadProject(project)}
+                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold transition-colors"
+                              >
+                                Open
+                              </button>
+                              <button
+                                onClick={() => deleteProject(project.id)}
+                                className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm font-semibold transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Export Modal */}
+          {showExportModal && selectedPathway && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+              <div className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn`}>
+                <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold">Export Options</h2>
+                      <p className={`text-sm ${theme.textMuted} mt-1`}>
+                        Export {selectedPathway} pathway data
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowExportModal(false)}
+                      className={`p-2 ${theme.cardHover} rounded-lg transition-colors`}
+                      aria-label="Close export modal"
+                    >
+                      <Icons.X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Single Pathway Exports */}
+                    <div>
+                      <h3 className={`text-sm font-semibold ${theme.textMuted} uppercase tracking-wider mb-3`}>
+                        Current Pathway {(searchQuery || termFilter !== 'all' || ztcFilter !== 'all') && '(Filtered)'}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* CSV Export */}
+                        <button
+                          onClick={() => {
+                            exportToCSV();
+                            setShowExportModal(false);
+                          }}
+                          className={`flex flex-col items-center gap-3 p-6 ${theme.card} border ${theme.cardBorder} rounded-lg ${theme.cardHover} transition-all`}
+                        >
+                          <Icons.FileText className="w-8 h-8 text-green-400" />
+                          <div className="text-center">
+                            <div className="font-semibold text-sm">CSV Export</div>
+                            <div className={`text-xs ${theme.textMuted} mt-1`}>Raw data format</div>
+                          </div>
+                        </button>
+
+                        {/* PNG Export (formerly Excel) */}
+                        <button
+                          onClick={async () => {
+                            await exportToPNG();
+                            setShowExportModal(false);
+                          }}
+                          className={`flex flex-col items-center gap-3 p-6 ${theme.card} border ${theme.cardBorder} rounded-lg ${theme.cardHover} transition-all`}
+                        >
+                          <Icons.Image className="w-8 h-8 text-purple-400" />
+                          <div className="text-center">
+                            <div className="font-semibold text-sm">PNG Screenshot</div>
+                            <div className={`text-xs ${theme.textMuted} mt-1`}>Dashboard image</div>
+                          </div>
+                        </button>
+
+                        {/* PDF Export */}
+                        <button
+                          onClick={async () => {
+                            await exportToPDF();
+                            setShowExportModal(false);
+                          }}
+                          className={`flex flex-col items-center gap-3 p-6 ${theme.card} border ${theme.cardBorder} rounded-lg ${theme.cardHover} transition-all`}
+                        >
+                          <Icons.FileText className="w-8 h-8 text-red-400" />
+                          <div className="text-center">
+                            <div className="font-semibold text-sm">PDF Report</div>
+                            <div className={`text-xs ${theme.textMuted} mt-1`}>Professional document</div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Batch Exports */}
+                    {pathways.length > 1 && (
+                      <div className={`border-t ${theme.cardBorder} pt-4`}>
+                        <h3 className={`text-sm font-semibold ${theme.textMuted} uppercase tracking-wider mb-3`}>
+                          Batch Export All Pathways ({pathways.length} total)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {/* Batch CSV */}
+                          <button
+                            onClick={async () => {
+                              await exportAllPathways('csv');
+                              setShowExportModal(false);
+                            }}
+                            className={`flex flex-col items-center gap-3 p-6 ${theme.card} border-2 border-green-500/30 rounded-lg ${theme.cardHover} transition-all`}
+                          >
+                            <Icons.Package className="w-8 h-8 text-green-400" />
+                            <div className="text-center">
+                              <div className="font-semibold text-sm">All as CSV</div>
+                              <div className={`text-xs ${theme.textMuted} mt-1`}>{pathways.length} files</div>
+                            </div>
+                          </button>
+
+                          {/* Batch Excel */}
+                          <button
+                            onClick={async () => {
+                              await exportAllPathways('excel');
+                              setShowExportModal(false);
+                            }}
+                            className={`flex flex-col items-center gap-3 p-6 ${theme.card} border-2 border-blue-500/30 rounded-lg ${theme.cardHover} transition-all`}
+                          >
+                            <Icons.Package className="w-8 h-8 text-blue-400" />
+                            <div className="text-center">
+                              <div className="font-semibold text-sm">All as Excel</div>
+                              <div className={`text-xs ${theme.textMuted} mt-1`}>{pathways.length} files</div>
+                            </div>
+                          </button>
+
+                          {/* Batch PDF */}
+                          <button
+                            onClick={async () => {
+                              await exportAllPathways('pdf');
+                              setShowExportModal(false);
+                            }}
+                            className={`flex flex-col items-center gap-3 p-6 ${theme.card} border-2 border-red-500/30 rounded-lg ${theme.cardHover} transition-all`}
+                          >
+                            <Icons.Package className="w-8 h-8 text-red-400" />
+                            <div className="text-center">
+                              <div className="font-semibold text-sm">All as PDF</div>
+                              <div className={`text-xs ${theme.textMuted} mt-1`}>{pathways.length} files</div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Export Info */}
+                    <div className={`${theme.card} border ${theme.cardBorder} rounded-lg p-4`}>
+                      <div className="flex items-start gap-3">
+                        <Icons.AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div className={`text-sm ${theme.textMuted}`}>
+                          <p className="font-semibold text-blue-400 mb-1">Export Information</p>
+                          <ul className="space-y-1 text-xs">
+                            <li>• <strong>CSV</strong>: Raw data, easy to import into other tools</li>
+                            <li>• <strong>PNG</strong>: Screenshot of the current dashboard view</li>
+                            <li>• <strong>PDF</strong>: Professional report with charts and tables</li>
+                            <li>• <strong>Batch</strong>: Export multiple pathways at once (delays between files)</li>
+                            <li>• <strong>Filters</strong>: Current pathway exports respect active filters</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Course Detail Modal */}
+          {selectedCourse && (
+            <CourseDetailModal 
+              course={selectedCourse} 
+              onClose={() => setSelectedCourse(null)} 
+            />
+          )}
+        </div>
+        </>
+      );
+    };
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ZTCPathwayMapper />);
+  </script>
+</body>
+</html>
