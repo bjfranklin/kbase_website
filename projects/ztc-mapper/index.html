@@ -56,21 +56,43 @@
 
     @keyframes scaleIn {
       from {
-        transform: scale(0.9);
+        transform: scale3d(0.9, 0.9, 1);
         opacity: 0;
       }
       to {
-        transform: scale(1);
+        transform: scale3d(1, 1, 1);
         opacity: 1;
       }
     }
 
     .animate-fadeIn {
       animation: fadeIn 0.2s ease-out;
+      will-change: opacity;
     }
 
     .animate-scaleIn {
       animation: scaleIn 0.2s ease-out;
+      will-change: transform, opacity;
+    }
+
+    /* Performance optimization for modals */
+    .modal-overlay {
+      will-change: opacity;
+      contain: layout style paint;
+      /* Backdrop blur is handled by Tailwind backdrop-blur-sm class */
+    }
+
+    .modal-content {
+      will-change: transform, opacity;
+      contain: layout style paint;
+      transform: translateZ(0); /* Force GPU acceleration */
+      backface-visibility: hidden; /* Prevent flickering */
+      perspective: 1000px; /* Enable 3D transforms */
+    }
+
+    /* Optimize course card rendering when many are present */
+    .course-card-container {
+      contain: layout style paint;
     }
 
     /* Screen reader only class */
@@ -1808,7 +1830,7 @@
             tabIndex={0}
             role="button"
             aria-label={`View details for ${course.code}: ${course.title}`}
-            className={`${theme.card} border ${theme.cardBorder} rounded-lg p-3 border-l-4 ${statusColors[course.ztcStatus]} ${theme.cardHover} transition-all cursor-pointer`}
+            className={`${theme.card} border ${theme.cardBorder} rounded-lg p-3 border-l-4 ${statusColors[course.ztcStatus]} ${theme.cardHover} transition-all cursor-pointer course-card-container`}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex-1 min-w-0">
@@ -1868,7 +1890,7 @@
 
         return (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay"
             role="dialog"
             aria-modal="true"
             aria-labelledby="course-detail-title"
@@ -1878,10 +1900,14 @@
           >
             <div 
               ref={(el) => {
-                if (el) setupFocusTrap(el);
+                // Delay focus trap setup slightly to avoid interfering with animation
+                if (el) {
+                  setTimeout(() => {
+                    setupFocusTrap(el);
+                  }, 50);
+                }
               }}
-              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn`}
-              style={{ animation: 'scaleIn 0.2s ease-out' }}
+              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
               role="document"
             >
               <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
@@ -2061,7 +2087,16 @@
               </div>
             </div>
             
-            <div className="space-y-2 flex-1 overflow-y-auto max-h-[600px]" style={{ margin: '1px', borderRadius: '0.75rem', paddingRight: '8px' }}>
+            <div 
+              className="space-y-2 flex-1 overflow-y-auto max-h-[600px]" 
+              style={{ 
+                margin: '1px', 
+                borderRadius: '0.75rem', 
+                paddingRight: '8px',
+                contain: 'layout style paint',
+                willChange: 'scroll-position'
+              }}
+            >
               {filteredCourses.length === 0 ? (
                 <div className={`${theme.emptyText} text-sm text-center py-8`}>
                   No courses match filters
@@ -2567,7 +2602,7 @@
           {/* Column Mapping Modal */}
           {showMapping && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay"
               role="dialog"
               aria-modal="true"
               aria-labelledby="mapping-modal-title"
@@ -2580,9 +2615,14 @@
             >
               <div 
                 ref={(el) => {
-                  if (el) setupFocusTrap(el);
+                  // Delay focus trap setup slightly to avoid interfering with animation
+                  if (el) {
+                    setTimeout(() => {
+                      setupFocusTrap(el);
+                    }, 50);
+                  }
                 }}
-                className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col`}
+                className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
                 role="document"
               >
                 <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
@@ -2724,7 +2764,7 @@
           {/* Project Manager Modal */}
           {showProjectManager && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay"
               role="dialog"
               aria-modal="true"
               aria-labelledby="project-manager-title"
@@ -2734,9 +2774,14 @@
             >
               <div 
                 ref={(el) => {
-                  if (el) setupFocusTrap(el);
+                  // Delay focus trap setup slightly to avoid interfering with animation
+                  if (el) {
+                    setTimeout(() => {
+                      setupFocusTrap(el);
+                    }, 50);
+                  }
                 }}
-                className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn`}
+                className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
                 role="document"
               >
                 <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
@@ -2806,7 +2851,7 @@
           {/* Export Modal */}
           {showExportModal && selectedPathway && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay"
               role="dialog"
               aria-modal="true"
               aria-labelledby="export-modal-title"
@@ -2816,9 +2861,14 @@
             >
               <div 
                 ref={(el) => {
-                  if (el) setupFocusTrap(el);
+                  // Delay focus trap setup slightly to avoid interfering with animation
+                  if (el) {
+                    setTimeout(() => {
+                      setupFocusTrap(el);
+                    }, 50);
+                  }
                 }}
-                className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn`}
+                className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
                 role="document"
               >
                 <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
