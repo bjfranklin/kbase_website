@@ -242,6 +242,228 @@
       )
     };
 
+    // ========================================
+    // CONSTANTS & CONFIGURATION
+    // ========================================
+    
+    /**
+     * ZTC Status Thresholds
+     * These thresholds determine how percentage values are categorized
+     */
+    const ZTC_THRESHOLDS = {
+      ZTC_MIN: 75,        // 75-100% = ZTC (fully zero textbook cost)
+      PARTIAL_MIN: 51,    // 51-74% = Partial (partially zero textbook cost)
+      NOT_ZTC_MAX: 50     // 0-50% = Not ZTC (not zero textbook cost)
+    };
+
+    /**
+     * LocalStorage Keys
+     * Keys used for persisting application state
+     */
+    const STORAGE_KEYS = {
+      THEME: 'ztc-theme',
+      PROJECTS: 'ztc-projects'
+    };
+
+    /**
+     * Default Column Mapping
+     * Initial state for CSV column mapping configuration
+     */
+    const DEFAULT_COLUMN_MAPPING = {
+      course: '',
+      title: '',
+      term: '',
+      ztcStatus: '',
+      pathways: []
+    };
+
+    /**
+     * CSV Column Auto-Detection Patterns
+     * Patterns used to automatically detect CSV columns
+     */
+    const COLUMN_PATTERNS = {
+      course: ['course code', 'course'],
+      title: ['course title', 'title', 'name'],
+      term: ['sec term', 'term', 'semester'],
+      ztcStatus: ['ztc percent term', 'ztc percent', 'ztc %'],
+      pathways: ['getc', 'pathway', 'comm', 'studies', 'lists', 'area']
+    };
+
+    /**
+     * Export Configuration
+     */
+    const EXPORT_CONFIG = {
+      CHART: {
+        WIDTH: 400,
+        HEIGHT: 200,
+        RENDER_DELAY: 500 // ms delay for chart rendering
+      },
+      PNG: {
+        SCALE: 2, // Higher quality for screenshots
+        BACKGROUND_DARK: '#020617',
+        BACKGROUND_LIGHT: '#f9fafb'
+      },
+      EXCEL: {
+        MAX_AREA_SHEETS: 10 // Limit to prevent performance issues
+      },
+      BATCH_DELAY: 500 // ms delay between batch exports
+    };
+
+    /**
+     * Course Catalog URL Template
+     */
+    const COURSE_CATALOG_URL = 'https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=';
+
+    /**
+     * Theme Configuration
+     * Centralized theme colors and styles for dark and light modes
+     */
+    const THEME_CONFIG = {
+      dark: {
+        colors: {
+          bg: 'bg-slate-950',
+          text: 'text-slate-100',
+          textMuted: 'text-slate-400',
+          header: 'bg-slate-900/95',
+          headerBorder: 'border-slate-800',
+          card: 'bg-slate-800/50',
+          cardHover: 'hover:bg-slate-800/70',
+          cardBorder: 'border-slate-700/50',
+          modal: 'bg-slate-900',
+          modalBorder: 'border-slate-700',
+          input: 'bg-slate-800 border-slate-700',
+          inputFocus: 'focus:ring-blue-500',
+          button: 'bg-slate-800 hover:bg-slate-700',
+          dashboard: 'from-slate-800/80 to-slate-900/80',
+          areaCol: 'bg-slate-900/50',
+          divider: 'bg-slate-700',
+          emptyText: 'text-slate-500'
+        },
+        scrollbar: {
+          track: '#1e293b',
+          thumb: '#475569',
+          thumbHover: '#64748b'
+        }
+      },
+      light: {
+        colors: {
+          bg: 'bg-gray-50',
+          text: 'text-gray-900',
+          textMuted: 'text-gray-700',
+          header: 'bg-white',
+          headerBorder: 'border-gray-300',
+          card: 'bg-white',
+          cardHover: 'hover:bg-gray-100',
+          cardBorder: 'border-gray-300',
+          modal: 'bg-white',
+          modalBorder: 'border-gray-300',
+          input: 'bg-gray-100 border-gray-500',
+          inputFocus: 'focus:ring-blue-500',
+          button: 'bg-gray-200 hover:bg-gray-300',
+          dashboard: 'from-blue-50/50 to-gray-100/50',
+          areaCol: 'bg-white',
+          divider: 'bg-gray-400',
+          emptyText: 'text-gray-500'
+        },
+        scrollbar: {
+          track: '#e2e8f0',
+          thumb: '#94a3b8',
+          thumbHover: '#64748b'
+        }
+      }
+    };
+
+    /**
+     * ZTC Status Configuration
+     * Badge styling and labels for different ZTC statuses
+     */
+    const ZTC_STATUS_CONFIG = {
+      'ztc': { 
+        bg: 'bg-green-500/20', 
+        border: 'border-green-500/50', 
+        text: 'text-green-400', 
+        label: 'ZTC', 
+        showIcon: true 
+      },
+      'partial': { 
+        bg: 'bg-amber-500/20', 
+        border: 'border-amber-500/50', 
+        text: 'text-amber-400', 
+        label: 'Partial', 
+        showIcon: true 
+      },
+      'not-ztc': { 
+        bg: 'bg-red-500/20', 
+        border: 'border-red-500/50', 
+        text: 'text-red-400', 
+        label: 'Not ZTC', 
+        showIcon: false 
+      },
+      'unknown': { 
+        bg: 'bg-gray-500/20', 
+        border: 'border-gray-500/50', 
+        text: 'text-gray-400', 
+        label: 'Unknown', 
+        showIcon: false 
+      }
+    };
+
+    // ========================================
+    // UTILITY FUNCTIONS
+    // ========================================
+
+    /**
+     * Parses a percentage value from various formats
+     * Handles strings with %, $, commas, and numeric values
+     * @param {string|number} value - The value to parse
+     * @returns {number|null} - Parsed percentage as number, or null if invalid
+     */
+    const parsePercentage = (value) => {
+      if (!value || value === '') return null;
+      // Remove % sign if present and parse as float
+      const numValue = parseFloat(String(value).replace('%', ''));
+      return isNaN(numValue) ? null : numValue;
+    };
+
+    /**
+     * Gets color class based on ZTC percentage threshold
+     * @param {number|null} percentage - The ZTC percentage value
+     * @returns {string} - Tailwind CSS color class
+     */
+    const getPercentageColorClass = (percentage) => {
+      if (percentage === null) return 'text-gray-400';
+      if (percentage >= ZTC_THRESHOLDS.ZTC_MIN) return 'text-green-400';
+      if (percentage >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'text-amber-400';
+      return 'text-red-400';
+    };
+
+    /**
+     * Gets background color class for metric cards based on ZTC percentage
+     * @param {number|null} percentage - The ZTC percentage value
+     * @returns {string} - Tailwind CSS background and border classes
+     */
+    const getMetricBackgroundClass = (percentage) => {
+      if (percentage === null) return 'bg-gray-500/10 border-gray-500/30';
+      if (percentage >= ZTC_THRESHOLDS.ZTC_MIN) return 'bg-green-500/10 border-green-500/30';
+      if (percentage >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'bg-amber-500/10 border-amber-500/30';
+      return 'bg-red-500/10 border-red-500/30';
+    };
+
+    /**
+     * Gets progress bar color class based on ZTC percentage
+     * @param {number} percentage - The ZTC percentage value
+     * @returns {string} - Tailwind CSS background color class
+     */
+    const getProgressBarColorClass = (percentage) => {
+      if (percentage >= ZTC_THRESHOLDS.ZTC_MIN) return 'bg-green-500';
+      if (percentage >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'bg-amber-500';
+      return 'bg-red-500';
+    };
+
+    // ========================================
+    // MAIN COMPONENT
+    // ========================================
+
     const ZTCPathwayMapper = () => {
       // State management
       const [projects, setProjects] = useState([]);
@@ -259,18 +481,19 @@
       const [selectedCourse, setSelectedCourse] = useState(null); // For course detail drill-down
       const [darkMode, setDarkMode] = useState(true); // Default to dark mode
       const [areaSortOrder, setAreaSortOrder] = useState('default'); // Sort order for area summary cards
-      const [columnMapping, setColumnMapping] = useState({
-        course: '',
-        title: '',
-        term: '',
-        ztcStatus: '',
-        pathways: []
-      });
+      const [columnMapping, setColumnMapping] = useState(DEFAULT_COLUMN_MAPPING);
       const [csvHeaders, setCsvHeaders] = useState([]);
       const [pendingCSVData, setPendingCSVData] = useState(null); // Replace window.tempCSVData
       const [previousActiveElement, setPreviousActiveElement] = useState(null); // For focus return
 
-      // Keyboard navigation for ESC key
+      // ========================================
+      // ACCESSIBILITY & KEYBOARD NAVIGATION
+      // ========================================
+
+      /**
+       * Handles keyboard navigation for ESC key to close modals
+       * Manages focus return to previous active element when modals close
+       */
       useEffect(() => {
         const handleKeyDown = (e) => {
           // ESC key closes any open modal
@@ -311,7 +534,13 @@
         };
       }, [showMapping, showProjectManager, showExportModal, selectedCourse, previousActiveElement]);
 
-      // Focus trap helper function
+      /**
+       * Sets up focus trap for modal dialogs
+       * Ensures keyboard navigation stays within the modal
+       * Focuses first focusable element when modal opens
+       * @param {HTMLElement} modalElement - The modal DOM element
+       * @returns {Function} - Cleanup function to remove event listeners
+       */
       const setupFocusTrap = (modalElement) => {
         if (!modalElement) return () => {};
         
@@ -352,20 +581,36 @@
         };
       };
 
-      // Load theme preference from localStorage on mount
+      // ========================================
+      // THEME MANAGEMENT
+      // ========================================
+
+      /**
+       * Loads theme preference from localStorage on component mount
+       */
       useEffect(() => {
-        const savedTheme = localStorage.getItem('ztc-theme');
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
         if (savedTheme !== null) {
           setDarkMode(savedTheme === 'dark');
         }
       }, []);
 
-      // Save theme preference to localStorage whenever it changes
+      /**
+       * Saves theme preference to localStorage whenever it changes
+       */
       useEffect(() => {
-        localStorage.setItem('ztc-theme', darkMode ? 'dark' : 'light');
+        localStorage.setItem(STORAGE_KEYS.THEME, darkMode ? 'dark' : 'light');
       }, [darkMode]);
 
-      // Load a project
+      // ========================================
+      // PROJECT MANAGEMENT
+      // ========================================
+
+      /**
+       * Loads a project into the application state
+       * Sets courses, pathways, selected pathway, and column mapping
+       * @param {Object} project - Project object with courses, pathways, and columnMapping
+       */
       const loadProject = (project) => {
         setCourses(project.courses || []);
         setPathways(project.pathways || []);
@@ -375,30 +620,40 @@
         setShowProjectManager(false);
       };
 
-      // Load projects from localStorage on mount
+      /**
+       * Loads projects from localStorage on component mount
+       * Automatically loads the first project if available
+       */
       useEffect(() => {
-        const saved = localStorage.getItem('ztc-projects');
-        if (saved) {
+        const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+        if (savedProjects) {
           try {
-            const loaded = JSON.parse(saved);
-            setProjects(loaded);
-            if (loaded.length > 0) {
-              loadProject(loaded[0]);
+            const loadedProjects = JSON.parse(savedProjects);
+            setProjects(loadedProjects);
+            if (loadedProjects.length > 0) {
+              loadProject(loadedProjects[0]);
             }
           } catch (err) {
-            console.error('Error loading projects:', err);
+            console.error('Error loading projects from localStorage:', err);
           }
         }
       }, []);
 
-      // Save projects to localStorage whenever they change
+      /**
+       * Saves projects to localStorage whenever the projects array changes
+       */
       useEffect(() => {
         if (projects.length > 0) {
-          localStorage.setItem('ztc-projects', JSON.stringify(projects));
+          localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
         }
       }, [projects]);
 
-      // Parse CSV with proper quote handling
+      /**
+       * Parses CSV text with proper quote handling
+       * Handles quoted fields, escaped quotes, and multi-line values
+       * @param {string} text - Raw CSV text content
+       * @returns {Array<Array<string>>} - Array of rows, each row is an array of field values
+       */
       const parseCSV = (text) => {
         const rows = [];
         let currentRow = [];
@@ -445,31 +700,42 @@
         return rows;
       };
 
-      // Auto-detect column mapping
+      /**
+       * Auto-detects CSV column mappings based on header patterns
+       * Uses COLUMN_PATTERNS to match headers to required fields
+       * @param {Array<string>} headers - Array of CSV column headers
+       * @returns {Object} - Column mapping object with course, title, term, ztcStatus, and pathways
+       */
       const autoDetectMapping = (headers) => {
+        /**
+         * Finds a column header matching any of the provided patterns
+         * @param {Array<string>} patterns - Array of pattern strings to match
+         * @returns {string} - Matching header name or empty string
+         */
         const findColumn = (patterns) => {
-          return headers.find(h => 
-            patterns.some(p => h.toLowerCase().includes(p.toLowerCase()))
+          return headers.find(header => 
+            patterns.some(pattern => header.toLowerCase().includes(pattern.toLowerCase()))
           ) || '';
         };
 
         return {
-          course: findColumn(['course code', 'course']),
-          title: findColumn(['course title', 'title', 'name']),
-          term: findColumn(['sec term', 'term', 'semester']),
-          ztcStatus: findColumn(['ztc percent term', 'ztc percent', 'ztc %']),
-          pathways: headers.filter(h => 
-            h.toLowerCase().includes('getc') || 
-            h.toLowerCase().includes('pathway') ||
-            h.toLowerCase().includes('comm') ||
-            h.toLowerCase().includes('studies') ||
-            h.toLowerCase().includes('lists') ||
-            h.toLowerCase().includes('area')
+          course: findColumn(COLUMN_PATTERNS.course),
+          title: findColumn(COLUMN_PATTERNS.title),
+          term: findColumn(COLUMN_PATTERNS.term),
+          ztcStatus: findColumn(COLUMN_PATTERNS.ztcStatus),
+          pathways: headers.filter(header => 
+            COLUMN_PATTERNS.pathways.some(pattern => 
+              header.toLowerCase().includes(pattern)
+            )
           )
         };
       };
 
-      // Handle CSV file upload
+      /**
+       * Handles CSV file upload and initiates column mapping
+       * Reads file, parses CSV, auto-detects columns, and opens mapping modal
+       * @param {Event} event - File input change event
+       */
       const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -499,7 +765,11 @@
         event.target.value = '';
       };
 
-      // Process mapped CSV data
+      /**
+       * Processes CSV data after column mapping is confirmed
+       * Extracts courses, determines ZTC status, maps to pathways, and saves as project
+       * Creates course objects with all ZTC metrics and pathway associations
+       */
       const processCSVData = () => {
         const rows = pendingCSVData;
         if (!rows) return;
@@ -623,36 +893,50 @@
         }
       };
 
-      // Determine ZTC status from value
-      // Thresholds: 0-50% = Not ZTC, 51-74% = Partial, 75-100% = ZTC
+      // ========================================
+      // CSV PROCESSING & DATA IMPORT
+      // ========================================
+
+      /**
+       * Determines ZTC status from a percentage value or text indicator
+       * Uses ZTC_THRESHOLDS constants to categorize the value
+       * @param {string|number} value - The ZTC percentage value or text indicator
+       * @returns {string} - One of: 'ztc', 'partial', 'not-ztc', or 'unknown'
+       */
       const determineZTCStatus = (value) => {
         if (!value || value === '') return 'unknown';
         
-        const val = value.toLowerCase().trim();
+        const normalizedValue = value.toLowerCase().trim();
         
         // Handle text-based status indicators
-        if (val.includes('ztc') || val.includes('zero')) {
+        if (normalizedValue.includes('ztc') || normalizedValue.includes('zero')) {
           return 'ztc';
-        } else if (val.includes('low') || val.includes('partial')) {
+        } else if (normalizedValue.includes('low') || normalizedValue.includes('partial')) {
           return 'partial';
-        } else if (val.includes('no') || val.includes('not') || val.includes('high')) {
+        } else if (normalizedValue.includes('no') || normalizedValue.includes('not') || normalizedValue.includes('high')) {
           return 'not-ztc';
         }
         
         // Try to parse as percentage or number
         // Remove %, $, and commas, then parse
-        const num = parseFloat(value.replace(/[%$,]/g, ''));
-        if (!isNaN(num)) {
-          // Apply new thresholds
-          if (num >= 75) return 'ztc';          // 75-100% is ZTC
-          if (num >= 51) return 'partial';      // 51-74% is Partial
-          if (num >= 0) return 'not-ztc';       // 0-50% is Not ZTC
+        const numericValue = parseFloat(value.replace(/[%$,]/g, ''));
+        if (!isNaN(numericValue)) {
+          // Apply thresholds from constants
+          if (numericValue >= ZTC_THRESHOLDS.ZTC_MIN) return 'ztc';          // 75-100% is ZTC
+          if (numericValue >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'partial';  // 51-74% is Partial
+          if (numericValue >= 0) return 'not-ztc';                           // 0-50% is Not ZTC
         }
         
         return 'unknown';
       };
 
-      // Save current state as a project
+      /**
+       * Saves current application state as a project
+       * Updates existing project if name matches, otherwise creates new project
+       * @param {string} name - Project name
+       * @param {Array} coursesData - Array of course objects (defaults to current courses)
+       * @param {Array} pathwaysData - Array of pathway objects (defaults to current pathways)
+       */
       const saveProject = (name, coursesData = courses, pathwaysData = pathways) => {
         const project = {
           id: Date.now(),
@@ -677,7 +961,11 @@
         setCurrentProject(project);
       };
 
-      // Delete a project
+      /**
+       * Deletes a project from the projects array
+       * Clears current project state if the deleted project was active
+       * @param {number} projectId - Unique project ID to delete
+       */
       const deleteProject = (projectId) => {
         if (confirm('Are you sure you want to delete this project?')) {
           setProjects(prev => prev.filter(p => p.id !== projectId));
@@ -689,7 +977,11 @@
         }
       };
 
-      // Clear datasource - reset everything
+      /**
+       * Clears all data and resets the application to initial state
+       * Removes all courses, pathways, filters, and current project
+       * Requires user confirmation before executing
+       */
       const clearDatasource = () => {
         if (confirm('Are you sure you want to clear all data? This will remove all courses, pathways, and reset filters.')) {
           setCourses([]);
@@ -699,33 +991,35 @@
           setTermFilter('all');
           setZtcFilter('all');
           setCurrentProject(null);
-          setColumnMapping({
-            course: '',
-            title: '',
-            term: '',
-            ztcStatus: '',
-            pathways: []
-          });
+          setColumnMapping(DEFAULT_COLUMN_MAPPING);
           setCsvHeaders([]);
           setPendingCSVData(null);
         }
       };
 
-      // Export current view
+      // ========================================
+      // EXPORT FUNCTIONALITY
+      // ========================================
+
+      /**
+       * Opens the export modal to allow user to choose export format
+       */
       const exportAnalysis = () => {
-        setShowExportModal(true); // Open export modal
+        setShowExportModal(true);
       };
 
-      // ========================================
-      // COMPREHENSIVE EXPORT SYSTEM
-      // ========================================
-
-      // Helper: Create chart as data URL for PDF embedding
+      /**
+       * Creates a chart as a data URL for embedding in PDF exports
+       * Generates a doughnut chart showing ZTC, Partial, and Not ZTC distribution
+       * @param {Object} pathway - Pathway object (not used but kept for consistency)
+       * @param {Object} stats - Statistics object with ztcCount, partialCount, notZtcCount
+       * @returns {Promise<string>} - Promise resolving to chart image data URL
+       */
       const createChartDataURL = (pathway, stats) => {
         return new Promise((resolve) => {
           const canvas = document.createElement('canvas');
-          canvas.width = 400;
-          canvas.height = 200;
+          canvas.width = EXPORT_CONFIG.CHART.WIDTH;
+          canvas.height = EXPORT_CONFIG.CHART.HEIGHT;
           
           const ctx = canvas.getContext('2d');
           
@@ -759,11 +1053,15 @@
             const imageURL = canvas.toDataURL('image/png');
             chart.destroy();
             resolve(imageURL);
-          }, 500);
+          }, EXPORT_CONFIG.CHART.RENDER_DELAY);
         });
       };
 
-      // Export to CSV - NOW RESPECTS FILTERS
+      /**
+       * Exports pathway data to CSV format
+       * Respects active filters (search, term, ZTC status)
+       * @param {string|null} pathwayName - Optional pathway name (defaults to selected pathway)
+       */
       const exportToCSV = (pathwayName = null) => {
         const pathway = pathwayName ? pathways.find(p => p.name === pathwayName) : pathways.find(p => p.name === selectedPathway);
         if (!pathway) return;
@@ -806,7 +1104,12 @@
         URL.revokeObjectURL(url);
       };
 
-      // Export to Excel with multiple sheets
+      /**
+       * Exports pathway data to Excel format with multiple sheets
+       * Creates Summary sheet, Course Details sheet, and individual area sheets
+       * Respects active filters
+       * @param {string|null} pathwayName - Optional pathway name (defaults to selected pathway)
+       */
       const exportToExcel = async (pathwayName = null) => {
         const pathway = pathwayName ? pathways.find(p => p.name === pathwayName) : pathways.find(p => p.name === selectedPathway);
         if (!pathway) return;
@@ -866,7 +1169,8 @@
         XLSX.utils.book_append_sheet(workbook, courseSheet, 'Course Details');
 
         // Area-by-Area Sheets
-        pathway.areas.slice(0, 10).forEach(area => { // Limit to 10 areas for performance
+        // Limit to prevent performance issues with too many sheets
+        pathway.areas.slice(0, EXPORT_CONFIG.EXCEL.MAX_AREA_SHEETS).forEach(area => {
           const areaData = [['Course Code', 'Course Title', 'Term', 'ZTC Status', 'ZTC %']];
           const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
           
@@ -892,7 +1196,12 @@
         XLSX.writeFile(workbook, `ztc-${pathway.name.replace(/\s+/g, '-')}-${Date.now()}.xlsx`);
       };
 
-      // Export to PDF with charts and professional styling - NOW RESPECTS FILTERS
+      /**
+       * Exports pathway data to PDF format with charts and professional styling
+       * Includes header, overall statistics, charts, area breakdown tables, and course details
+       * Respects active filters
+       * @param {string|null} pathwayName - Optional pathway name (defaults to selected pathway)
+       */
       const exportToPDF = async (pathwayName = null) => {
         const pathway = pathwayName ? pathways.find(p => p.name === pathwayName) : pathways.find(p => p.name === selectedPathway);
         if (!pathway) return;
@@ -1041,10 +1350,17 @@
         doc.save(`ztc-${pathway.name.replace(/\s+/g, '-')}-${Date.now()}.pdf`);
       };
 
-      // NEW: Export to PNG (screenshot of current dashboard)
+      /**
+       * Exports current dashboard view as PNG screenshot
+       * Captures the main content area using html2canvas
+       * @returns {Promise<void>}
+       */
       const exportToPNG = async () => {
         const pathway = pathways.find(p => p.name === selectedPathway);
-        if (!pathway) return;
+        if (!pathway) {
+          console.warn('No pathway selected for PNG export');
+          return;
+        }
 
         try {
           // Find the main content area to capture
@@ -1056,8 +1372,8 @@
 
           // Use html2canvas to capture the view
           const canvas = await html2canvas(mainElement, {
-            backgroundColor: darkMode ? '#020617' : '#f9fafb',
-            scale: 2, // Higher quality
+            backgroundColor: darkMode ? EXPORT_CONFIG.PNG.BACKGROUND_DARK : EXPORT_CONFIG.PNG.BACKGROUND_LIGHT,
+            scale: EXPORT_CONFIG.PNG.SCALE,
             logging: false,
             useCORS: true
           });
@@ -1078,7 +1394,12 @@
         }
       };
 
-      // Batch export all pathways
+      /**
+       * Batch exports all pathways in the specified format
+       * Exports each pathway sequentially with delays to prevent browser throttling
+       * @param {string} format - Export format: 'csv', 'excel', or 'pdf'
+       * @returns {Promise<void>}
+       */
       const exportAllPathways = async (format) => {
         if (pathways.length === 0) {
           alert('No pathways to export!');
@@ -1096,85 +1417,142 @@
             case 'pdf':
               await exportToPDF(pathway.name);
               break;
+            default:
+              console.warn(`Unknown export format: ${format}`);
           }
           
-          // Small delay between exports to prevent browser throttling
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Delay between exports to prevent browser throttling
+          await new Promise(resolve => setTimeout(resolve, EXPORT_CONFIG.BATCH_DELAY));
         }
         
         alert(`Successfully exported ${pathways.length} pathway(s) as ${format.toUpperCase()}!`);
       };
 
+
       // ========================================
-      // END EXPORT SYSTEM
+      // STATISTICS CALCULATION
       // ========================================
 
-      // Get courses for a specific pathway area
+      /**
+       * Gets all courses that belong to a specific pathway area
+       * @param {string} pathwayName - Name of the pathway
+       * @param {string} area - Name of the area within the pathway
+       * @returns {Array<Object>} - Array of course objects
+       */
       const getCoursesForArea = (pathwayName, area) => {
+        if (!pathwayName || !area) return [];
         return courses.filter(course => 
           course.pathways[pathwayName]?.includes(area)
         );
       };
 
-      // Calculate stats for an area
+      /**
+       * Calculates ZTC statistics for a specific pathway area
+       * Only counts courses with ztcStatus === 'ztc' (75%+) toward the percentage
+       * Partial courses (51-74%) are tracked separately but don't contribute to percentage
+       * @param {string} area - The area name to calculate stats for
+       * @returns {{ztcCount: number, totalCourses: number, ztcPercentage: number}}
+       */
       const calculateAreaStats = (area) => {
+        if (!area || !selectedPathway) {
+          return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0 };
+        }
+        
         const areaCourses = getCoursesForArea(selectedPathway, area);
-        const ztcCount = areaCourses.filter(c => c.ztcStatus === 'ztc').length;
+        const ztcCount = areaCourses.filter(course => course.ztcStatus === 'ztc').length;
         const totalCourses = areaCourses.length;
         const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
         
         return { ztcCount, totalCourses, ztcPercentage };
       };
 
-      // Calculate stats for an area based on filtered courses
+      /**
+       * Calculates ZTC statistics for an area based on filtered courses
+       * Respects active search query, term filter, and ZTC status filter
+       * @param {string} area - The area name to calculate stats for
+       * @returns {{ztcCount: number, totalCourses: number, ztcPercentage: number}}
+       */
       const calculateFilteredAreaStats = (area) => {
+        if (!area || !selectedPathway) {
+          return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0 };
+        }
+        
         const areaCourses = getFilteredCourses(area);
-        const ztcCount = areaCourses.filter(c => c.ztcStatus === 'ztc').length;
+        const ztcCount = areaCourses.filter(course => course.ztcStatus === 'ztc').length;
         const totalCourses = areaCourses.length;
         const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
         
         return { ztcCount, totalCourses, ztcPercentage };
       };
 
-      // Calculate overall pathway stats
+      /**
+       * Calculates overall pathway statistics across all areas
+       * Uses Set to deduplicate courses that appear in multiple areas
+       * A course can be in "Area A" and "Area B" but should only count once
+       * @param {Object} pathway - Pathway object with name and areas array
+       * @returns {{ztcCount: number, partialCount: number, notZtcCount: number, totalCourses: number, ztcPercentage: number}}
+       */
       const calculatePathwayStats = (pathway) => {
-        if (!pathway) return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0 };
+        if (!pathway || !pathway.name || !pathway.areas) {
+          return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0, partialCount: 0, notZtcCount: 0 };
+        }
         
+        // Use Set to deduplicate courses that appear in multiple areas
         const allCourses = new Set();
         pathway.areas.forEach(area => {
-          getCoursesForArea(pathway.name, area).forEach(c => allCourses.add(c.id));
+          getCoursesForArea(pathway.name, area).forEach(course => allCourses.add(course.id));
         });
         
-        const uniqueCourses = Array.from(allCourses).map(id => courses.find(c => c.id === id)).filter(Boolean);
-        const ztcCount = uniqueCourses.filter(c => c.ztcStatus === 'ztc').length;
-        const partialCount = uniqueCourses.filter(c => c.ztcStatus === 'partial').length;
-        const notZtcCount = uniqueCourses.filter(c => c.ztcStatus === 'not-ztc').length;
+        const uniqueCourses = Array.from(allCourses)
+          .map(courseId => courses.find(course => course.id === courseId))
+          .filter(Boolean);
+        
+        const ztcCount = uniqueCourses.filter(course => course.ztcStatus === 'ztc').length;
+        const partialCount = uniqueCourses.filter(course => course.ztcStatus === 'partial').length;
+        const notZtcCount = uniqueCourses.filter(course => course.ztcStatus === 'not-ztc').length;
         const totalCourses = uniqueCourses.length;
         const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
         
         return { ztcCount, partialCount, notZtcCount, totalCourses, ztcPercentage };
       };
 
-      // Calculate pathway stats based on FILTERED courses (respects search and filters)
+      /**
+       * Calculates pathway statistics based on filtered courses
+       * Respects active search query, term filter, and ZTC status filter
+       * Uses Set to deduplicate courses across areas
+       * @param {Object} pathway - Pathway object with name and areas array
+       * @returns {{ztcCount: number, partialCount: number, notZtcCount: number, totalCourses: number, ztcPercentage: number}}
+       */
       const calculateFilteredPathwayStats = (pathway) => {
-        if (!pathway) return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0, partialCount: 0, notZtcCount: 0 };
+        if (!pathway || !pathway.name || !pathway.areas) {
+          return { ztcCount: 0, totalCourses: 0, ztcPercentage: 0, partialCount: 0, notZtcCount: 0 };
+        }
         
+        // Use Set to deduplicate filtered courses across areas
         const allFilteredCourses = new Set();
         pathway.areas.forEach(area => {
-          getFilteredCourses(area).forEach(c => allFilteredCourses.add(c.id));
+          getFilteredCourses(area).forEach(course => allFilteredCourses.add(course.id));
         });
         
-        const uniqueCourses = Array.from(allFilteredCourses).map(id => courses.find(c => c.id === id)).filter(Boolean);
-        const ztcCount = uniqueCourses.filter(c => c.ztcStatus === 'ztc').length;
-        const partialCount = uniqueCourses.filter(c => c.ztcStatus === 'partial').length;
-        const notZtcCount = uniqueCourses.filter(c => c.ztcStatus === 'not-ztc').length;
+        const uniqueCourses = Array.from(allFilteredCourses)
+          .map(courseId => courses.find(course => course.id === courseId))
+          .filter(Boolean);
+        
+        const ztcCount = uniqueCourses.filter(course => course.ztcStatus === 'ztc').length;
+        const partialCount = uniqueCourses.filter(course => course.ztcStatus === 'partial').length;
+        const notZtcCount = uniqueCourses.filter(course => course.ztcStatus === 'not-ztc').length;
         const totalCourses = uniqueCourses.length;
         const ztcPercentage = totalCourses > 0 ? Math.round((ztcCount / totalCourses) * 100) : 0;
         
         return { ztcCount, partialCount, notZtcCount, totalCourses, ztcPercentage };
       };
 
-      // Filter courses based on search and filters
+      /**
+       * Filters courses for a specific area based on active search and filter criteria
+       * Applies search query (course code/title), term filter, and ZTC status filter
+       * @param {string} area - The area name to filter courses for
+       * @returns {Array<Object>} - Filtered array of course objects
+       */
       const getFilteredCourses = (area) => {
         let filtered = getCoursesForArea(selectedPathway, area);
 
@@ -1202,63 +1580,38 @@
         return Array.from(new Set(courses.map(c => c.term).filter(Boolean))).sort();
       }, [courses]);
 
-      // Theme configuration
+      // ========================================
+      // THEME CONFIGURATION
+      // ========================================
+
+      /**
+       * Gets theme configuration based on current dark mode setting
+       * Uses THEME_CONFIG constants for centralized theme management
+       */
       const theme = darkMode ? {
-        // Dark mode
-        bg: 'bg-slate-950',
-        text: 'text-slate-100',
-        textMuted: 'text-slate-400',
-        header: 'bg-slate-900/95',
-        headerBorder: 'border-slate-800',
-        card: 'bg-slate-800/50',
-        cardHover: 'hover:bg-slate-800/70',
-        cardBorder: 'border-slate-700/50',
-        modal: 'bg-slate-900',  // Solid background for modals (better readability)
-        modalBorder: 'border-slate-700',  // Stronger border for modals
-        input: 'bg-slate-800 border-slate-700',
-        inputFocus: 'focus:ring-blue-500',
-        button: 'bg-slate-800 hover:bg-slate-700',
-        dashboard: 'from-slate-800/80 to-slate-900/80',
-        areaCol: 'bg-slate-900/50',
-        divider: 'bg-slate-700',
-        emptyText: 'text-slate-500',
-        scrollbarTrack: '#1e293b',
-        scrollbarThumb: '#475569',
-        scrollbarThumbHover: '#64748b'
+        ...THEME_CONFIG.dark.colors,
+        scrollbarTrack: THEME_CONFIG.dark.scrollbar.track,
+        scrollbarThumb: THEME_CONFIG.dark.scrollbar.thumb,
+        scrollbarThumbHover: THEME_CONFIG.dark.scrollbar.thumbHover
       } : {
-        // Light mode - Improved readability
-        bg: 'bg-gray-50',
-        text: 'text-gray-900',
-        textMuted: 'text-gray-700',  // Darker for better readability (was text-gray-600)
-        header: 'bg-white',  // Solid white instead of transparent
-        headerBorder: 'border-gray-300',  // Stronger border (was border-gray-200)
-        card: 'bg-white',
-        cardHover: 'hover:bg-gray-100',  // More visible hover (was hover:bg-gray-50)
-        cardBorder: 'border-gray-300',  // Stronger borders (was border-gray-200)
-        modal: 'bg-white',  // Solid background for modals
-        modalBorder: 'border-gray-300',  // Border for modals
-        input: 'bg-gray-100 border-gray-500',  // Enhanced contrast for inputs/dropdowns (darker bg and border)
-        inputFocus: 'focus:ring-blue-500',
-        button: 'bg-gray-200 hover:bg-gray-300',  // Darker buttons for visibility (was bg-gray-100)
-        dashboard: 'from-blue-50/50 to-gray-100/50',  // Subtle color for distinction (was from-gray-100/80)
-        areaCol: 'bg-white',
-        divider: 'bg-gray-400',  // Darker divider (was bg-gray-300)
-        emptyText: 'text-gray-500',  // Darker for readability (was text-gray-400)
-        scrollbarTrack: '#e2e8f0',  // Slightly darker track
-        scrollbarThumb: '#94a3b8',  // Darker thumb (was #cbd5e1)
-        scrollbarThumbHover: '#64748b'  // Darker hover (was #94a3b8)
+        ...THEME_CONFIG.light.colors,
+        scrollbarTrack: THEME_CONFIG.light.scrollbar.track,
+        scrollbarThumb: THEME_CONFIG.light.scrollbar.thumb,
+        scrollbarThumbHover: THEME_CONFIG.light.scrollbar.thumbHover
       };
 
-      // ZTC Status badge component
-      const ZTCBadge = ({ status }) => {
-        const config = {
-          'ztc': { bg: 'bg-green-500/20', border: 'border-green-500/50', text: 'text-green-400', label: 'ZTC', showIcon: true },
-          'partial': { bg: 'bg-amber-500/20', border: 'border-amber-500/50', text: 'text-amber-400', label: 'Partial', showIcon: true },
-          'not-ztc': { bg: 'bg-red-500/20', border: 'border-red-500/50', text: 'text-red-400', label: 'Not ZTC', showIcon: false },
-          'unknown': { bg: 'bg-gray-500/20', border: 'border-gray-500/50', text: 'text-gray-400', label: 'Unknown', showIcon: false }
-        };
+      // ========================================
+      // UI COMPONENTS
+      // ========================================
 
-        const style = config[status] || config.unknown;
+      /**
+       * ZTC Status Badge Component
+       * Displays a colored badge indicating the ZTC status of a course
+       * @param {Object} props - Component props
+       * @param {string} props.status - ZTC status: 'ztc', 'partial', 'not-ztc', or 'unknown'
+       */
+      const ZTCBadge = ({ status }) => {
+        const style = ZTC_STATUS_CONFIG[status] || ZTC_STATUS_CONFIG.unknown;
 
         return (
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${style.bg} ${style.border} ${style.text}`}>
@@ -1269,7 +1622,13 @@
         );
       };
 
-      // Course card component
+      /**
+       * Course Card Component
+       * Displays a course with code, title, term, and ZTC status badge
+       * Clickable to open course detail modal
+       * @param {Object} props - Component props
+       * @param {Object} props.course - Course object with code, title, term, ztcStatus
+       */
       const CourseCard = ({ course }) => {
         const statusColors = {
           'ztc': 'border-l-green-500',
@@ -1308,33 +1667,25 @@
         );
       };
 
-      // Course Detail Modal Component
+      /**
+       * Course Detail Modal Component
+       * Displays comprehensive course information including ZTC metrics breakdown
+       * Shows overall ZTC percentage, type breakdown (ZTC-A, ZTC-C, etc.), and pathway associations
+       * @param {Object} props - Component props
+       * @param {Object} props.course - Course object with all ZTC metrics
+       * @param {Function} props.onClose - Callback function to close the modal
+       */
       const CourseDetailModal = ({ course, onClose }) => {
         if (!course) return null;
 
-        // Parse percentage values and handle different formats
-        const parsePercentage = (value) => {
-          if (!value || value === '') return null;
-          // Remove % sign if present and parse as float
-          const numValue = parseFloat(String(value).replace('%', ''));
-          return isNaN(numValue) ? null : numValue;
-        };
-
-        // Get color based on percentage value (for OVERALL ZTC only)
-        const getPercentageColor = (pct) => {
-          if (pct === null) return 'text-gray-400';
-          if (pct >= 75) return 'text-green-400';
-          if (pct >= 51) return 'text-amber-400';
-          return 'text-red-400';
-        };
-
-        // Get background color for metric cards (for OVERALL ZTC only)
-        const getMetricBg = (pct) => {
-          if (pct === null) return 'bg-gray-500/10 border-gray-500/30';
-          if (pct >= 75) return 'bg-green-500/10 border-green-500/30';
-          if (pct >= 51) return 'bg-amber-500/10 border-amber-500/30';
-          return 'bg-red-500/10 border-red-500/30';
-        };
+        // Parse percentage values using utility function
+        const overallZtcPercentage = parsePercentage(course.ztcPercentage);
+        const ztcaPercentage = parsePercentage(course.ztcaPercentage);
+        const ztccPercentage = parsePercentage(course.ztccPercentage);
+        const ztcePercentage = parsePercentage(course.ztcePercentage);
+        const ztcfPercentage = parsePercentage(course.ztcfPercentage);
+        const ztcgPercentage = parsePercentage(course.ztcgPercentage);
+        const lctPercentage = parsePercentage(course.lctPercentage);
 
         // Neutral colors for ZTC type breakdown (not threshold-based)
         const getNeutralColor = () => {
@@ -1345,23 +1696,16 @@
           return darkMode ? 'bg-slate-700/30 border-slate-600/50' : 'bg-blue-50 border-blue-200/50';
         };
 
-        const ztcPct = parsePercentage(course.ztcPercentage);
-        const ztcaPct = parsePercentage(course.ztcaPercentage);
-        const ztccPct = parsePercentage(course.ztccPercentage);
-        const ztcePct = parsePercentage(course.ztcePercentage);
-        const ztcfPct = parsePercentage(course.ztcfPercentage);
-        const ztcgPct = parsePercentage(course.ztcgPercentage);
-        const lctPct = parsePercentage(course.lctPercentage);
-
         // Metric definitions with icons
+        // Only show metrics that have values (filter out null)
         const metrics = [
-          { label: 'ZTC-A', value: ztcaPct, description: 'Zero Textbook Cost - A', icon: '📚' },
-          { label: 'ZTC-C', value: ztccPct, description: 'Zero Textbook Cost - C', icon: '📖' },
-          { label: 'ZTC-E', value: ztcePct, description: 'Zero Textbook Cost - E', icon: '📝' },
-          { label: 'ZTC-F', value: ztcfPct, description: 'Zero Textbook Cost - F', icon: '📄' },
-          { label: 'ZTC-G', value: ztcgPct, description: 'Zero Textbook Cost - G', icon: '📃' },
-          { label: 'LCT', value: lctPct, description: 'Low Cost Textbook', icon: '💵' }
-        ].filter(m => m.value !== null); // Only show metrics that have values
+          { label: 'ZTC-A', value: ztcaPercentage, description: 'Zero Textbook Cost - A', icon: '📚' },
+          { label: 'ZTC-C', value: ztccPercentage, description: 'Zero Textbook Cost - C', icon: '📖' },
+          { label: 'ZTC-E', value: ztcePercentage, description: 'Zero Textbook Cost - E', icon: '📝' },
+          { label: 'ZTC-F', value: ztcfPercentage, description: 'Zero Textbook Cost - F', icon: '📄' },
+          { label: 'ZTC-G', value: ztcgPercentage, description: 'Zero Textbook Cost - G', icon: '📃' },
+          { label: 'LCT', value: lctPercentage, description: 'Low Cost Textbook', icon: '💵' }
+        ].filter(metric => metric.value !== null);
 
         return (
           <div 
@@ -1402,14 +1746,14 @@
                   </div>
 
                   {/* Overall ZTC Percentage - Big and Prominent */}
-                  <div className={`${getMetricBg(ztcPct)} border-2 rounded-xl p-6 mb-6 text-center`}>
+                  <div className={`${getMetricBackgroundClass(overallZtcPercentage)} border-2 rounded-xl p-6 mb-6 text-center`}>
                     <div className={`text-xs font-semibold ${theme.textMuted} uppercase tracking-wider mb-2`}>
                       Overall ZTC Status
                     </div>
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="flex items-center gap-3">
-                        <div className={`text-6xl font-bold ${getPercentageColor(ztcPct)}`}>
-                          {ztcPct !== null ? `${ztcPct}%` : 'N/A'}
+                        <div className={`text-6xl font-bold ${getPercentageColorClass(overallZtcPercentage)}`}>
+                          {overallZtcPercentage !== null ? `${overallZtcPercentage}%` : 'N/A'}
                         </div>
                         <ZTCBadge status={course.ztcStatus} />
                       </div>
@@ -1475,7 +1819,7 @@
 
                 {/* View in Course Catalog Button */}
                 <a
-                  href={`https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=${encodeURIComponent(course.code)}`}
+                  href={`${COURSE_CATALOG_URL}${encodeURIComponent(course.code)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold mb-4"
@@ -1501,21 +1845,27 @@
         );
       };
 
-      // Area column component
+      /**
+       * Area Column Component
+       * Displays a column of courses for a specific pathway area
+       * Shows area name, ZTC percentage, and scrollable list of course cards
+       * @param {Object} props - Component props
+       * @param {string} props.area - The area name to display
+       */
       const AreaColumn = ({ area }) => {
         const filteredCourses = getFilteredCourses(area);
         const stats = calculateFilteredAreaStats(area);
         
-        // Color coding based on new thresholds: >=75% = green, 51-74% = amber, <=50% = red
-        const statusColor = stats.ztcPercentage >= 75 ? 'text-green-400' : 
-                           stats.ztcPercentage >= 51 ? 'text-amber-400' : 'text-red-400';
+        // Color coding based on ZTC thresholds
+        const statusColor = stats.ztcPercentage >= ZTC_THRESHOLDS.ZTC_MIN ? 'text-green-400' : 
+                           stats.ztcPercentage >= ZTC_THRESHOLDS.PARTIAL_MIN ? 'text-amber-400' : 'text-red-400';
 
         return (
           <div className={`${theme.areaCol} rounded-xl border ${theme.cardBorder} p-4 flex flex-col`} style={{width: '320px', flexShrink: 0}}>
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-bold text-sm text-blue-400 uppercase tracking-wide">{area}</h3>
-                {stats.ztcPercentage >= 75 && <Icons.CheckCircle className="w-4 h-4 text-green-400" />}
+                {stats.ztcPercentage >= ZTC_THRESHOLDS.ZTC_MIN && <Icons.CheckCircle className="w-4 h-4 text-green-400" />}
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className={`font-semibold ${statusColor}`}>{stats.ztcPercentage}% ZTC</span>
@@ -1538,7 +1888,11 @@
         );
       };
 
-      // Progress dashboard component
+      /**
+       * Progress Dashboard Component
+       * Displays overall pathway statistics, progress bar, and area summary cards
+       * Shows ZTC percentage, course counts, and filtered view indicator when applicable
+       */
       const ProgressDashboard = () => {
         if (!selectedPathway) return null;
         
@@ -1617,7 +1971,7 @@
             {/* Progress bar */}
             <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden mb-6">
               <div 
-                className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500 transition-all duration-500"
+                className={`h-full transition-all duration-500 ${getProgressBarColorClass(stats.ztcPercentage)}`}
                 style={{ width: `${stats.ztcPercentage}%` }}
               ></div>
             </div>
