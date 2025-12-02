@@ -286,7 +286,10 @@
       title: ['course title', 'title', 'name'],
       term: ['sec term', 'term', 'semester'],
       ztcStatus: ['ztc percent term', 'ztc percent', 'ztc %'],
-      pathways: ['getc', 'pathway', 'comm', 'studies', 'lists', 'area']
+      pathways: ['getc', 'pathway', 'comm', 'studies', 'lists', 'area'],
+      // Future patterns for new filters (add here for auto-detection)
+      pathwayProgression: ['progression', 'pathway progression', 'level'],
+      studentLevel: ['student level', 'level', 'class level']
     };
 
     /**
@@ -471,10 +474,76 @@
       const [courses, setCourses] = useState([]);
       const [pathways, setPathways] = useState([]);
       const [selectedPathway, setSelectedPathway] = useState(null);
+      // ========================================
+      // FILTER STATE MANAGEMENT
+      // ========================================
+      
+      /**
+       * Helper function to update a single filter value
+       * Makes it easy to add new filters without changing multiple places
+       * @param {string} filterName - Name of the filter to update
+       * @param {*} value - New filter value
+       */
+      const updateFilter = (filterName, value) => {
+        setFilters(prev => ({ ...prev, [filterName]: value }));
+      };
+      
+      /**
+       * Helper function to check if any filters are active
+       * Automatically includes all filters in the unified state
+       * @returns {boolean} - True if any filter is active
+       */
+      const hasActiveFilters = () => {
+        return Object.entries(filters).some(([key, value]) => {
+          if (key === 'search') return value !== '';
+          return value !== 'all';
+        });
+      };
+      
+      /**
+       * Helper function to clear all filters
+       * Resets all filters to their default values
+       */
+      const clearAllFilters = () => {
+        setSearchQuery('');
+        setTermFilter('all');
+        setZtcFilter('all');
+        // Future filters should also be cleared here
+        // setPathwayProgressionFilter('all');
+        // setStudentLevelFilter('all');
+      };
+      // Individual filter states (maintained for backward compatibility and UI binding)
       const [searchQuery, setSearchQuery] = useState('');
       const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
       const [termFilter, setTermFilter] = useState('all');
       const [ztcFilter, setZtcFilter] = useState('all');
+      
+      // Unified filter state (internal use for scalability)
+      // This allows easy addition of new filters without changing multiple places
+      // To add a new filter:
+      // 1. Add it here with default value
+      // 2. Add column pattern to COLUMN_PATTERNS if needed
+      // 3. Extract in processCSVData() if from CSV
+      // 4. Add filter logic in getFilteredCourses()
+      // 5. Add UI element in filter section
+      const [filters, setFilters] = useState({
+        search: '',
+        term: 'all',
+        ztcStatus: 'all'
+        // Future filters can be added here:
+        // pathwayProgression: 'all',
+        // studentLevel: 'all',
+      });
+      
+      // Sync individual states with unified filter state
+      // This ensures backward compatibility while enabling scalable filter system
+      useEffect(() => {
+        setFilters({
+          search: searchQuery,
+          term: termFilter,
+          ztcStatus: ztcFilter
+        });
+      }, [searchQuery, termFilter, ztcFilter]);
       const [showMapping, setShowMapping] = useState(false);
       const [showProjectManager, setShowProjectManager] = useState(false);
       const [showExportModal, setShowExportModal] = useState(false);
@@ -844,12 +913,54 @@
           pathwayGroups[name].areas.push(area);
         });
 
-        // Sort areas within each pathway
+        // ========================================
+        // ENHANCED PATHWAY STRUCTURE (Backward Compatible)
+        // ========================================
+        // Detect area requirements columns in CSV (e.g., "Area A Required", "List B Required")
+        // If found, enhance pathway structure with metadata
+        // If not found, keep simple string format (backward compatible)
+        const areaRequirements = {};
+        headers.forEach((header, index) => {
+          // Look for columns like "Area A Required", "List B Required", etc.
+          const requirementMatch = header.match(/(.+?)\s+Required/i);
+          if (requirementMatch) {
+            const areaName = requirementMatch[1].trim();
+            // Try to find a value in the first data row (requirements are typically constant per area)
+            const requirementValue = data.length > 0 ? data[0][index] : null;
+            if (requirementValue) {
+              const parsedValue = parseInt(requirementValue, 10);
+              if (!isNaN(parsedValue) && parsedValue > 0) {
+                areaRequirements[areaName] = parsedValue;
+              }
+            }
+          }
+        });
+
+        // Enhance pathway structure if requirements data exists
+        const hasRequirements = Object.keys(areaRequirements).length > 0;
+
+        // Sort areas within each pathway and enhance structure if requirements exist
         Object.values(pathwayGroups).forEach(pathway => {
+          // Enhance areas with metadata if requirements data exists
+          if (hasRequirements) {
+            pathway.areas = pathway.areas.map(areaName => {
+              const coursesRequired = areaRequirements[areaName] || 0;
+              return {
+                name: areaName,
+                coursesRequired: coursesRequired
+              };
+            });
+          }
+          // If no requirements, areas remain as strings (backward compatible)
+          
           pathway.areas.sort((a, b) => {
+            // Get area names (handles both string and object formats)
+            const areaA = typeof a === 'string' ? a : a.name;
+            const areaB = typeof b === 'string' ? b : b.name;
+            
             // Special handling for "List X" patterns (List A, List B, List C, etc.)
-            const aListMatch = a.match(/List\s+([A-Z])/i);
-            const bListMatch = b.match(/List\s+([A-Z])/i);
+            const aListMatch = areaA.match(/List\s+([A-Z])/i);
+            const bListMatch = areaB.match(/List\s+([A-Z])/i);
             
             if (aListMatch && bListMatch) {
               // Both are "List X" format, sort by the letter
@@ -857,12 +968,12 @@
             }
             
             // Special handling for "Required Core" - always put it first
-            if (a.toLowerCase().includes('required') || a.toLowerCase().includes('core')) return -1;
-            if (b.toLowerCase().includes('required') || b.toLowerCase().includes('core')) return 1;
+            if (areaA.toLowerCase().includes('required') || areaA.toLowerCase().includes('core')) return -1;
+            if (areaB.toLowerCase().includes('required') || areaB.toLowerCase().includes('core')) return 1;
             
             // Handle GETC/Area patterns (e.g., "Area A", "GETC-1A")
-            const aMatch = a.match(/([A-Z]+)\s*[-:]?\s*([A-Z]?\d*)/i);
-            const bMatch = b.match(/([A-Z]+)\s*[-:]?\s*([A-Z]?\d*)/i);
+            const aMatch = areaA.match(/([A-Z]+)\s*[-:]?\s*([A-Z]?\d*)/i);
+            const bMatch = areaB.match(/([A-Z]+)\s*[-:]?\s*([A-Z]?\d*)/i);
             
             if (aMatch && bMatch) {
               // Compare the prefix first (e.g., "Area", "GETC")
@@ -876,7 +987,7 @@
             }
             
             // Default: alphabetical comparison
-            return a.localeCompare(b);
+            return areaA.localeCompare(areaB);
           });
         });
 
@@ -1069,10 +1180,11 @@
         // Collect all courses for this pathway - USING FILTERED COURSES
         const allCourses = [];
         pathway.areas.forEach(area => {
-          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          const areaName = getAreaName(area); // Use compatibility helper
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, areaName) : getFilteredCourses(areaName);
           areaCourses.forEach(course => {
-            allCourses.push({
-              Area: area,
+          allCourses.push({
+            Area: areaName, // Use area name from compatibility helper
               'Course Code': course.code,
               'Course Title': course.title,
               'Term': course.term || '',
@@ -1135,8 +1247,9 @@
         summaryData.push(['Area', 'Total', 'ZTC', 'ZTC %']);
 
         pathway.areas.forEach(area => {
-          const areaStats = pathwayName ? calculateAreaStats(area) : calculateFilteredAreaStats(area);
-          summaryData.push([area, areaStats.totalCourses, areaStats.ztcCount, `${areaStats.ztcPercentage}%`]);
+          const areaName = getAreaName(area); // Use compatibility helper
+          const areaStats = pathwayName ? calculateAreaStats(areaName) : calculateFilteredAreaStats(areaName);
+          summaryData.push([areaName, areaStats.totalCourses, areaStats.ztcCount, `${areaStats.ztcPercentage}%`]);
         });
 
         const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
@@ -1150,10 +1263,11 @@
         const courseData = [['Area', 'Course Code', 'Course Title', 'Term', 'ZTC Status', 'ZTC %']];
         
         pathway.areas.forEach(area => {
-          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          const areaName = getAreaName(area); // Use compatibility helper
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, areaName) : getFilteredCourses(areaName);
           areaCourses.forEach(course => {
             courseData.push([
-              area,
+              areaName, // Use area name from compatibility helper
               course.code,
               course.title,
               course.term || '',
@@ -1171,8 +1285,9 @@
         // Area-by-Area Sheets
         // Limit to prevent performance issues with too many sheets
         pathway.areas.slice(0, EXPORT_CONFIG.EXCEL.MAX_AREA_SHEETS).forEach(area => {
+          const areaName = getAreaName(area); // Use compatibility helper
           const areaData = [['Course Code', 'Course Title', 'Term', 'ZTC Status', 'ZTC %']];
-          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, areaName) : getFilteredCourses(areaName);
           
           areaCourses.forEach(course => {
             areaData.push([
@@ -1188,7 +1303,7 @@
           areaSheet['!cols'] = [{ wch: 15 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 10 }];
           
           // Sanitize sheet name (Excel limits: 31 chars, no special chars)
-          const sheetName = area.substring(0, 31).replace(/[:\\/?*\[\]]/g, '');
+          const sheetName = areaName.substring(0, 31).replace(/[:\\/?*\[\]]/g, '');
           XLSX.utils.book_append_sheet(workbook, areaSheet, sheetName);
         });
 
@@ -1267,9 +1382,10 @@
         yPos += 8;
         
         const tableData = pathway.areas.map(area => {
-          const areaStats = pathwayName ? calculateAreaStats(area) : calculateFilteredAreaStats(area);
+          const areaName = getAreaName(area); // Use compatibility helper
+          const areaStats = pathwayName ? calculateAreaStats(areaName) : calculateFilteredAreaStats(areaName);
           return [
-            area,
+            areaName, // Use area name from compatibility helper
             areaStats.totalCourses.toString(),
             areaStats.ztcCount.toString(),
             `${areaStats.ztcPercentage}%`
@@ -1311,7 +1427,8 @@
             yPos = 20;
           }
           
-          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, area) : getFilteredCourses(area);
+          const areaName = getAreaName(area); // Use compatibility helper
+          const areaCourses = pathwayName ? getCoursesForArea(pathway.name, areaName) : getFilteredCourses(areaName);
           if (areaCourses.length === 0) return;
           
           const courseTableData = areaCourses.map(course => [
@@ -1322,7 +1439,7 @@
           
           doc.autoTable({
             startY: yPos,
-            head: [[{ content: area, colSpan: 3, styles: { halign: 'left', fillColor: [71, 85, 105] } }]],
+            head: [[{ content: areaName, colSpan: 3, styles: { halign: 'left', fillColor: [71, 85, 105] } }]], // Use area name from compatibility helper
             body: courseTableData,
             theme: 'plain',
             styles: { fontSize: 9 },
@@ -1430,6 +1547,37 @@
 
 
       // ========================================
+      // PATHWAY STRUCTURE COMPATIBILITY HELPERS
+      // ========================================
+      // These helpers ensure backward compatibility when pathway structure is enhanced
+      // Supports both old format (array of strings) and new format (array of objects)
+
+      /**
+       * Gets area name from area data - handles both string and object formats
+       * @param {string|Object} area - Area as string (old format) or object with name property (new format)
+       * @returns {string} - Area name
+       */
+      const getAreaName = (area) => {
+        if (typeof area === 'string') return area;
+        if (area && typeof area === 'object' && area.name) return area.name;
+        return '';
+      };
+
+      /**
+       * Gets area metadata - returns null for string format, metadata object for object format
+       * @param {string|Object} area - Area as string or object
+       * @returns {Object|null} - Area metadata (coursesRequired, etc.) or null if string format
+       */
+      const getAreaMetadata = (area) => {
+        if (typeof area === 'string') return null;
+        if (area && typeof area === 'object') {
+          const { name, ...metadata } = area;
+          return Object.keys(metadata).length > 0 ? metadata : null;
+        }
+        return null;
+      };
+
+      // ========================================
       // STATISTICS CALCULATION
       // ========================================
 
@@ -1500,7 +1648,8 @@
         // Use Set to deduplicate courses that appear in multiple areas
         const allCourses = new Set();
         pathway.areas.forEach(area => {
-          getCoursesForArea(pathway.name, area).forEach(course => allCourses.add(course.id));
+          const areaName = getAreaName(area); // Use compatibility helper
+          getCoursesForArea(pathway.name, areaName).forEach(course => allCourses.add(course.id));
         });
         
         const uniqueCourses = Array.from(allCourses)
@@ -1531,7 +1680,8 @@
         // Use Set to deduplicate filtered courses across areas
         const allFilteredCourses = new Set();
         pathway.areas.forEach(area => {
-          getFilteredCourses(area).forEach(course => allFilteredCourses.add(course.id));
+          const areaName = getAreaName(area); // Use compatibility helper
+          getFilteredCourses(areaName).forEach(course => allFilteredCourses.add(course.id));
         });
         
         const uniqueCourses = Array.from(allFilteredCourses)
@@ -1549,6 +1699,7 @@
 
       /**
        * Filters courses for a specific area based on active search and filter criteria
+       * Uses unified filter system internally for scalability
        * Applies search query (course code/title), term filter, and ZTC status filter
        * @param {string} area - The area name to filter courses for
        * @returns {Array<Object>} - Filtered array of course objects
@@ -1556,21 +1707,29 @@
       const getFilteredCourses = (area) => {
         let filtered = getCoursesForArea(selectedPathway, area);
 
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filtered = filtered.filter(c => 
-            c.code.toLowerCase().includes(query) ||
-            c.title.toLowerCase().includes(query)
+        // Use unified filters internally (maintains backward compatibility)
+        // Search filter
+        if (filters.search) {
+          const query = filters.search.toLowerCase();
+          filtered = filtered.filter(course => 
+            course.code.toLowerCase().includes(query) ||
+            course.title.toLowerCase().includes(query)
           );
         }
 
-        if (termFilter !== 'all') {
-          filtered = filtered.filter(c => c.term === termFilter);
+        // Term filter
+        if (filters.term !== 'all') {
+          filtered = filtered.filter(course => course.term === filters.term);
         }
 
-        if (ztcFilter !== 'all') {
-          filtered = filtered.filter(c => c.ztcStatus === ztcFilter);
+        // ZTC status filter
+        if (filters.ztcStatus !== 'all') {
+          filtered = filtered.filter(course => course.ztcStatus === filters.ztcStatus);
         }
+
+        // Future filters can be added here easily:
+        // if (filters.pathwayProgression !== 'all') { ... }
+        // if (filters.studentLevel !== 'all') { ... }
 
         return filtered;
       };
@@ -1848,25 +2007,54 @@
       /**
        * Area Column Component
        * Displays a column of courses for a specific pathway area
-       * Shows area name, ZTC percentage, and scrollable list of course cards
+       * Shows area name, ZTC percentage, requirements (if available), and scrollable list of course cards
+       * Supports both string format (backward compatible) and object format (with metadata)
        * @param {Object} props - Component props
-       * @param {string} props.area - The area name to display
+       * @param {string|Object} props.area - The area name (string) or area object with name and metadata
        */
       const AreaColumn = ({ area }) => {
-        const filteredCourses = getFilteredCourses(area);
-        const stats = calculateFilteredAreaStats(area);
+        // Use compatibility helpers to handle both formats
+        const areaName = getAreaName(area);
+        const areaMetadata = getAreaMetadata(area);
+        
+        const filteredCourses = getFilteredCourses(areaName);
+        const stats = calculateFilteredAreaStats(areaName);
         
         // Color coding based on ZTC thresholds
         const statusColor = stats.ztcPercentage >= ZTC_THRESHOLDS.ZTC_MIN ? 'text-green-400' : 
                            stats.ztcPercentage >= ZTC_THRESHOLDS.PARTIAL_MIN ? 'text-amber-400' : 'text-red-400';
 
+        // Calculate requirements display (only if metadata exists)
+        const coursesRequired = areaMetadata?.coursesRequired || 0;
+        const coursesRemaining = coursesRequired > 0 ? Math.max(0, coursesRequired - filteredCourses.length) : 0;
+        const hasRequirements = coursesRequired > 0;
+
         return (
           <div className={`${theme.areaCol} rounded-xl border ${theme.cardBorder} p-4 flex flex-col`} style={{width: '320px', flexShrink: 0}}>
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-sm text-blue-400 uppercase tracking-wide">{area}</h3>
+                <h3 className="font-bold text-sm text-blue-400 uppercase tracking-wide">{areaName}</h3>
                 {stats.ztcPercentage >= ZTC_THRESHOLDS.ZTC_MIN && <Icons.CheckCircle className="w-4 h-4 text-green-400" />}
               </div>
+              
+              {/* Requirements Display - Only shows if requirements data exists */}
+              {hasRequirements && (
+                <div className={`mb-2 p-2 ${theme.card} border border-blue-500/30 rounded text-xs`}>
+                  <div className={`font-semibold ${theme.text} mb-1`}>Requirements:</div>
+                  <div className={theme.textMuted}>
+                    {filteredCourses.length} of {coursesRequired} courses
+                    {coursesRemaining > 0 && (
+                      <span className="text-amber-400 ml-1">
+                        ({coursesRemaining} remaining)
+                      </span>
+                    )}
+                    {coursesRemaining === 0 && coursesRequired > 0 && (
+                      <span className="text-green-400 ml-1">✓ Complete</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div className="flex items-center gap-2 text-xs">
                 <span className={`font-semibold ${statusColor}`}>{stats.ztcPercentage}% ZTC</span>
                 <span className={theme.emptyText}>({stats.ztcCount}/{stats.totalCourses})</span>
@@ -1901,15 +2089,15 @@
         
         const stats = calculateFilteredPathwayStats(pathway);
         
-        // Determine if filters are active
-        const hasActiveFilters = searchQuery || termFilter !== 'all' || ztcFilter !== 'all';
+        // Determine if filters are active (uses helper function)
+        const filtersActive = hasActiveFilters();
         
         return (
           <div className={`mb-6 bg-gradient-to-br ${theme.dashboard} backdrop-blur-sm border ${theme.cardBorder} rounded-xl p-6`}>
             {/* Pathway title with Filtered View badge */}
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-2xl font-bold">{pathway.name}</h2>
-              {hasActiveFilters && (
+              {filtersActive && (
                 <span className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded text-xs font-semibold">
                   Filtered View
                 </span>
@@ -2000,10 +2188,16 @@
               <div className="flex gap-3 overflow-x-auto pb-2">
               {(() => {
                 // Calculate stats for each area
-                const areasWithStats = pathway.areas.map(area => ({
-                  name: area,
-                  stats: calculateFilteredAreaStats(area)
-                }));
+                // Use compatibility helpers to handle both string and object formats
+                const areasWithStats = pathway.areas.map(area => {
+                  const areaName = getAreaName(area);
+                  const areaMetadata = getAreaMetadata(area);
+                  return {
+                    name: areaName,
+                    metadata: areaMetadata,
+                    stats: calculateFilteredAreaStats(areaName)
+                  };
+                });
                 
                 // Sort based on selected order
                 let sortedAreas = [...areasWithStats];
@@ -2031,18 +2225,26 @@
                   sortedAreas.sort((a, b) => b.name.localeCompare(a.name));
                 }
                 
-                return sortedAreas.map(({ name: area, stats: areaStats }) => {
+                return sortedAreas.map(({ name: areaName, metadata: areaMetadata, stats: areaStats }) => {
                   const areaColor = areaStats.ztcPercentage === 100 ? 'border-green-500/50 bg-green-500/10' :
                                    areaStats.ztcPercentage >= 50 ? 'border-amber-500/50 bg-amber-500/10' :
                                    'border-red-500/50 bg-red-500/10';
                   
+                  const coursesRequired = areaMetadata?.coursesRequired || 0;
+                  
                   return (
-                    <div key={area} className={`border ${areaColor} rounded-lg p-2`} style={{flex: '0 0 auto', width: '180px'}}>
-                      <div className={`text-xs font-semibold ${theme.text} mb-1`}>{area}</div>
+                    <div key={areaName} className={`border ${areaColor} rounded-lg p-2`} style={{flex: '0 0 auto', width: '180px'}}>
+                      <div className={`text-xs font-semibold ${theme.text} mb-1`}>{areaName}</div>
                       <div className="flex items-baseline gap-1">
                         <span className={`text-sm font-bold ${theme.text}`}>{areaStats.ztcPercentage}%</span>
                         <span className={`text-xs ${theme.textMuted}`}>({areaStats.ztcCount}/{areaStats.totalCourses})</span>
                       </div>
+                      {/* Show requirements in summary card if available */}
+                      {coursesRequired > 0 && (
+                        <div className={`text-xs ${theme.textMuted} mt-1`}>
+                          Req: {coursesRequired}
+                        </div>
+                      )}
                     </div>
                   );
                 });
@@ -2283,14 +2485,11 @@
                   </select>
 
                   {/* Clear filters */}
-                  {(searchQuery || termFilter !== 'all' || ztcFilter !== 'all') && (
+                  {hasActiveFilters() && (
                     <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setTermFilter('all');
-                        setZtcFilter('all');
-                      }}
+                      onClick={clearAllFilters}
                       className={`flex items-center gap-1 px-3 py-1.5 ${theme.button} border ${theme.cardBorder} rounded-lg text-sm transition-colors`}
+                      aria-label="Clear all filters"
                     >
                       <Icons.X className="w-3.5 h-3.5" />
                       Clear
@@ -2644,7 +2843,7 @@
                     {/* Single Pathway Exports */}
                     <div>
                       <h3 className={`text-sm font-semibold ${theme.textMuted} uppercase tracking-wider mb-3`}>
-                        Current Pathway {(searchQuery || termFilter !== 'all' || ztcFilter !== 'all') && '(Filtered)'}
+                        Current Pathway {hasActiveFilters() && '(Filtered)'}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {/* CSV Export */}
