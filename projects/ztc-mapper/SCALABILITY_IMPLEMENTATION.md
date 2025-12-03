@@ -8,6 +8,7 @@ All scalability improvements have been implemented with **full backward compatib
 2. ✅ **Enhanced Pathway Structure** - Supports area requirements and metadata
 3. ✅ **Compatibility Layer** - Works with both old and new data formats
 4. ✅ **Requirements Display** - Shows course requirements per area (when data available)
+5. ✅ **Background Scroll Lock** - Prevents background scrolling when modals are open
 
 ## What Was Changed
 
@@ -60,6 +61,31 @@ All scalability improvements have been implemented with **full backward compatib
 - ✅ Existing UI unchanged when no requirements data
 - ✅ New features appear automatically when requirements data exists
 - ✅ Requirements display shows: "X of Y courses (Z remaining)"
+
+### Phase 5: Animation Performance Fix ✅
+
+**Changes Made:**
+- Simplified CSS animations (removed GPU-forcing properties)
+- Removed `course-card-container` class that was forcing GPU layers on every card
+- Simplified modal animation implementation
+- Removed `modal-overlay` and `modal-content` CSS classes
+
+**Result:**
+- ✅ Smooth animations even with 50+ course cards
+- ✅ No flickering when opening course detail modal
+- ✅ All animation functionality preserved
+
+### Phase 6: Background Scroll Lock ✅
+
+**Changes Made:**
+- Added centralized scroll lock effect (Lines 558-577)
+- Handles all four modal types in a single effect
+- Automatically restores scrolling when modal closes
+
+**Result:**
+- ✅ Background doesn't scroll when modal is open
+- ✅ Improved user experience and focus
+- ✅ No conflicts between multiple modals
 
 ## How to Add New Features
 
@@ -201,26 +227,50 @@ After implementation, verify:
 - [x] No console errors
 - [x] Requirements display when CSV has requirement columns
 - [x] Requirements don't display when CSV lacks requirement columns
+- [x] Modal animations are smooth with many cards
+- [x] Background scroll is locked when modals are open
 
 ## Code Locations Reference
 
+### Scroll Lock
+- **Effect**: Lines 558-577 (SCROLL LOCK FOR MODALS section)
+
 ### Filter System
-- **State**: Lines ~490-510 (unified filters + individual states)
-- **Helpers**: Lines ~490-530 (updateFilter, hasActiveFilters, clearAllFilters)
-- **Filter Logic**: Lines ~1556-1580 (getFilteredCourses)
-- **UI**: Lines ~2259-2298 (filter dropdowns)
+- **State**: Lines 527-546 (unified filters + individual states)
+- **Helpers**: Lines 527-546 (updateFilter, hasActiveFilters, clearAllFilters)
+- **Filter Logic**: Lines 1753-1781 (getFilteredCourses)
+- **UI**: Filter section in main render
 
 ### Compatibility Helpers
-- **Functions**: Lines ~1400-1430 (getAreaName, getAreaMetadata)
+- **Functions**: Lines 1594-1620 (getAreaName, getAreaMetadata)
 - **Usage**: Throughout codebase (all area iterations)
 
 ### CSV Processing
-- **Requirements Detection**: Lines ~880-920 (detects "X Required" columns)
-- **Enhanced Structure**: Lines ~900-920 (creates enhanced format if data exists)
+- **Requirements Detection**: processCSVData function
+- **Enhanced Structure**: Creates enhanced format if requirements data exists
 
 ### UI Components
-- **AreaColumn**: Lines ~1855-1920 (displays requirements if available)
-- **ProgressDashboard**: Lines ~2108-2150 (area summary with requirements)
+- **AreaColumn**: Lines 2097-2176 (displays requirements if available)
+- **ProgressDashboard**: Lines 2178+ (area summary with requirements)
+
+### CSS Animations
+- **Location**: Lines 47-74
+- **Note**: Keep animations simple - avoid GPU-forcing on individual cards
+
+## Performance Considerations
+
+### Animation Performance
+⚠️ **Important**: Do NOT add GPU-forcing CSS properties to course cards:
+- Avoid `transform: translateZ(0)` on `.course-card-container` or similar
+- Avoid `will-change: transform` on individual cards
+- These cause compositor layer overload with many cards
+
+The current implementation uses simple `scale()` and `opacity` animations on modals only, which performs well regardless of card count.
+
+### Recommended Approach for Future Animations
+- Apply GPU hints only to modal overlays and content (single elements)
+- Keep individual card styling simple
+- Use CSS classes rather than inline animation styles
 
 ## Future Enhancements Made Easy
 
@@ -238,6 +288,7 @@ With this implementation, adding new features is now straightforward:
 ✅ **Ready for future enhancements**
 ✅ **No UI changes unless new data present**
 ✅ **All existing functionality preserved**
+✅ **Animation performance optimized**
+✅ **Background scroll lock for improved UX**
 
 The application is now highly scalable and ready for your future requirements!
-

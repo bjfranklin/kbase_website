@@ -8,7 +8,7 @@ The ZTC Pathway Mapper is a React-based web application for analyzing and visual
 
 ### Technology Stack
 - **React 18** - UI framework
-- **Tailwind CSS** - Styling
+- **Tailwind CSS (CDN)** - Styling (CDN is appropriate for single-file apps)
 - **Babel Standalone** - JSX compilation
 - **jsPDF & jsPDF-AutoTable** - PDF generation
 - **SheetJS (XLSX)** - Excel export
@@ -16,13 +16,25 @@ The ZTC Pathway Mapper is a React-based web application for analyzing and visual
 - **html2canvas** - PNG screenshot export
 
 ### File Structure
-- Single-file HTML application (`index-v2.html`)
+- Single-file HTML application (`index.html`)
 - All code is inline with clear section organization
 - Constants and configuration at the top
 - Utility functions grouped by purpose
 - React components defined within main component
 
+### Note on Tailwind CDN Warning
+You may see a console warning about using cdn.tailwindcss.com in production. This warning can be safely ignored because:
+- This is a single-file application without a build pipeline
+- The app loads once and stays open (minimal impact on load time)
+- Keeps everything self-contained in one portable file
+
 ## Code Organization
+
+### CSS Section (Lines 30-113)
+- Custom scrollbar styling
+- Modal animations (`fadeIn`, `scaleIn`)
+- Screen reader only class (`.sr-only`)
+- Enhanced focus indicators
 
 ### Constants & Configuration
 Located at the top of the file (after Icons definition):
@@ -43,31 +55,48 @@ Reusable helper functions for common operations:
 - `getPercentageColorClass(percentage)` - Gets color class based on ZTC percentage
 - `getMetricBackgroundClass(percentage)` - Gets background class for metric cards
 - `getProgressBarColorClass(percentage)` - Gets progress bar color based on percentage
+- `getAreaName(area)` - Compatibility helper for area name extraction
+- `getAreaMetadata(area)` - Compatibility helper for area metadata extraction
 
 ### Main Sections
 
-#### 1. CSV Processing & Data Import
+#### 1. State Management
+- Individual filter states (`searchQuery`, `termFilter`, `ztcFilter`)
+- Unified filter system (`filters` object) for internal use
+- Modal states (`showMapping`, `showProjectManager`, `showExportModal`, `selectedCourse`)
+
+#### 2. Scroll Lock for Modals
+- Location: Lines 558-577
+- Centralized handler prevents background scrolling when any modal is open
+- Automatically restores scrolling when modal closes
+
+#### 3. Accessibility & Keyboard Navigation
+- ESC key handling for modal closing
+- Focus trap for modals (`setupFocusTrap` function)
+- Focus return management
+
+#### 4. CSV Processing & Data Import
 - `parseCSV(text)` - Parses CSV with proper quote handling
 - `autoDetectMapping(headers)` - Auto-detects column mappings
 - `handleFileUpload(event)` - Handles file upload
 - `processCSVData()` - Processes mapped CSV data
 - `determineZTCStatus(value)` - Determines ZTC status from percentage
 
-#### 2. Statistics Calculation
+#### 5. Statistics Calculation
 - `getCoursesForArea(pathwayName, area)` - Gets courses for a pathway area
 - `calculateAreaStats(area)` - Calculates ZTC stats for an area
 - `calculateFilteredAreaStats(area)` - Calculates filtered area stats
 - `calculatePathwayStats(pathway)` - Calculates overall pathway stats
 - `calculateFilteredPathwayStats(pathway)` - Calculates filtered pathway stats
-- `getFilteredCourses(area)` - Filters courses based on search/filters
+- `getFilteredCourses(area)` - Filters courses using unified filter system
 
-#### 3. Project Management
+#### 6. Project Management
 - `loadProject(project)` - Loads a project into application state
 - `saveProject(name, coursesData, pathwaysData)` - Saves current state as project
 - `deleteProject(projectId)` - Deletes a project
 - `clearDatasource()` - Resets application to initial state
 
-#### 4. Export Functionality
+#### 7. Export Functionality
 - `exportAnalysis()` - Opens export modal
 - `createChartDataURL(pathway, stats)` - Creates chart for PDF embedding
 - `exportToCSV(pathwayName)` - Exports to CSV format
@@ -76,17 +105,12 @@ Reusable helper functions for common operations:
 - `exportToPNG()` - Exports dashboard screenshot
 - `exportAllPathways(format)` - Batch exports all pathways
 
-#### 5. UI Components
+#### 8. UI Components
 - `ZTCBadge` - Status badge component
 - `CourseCard` - Course card display component
 - `CourseDetailModal` - Detailed course information modal
-- `AreaColumn` - Area column with course list
+- `AreaColumn` - Area column with course list (supports requirements display)
 - `ProgressDashboard` - Main dashboard with statistics
-
-#### 6. Accessibility & Keyboard Navigation
-- ESC key handling for modal closing
-- Focus trap for modals
-- Focus return management
 
 ## ZTC Percentage Calculation Logic
 
@@ -125,7 +149,7 @@ processCSVData() → Extract courses and pathways
   ↓
 determineZTCStatus() → Categorize each course
   ↓
-Build pathway structure
+Build pathway structure (with optional requirements)
   ↓
 Save as project (localStorage)
   ↓
@@ -155,8 +179,16 @@ Main data processing function:
 - Extracts course data from CSV rows
 - Determines ZTC status for each course
 - Maps courses to pathway areas
-- Builds pathway structure
+- Detects area requirements from CSV columns (if present)
+- Builds pathway structure (supports both simple and enhanced formats)
 - Saves as project
+
+### `getFilteredCourses(area)`
+Filters courses using unified filter system:
+- Applies search query (course code/title)
+- Applies term filter
+- Applies ZTC status filter
+- Extensible for future filter additions
 
 ## Modifying the Application
 
@@ -169,6 +201,13 @@ const ZTC_THRESHOLDS = {
   NOT_ZTC_MAX: 50     // Change this value
 };
 ```
+
+### Adding New Filters
+1. Add to unified `filters` state object
+2. Add filter logic in `getFilteredCourses()`
+3. Add UI element in filter section
+4. Update `clearAllFilters()` function
+5. Update `hasActiveFilters()` function
 
 ### Adding New Export Format
 1. Create new export function following existing pattern
@@ -236,19 +275,25 @@ Value: `"dark"` or `"light"`
 
 ## Performance Considerations
 
+- Simple CSS animations (no GPU layer forcing on individual cards)
 - Excel export limited to 10 area sheets per pathway
 - Batch exports include delays to prevent browser throttling
 - Chart rendering includes delay for proper canvas generation
 - Course deduplication uses Set for O(1) lookups
 
+### Animation Performance Note
+The application uses simple `transform: scale()` and `opacity` animations for modals. Avoid adding `will-change`, `translateZ(0)`, or `transform: translate3d()` to individual course cards, as this creates too many GPU compositor layers and causes flickering when many cards are present.
+
 ## Accessibility Features
 
 - ARIA labels and roles throughout
-- Keyboard navigation (ESC to close modals)
+- Keyboard navigation (ESC to close modals, Enter/Space to activate cards)
 - Focus trap in modals
+- Focus return to triggering element
 - Screen reader support (sr-only class)
 - Skip to main content link
 - Enhanced focus indicators
+- Background scroll lock when modals are open
 
 ## Maintenance Notes
 
@@ -265,12 +310,23 @@ Value: `"dark"` or `"light"`
 3. Test export functionality with large datasets
 4. Verify theme persistence
 5. Test keyboard navigation and accessibility
+6. Test modal scroll lock behavior
+7. Test with 50+ course cards to verify smooth animations
 
 ### Common Issues
 - **CSV parsing errors**: Check for proper quote handling
 - **Percentage calculations**: Verify ZTC_THRESHOLDS are correct
 - **Export failures**: Check browser console for errors
 - **Theme not persisting**: Verify STORAGE_KEYS constant
+- **Animation flickering**: Ensure no GPU-forcing CSS on course cards
+
+## Scalability Features
+
+The application includes a unified filter system and compatibility helpers for future enhancements:
+
+- **Unified Filter State**: Internal `filters` object makes adding new filters straightforward
+- **Compatibility Helpers**: `getAreaName()` and `getAreaMetadata()` support both simple and enhanced pathway structures
+- **Area Requirements**: Automatically detected from CSV columns matching "Area Name Required" pattern
 
 ## Future Improvements
 
@@ -282,6 +338,13 @@ Potential enhancements for future development:
 5. Support for additional export formats
 6. Real-time collaboration features
 7. Server-side data persistence
+8. Add `prefers-reduced-motion` support
+
+## Version History
+
+- **v1.0**: Initial release
+- **v2.0**: Added scalability improvements, ADA compliance, code refactoring
+- **v2.1**: Animation performance fix, background scroll lock for modals
 
 ## Support
 
@@ -290,4 +353,3 @@ For questions or issues:
 2. Review function JSDoc comments
 3. Check browser console for errors
 4. Verify constants match requirements
-
