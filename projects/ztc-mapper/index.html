@@ -44,7 +44,7 @@
       background: #64748b;
     }
 
-    /* Modal animations */
+    /* Modal animations - optimized for GPU acceleration */
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -56,7 +56,7 @@
 
     @keyframes scaleIn {
       from {
-        transform: translate3d(0, 0, 0) scale3d(0.96, 0.96, 1);
+        transform: translate3d(0, 0, 0) scale3d(0.98, 0.98, 1);
         opacity: 0;
       }
       to {
@@ -68,19 +68,24 @@
     .animate-fadeIn {
       animation: fadeIn 0.2s ease-out;
       will-change: opacity;
+      transform: translateZ(0); /* Force GPU layer */
     }
 
     .animate-scaleIn {
-      animation: scaleIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       will-change: transform, opacity;
+      transform: translateZ(0); /* Force GPU layer */
+      backface-visibility: hidden;
+      perspective: 1000px;
     }
 
     /* Performance optimization for modals */
     .modal-overlay {
       will-change: opacity;
-      contain: layout style paint; /* Less aggressive - allows positioning */
+      transform: translateZ(0); /* Force GPU layer */
       isolation: isolate; /* Create new stacking context */
-      /* Initially no backdrop blur for performance */
+      /* No containment - causes rendering issues */
+      /* No backdrop blur during animation - added after via JS */
     }
 
     .modal-overlay.animation-complete {
@@ -96,17 +101,17 @@
       isolation: isolate; /* Create new stacking context */
       position: relative; /* Ensure proper positioning */
       z-index: 1; /* Ensure content is above overlay */
+      /* No containment - causes rendering issues */
     }
 
     /* Special class for course detail modal (needs performance optimization) */
-    .modal-content-optimized {
-      contain: layout style paint; /* Only for modals with many elements behind */
-    }
+    /* Removed containment - it was causing rendering issues */
+    /* Rely on transform and will-change for performance */
 
     /* Optimize course card rendering when many are present */
     .course-card-container {
-      contain: layout style paint;
       transform: translateZ(0); /* Force GPU layer */
+      will-change: transform; /* Hint for browser optimization */
     }
 
     /* Prevent layout shifts during modal animation */
@@ -1882,11 +1887,15 @@
         // Use requestAnimationFrame for smoother timing
         useEffect(() => {
           let rafId;
+          // Wait for animation to complete (200ms) plus a small buffer
           const timer = setTimeout(() => {
             rafId = requestAnimationFrame(() => {
-              setAnimationComplete(true);
+              // Double RAF to ensure it happens after paint
+              requestAnimationFrame(() => {
+                setAnimationComplete(true);
+              });
             });
-          }, 150); // Match animation duration (0.15s)
+          }, 220); // Slightly longer than animation (200ms) to ensure completion
           return () => {
             clearTimeout(timer);
             if (rafId) cancelAnimationFrame(rafId);
@@ -1894,9 +1903,13 @@
         }, []);
 
         // Prevent body scroll when modal is open
+        // Delay to avoid interfering with animation
         useEffect(() => {
-          document.body.classList.add('modal-open');
+          const timer = setTimeout(() => {
+            document.body.classList.add('modal-open');
+          }, 10); // Small delay to let animation start
           return () => {
+            clearTimeout(timer);
             document.body.classList.remove('modal-open');
           };
         }, []);
@@ -1943,7 +1956,7 @@
             }}
             style={{ 
               isolation: 'isolate',
-              contain: 'layout style paint',
+              transform: 'translateZ(0)', // Force GPU layer
               // Remove backdrop blur during animation for performance
               backdropFilter: animationComplete ? 'blur(4px)' : 'none',
               WebkitBackdropFilter: animationComplete ? 'blur(4px)' : 'none'
@@ -1958,7 +1971,7 @@
                   }, 50);
                 }
               }}
-              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content modal-content-optimized`}
+              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
               role="document"
             >
               <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
@@ -2144,7 +2157,7 @@
                 margin: '1px', 
                 borderRadius: '0.75rem', 
                 paddingRight: '8px',
-                contain: 'layout style paint',
+                transform: 'translateZ(0)', // Force GPU layer for smooth scrolling
                 willChange: 'scroll-position'
               }}
             >
@@ -2641,7 +2654,7 @@
                   <div 
                     className="overflow-x-auto pb-4"
                     style={{ 
-                      contain: 'layout style',
+                      transform: 'translateZ(0)', // Force GPU layer for smooth scrolling
                       willChange: 'scroll-position'
                     }}
                   >
