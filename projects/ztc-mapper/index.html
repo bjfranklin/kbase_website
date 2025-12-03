@@ -56,11 +56,11 @@
 
     @keyframes scaleIn {
       from {
-        transform: scale3d(0.9, 0.9, 1);
+        transform: translate3d(0, 0, 0) scale3d(0.96, 0.96, 1);
         opacity: 0;
       }
       to {
-        transform: scale3d(1, 1, 1);
+        transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
         opacity: 1;
       }
     }
@@ -71,28 +71,41 @@
     }
 
     .animate-scaleIn {
-      animation: scaleIn 0.2s ease-out;
+      animation: scaleIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       will-change: transform, opacity;
     }
 
     /* Performance optimization for modals */
     .modal-overlay {
       will-change: opacity;
-      contain: layout style paint;
-      /* Backdrop blur is handled by Tailwind backdrop-blur-sm class */
+      contain: strict; /* Aggressive containment */
+      isolation: isolate; /* Create new stacking context */
+      /* Initially no backdrop blur for performance */
+    }
+
+    .modal-overlay.animation-complete {
+      /* Add backdrop blur after animation completes */
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .modal-content {
       will-change: transform, opacity;
-      contain: layout style paint;
+      contain: strict; /* Aggressive containment */
       transform: translateZ(0); /* Force GPU acceleration */
       backface-visibility: hidden; /* Prevent flickering */
-      perspective: 1000px; /* Enable 3D transforms */
+      isolation: isolate; /* Create new stacking context */
     }
 
     /* Optimize course card rendering when many are present */
     .course-card-container {
       contain: layout style paint;
+      transform: translateZ(0); /* Force GPU layer */
+    }
+
+    /* Prevent layout shifts during modal animation */
+    .modal-open {
+      overflow: hidden; /* Prevent body scroll during modal */
     }
 
     /* Screen reader only class */
@@ -1857,6 +1870,31 @@
        * @param {Function} props.onClose - Callback function to close the modal
        */
       const CourseDetailModal = ({ course, onClose }) => {
+        const [animationComplete, setAnimationComplete] = useState(false);
+        
+        // Add backdrop blur after animation completes for better performance
+        // Use requestAnimationFrame for smoother timing
+        useEffect(() => {
+          let rafId;
+          const timer = setTimeout(() => {
+            rafId = requestAnimationFrame(() => {
+              setAnimationComplete(true);
+            });
+          }, 150); // Match animation duration (0.15s)
+          return () => {
+            clearTimeout(timer);
+            if (rafId) cancelAnimationFrame(rafId);
+          };
+        }, []);
+
+        // Prevent body scroll when modal is open
+        useEffect(() => {
+          document.body.classList.add('modal-open');
+          return () => {
+            document.body.classList.remove('modal-open');
+          };
+        }, []);
+
         if (!course) return null;
 
         // Parse percentage values using utility function
@@ -1890,12 +1928,19 @@
 
         return (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay"
+            className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay ${animationComplete ? 'animation-complete' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="course-detail-title"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
+            }}
+            style={{ 
+              isolation: 'isolate',
+              contain: 'strict',
+              // Remove backdrop blur during animation for performance
+              backdropFilter: animationComplete ? 'blur(4px)' : 'none',
+              WebkitBackdropFilter: animationComplete ? 'blur(4px)' : 'none'
             }}
           >
             <div 
@@ -2587,7 +2632,13 @@
                 
                 {/* Area columns */}
                 {selectedPathway && (
-                  <div className="overflow-x-auto pb-4">
+                  <div 
+                    className="overflow-x-auto pb-4"
+                    style={{ 
+                      contain: 'layout style',
+                      willChange: 'scroll-position'
+                    }}
+                  >
                     <div className="flex gap-4 min-w-min">
                       {pathways.find(p => p.name === selectedPathway)?.areas.map(area => (
                         <AreaColumn key={area} area={area} />
