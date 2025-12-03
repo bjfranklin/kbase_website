@@ -78,7 +78,7 @@
     /* Performance optimization for modals */
     .modal-overlay {
       will-change: opacity;
-      contain: strict; /* Aggressive containment */
+      contain: layout style paint; /* Less aggressive - allows positioning */
       isolation: isolate; /* Create new stacking context */
       /* Initially no backdrop blur for performance */
     }
@@ -91,10 +91,16 @@
 
     .modal-content {
       will-change: transform, opacity;
-      contain: strict; /* Aggressive containment */
       transform: translateZ(0); /* Force GPU acceleration */
       backface-visibility: hidden; /* Prevent flickering */
       isolation: isolate; /* Create new stacking context */
+      position: relative; /* Ensure proper positioning */
+      z-index: 1; /* Ensure content is above overlay */
+    }
+
+    /* Special class for course detail modal (needs performance optimization) */
+    .modal-content-optimized {
+      contain: layout style paint; /* Only for modals with many elements behind */
     }
 
     /* Optimize course card rendering when many are present */
@@ -1937,7 +1943,7 @@
             }}
             style={{ 
               isolation: 'isolate',
-              contain: 'strict',
+              contain: 'layout style paint',
               // Remove backdrop blur during animation for performance
               backdropFilter: animationComplete ? 'blur(4px)' : 'none',
               WebkitBackdropFilter: animationComplete ? 'blur(4px)' : 'none'
@@ -1952,7 +1958,7 @@
                   }, 50);
                 }
               }}
-              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
+              className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content modal-content-optimized`}
               role="document"
             >
               <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
@@ -2653,7 +2659,7 @@
           {/* Column Mapping Modal */}
           {showMapping && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn modal-overlay"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
               role="dialog"
               aria-modal="true"
               aria-labelledby="mapping-modal-title"
@@ -2675,6 +2681,10 @@
                 }}
                 className={`${theme.modal} rounded-xl border ${theme.modalBorder} max-w-2xl w-full max-h-[90vh] flex flex-col animate-scaleIn modal-content`}
                 role="document"
+                style={{
+                  position: 'relative',
+                  zIndex: 1
+                }}
               >
                 <div className="overflow-auto" style={{ margin: '1px', borderRadius: '0.75rem' }}>
                 <div className="p-6">
