@@ -97,6 +97,21 @@
       white-space: normal;
     }
 
+    /* Performance optimization for course cards */
+    .course-card {
+      contain: content;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 100px;
+      will-change: auto;
+    }
+
+    /* Performance optimization for scroll containers */
+    .area-scroll-container {
+      contain: strict;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 600px;
+    }
+
     /* Enhanced focus indicators for better visibility */
     *:focus-visible {
       outline: 2px solid #3b82f6;
@@ -151,6 +166,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      ),
+      Filter: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
         </svg>
       ),
       X: (props) => (
@@ -1790,7 +1810,7 @@
        * @param {Object} props - Component props
        * @param {string} props.status - ZTC status: 'ztc', 'partial', 'not-ztc', or 'unknown'
        */
-      const ZTCBadge = ({ status }) => {
+      const ZTCBadge = React.memo(({ status }) => {
         const style = ZTC_STATUS_CONFIG[status] || ZTC_STATUS_CONFIG.unknown;
 
         return (
@@ -1800,36 +1820,38 @@
             {style.label}
           </span>
         );
-      };
+      });
 
       /**
        * Course Card Component
        * Displays a course with code, title, term, and ZTC status badge
-       * Clickable to open course detail modal
+       * Cards are only clickable when filters are active to improve performance
        * @param {Object} props - Component props
        * @param {Object} props.course - Course object with code, title, term, ztcStatus
        */
-      const CourseCard = ({ course }) => {
-        const statusColors = {
-          'ztc': 'border-l-green-500',
-          'partial': 'border-l-amber-500',
-          'not-ztc': 'border-l-red-500',
-          'unknown': 'border-l-gray-500'
-        };
+      const CARD_STATUS_COLORS = {
+        'ztc': 'border-l-green-500',
+        'partial': 'border-l-amber-500',
+        'not-ztc': 'border-l-red-500',
+        'unknown': 'border-l-gray-500'
+      };
 
+      const CourseCard = ({ course }) => {
+        const isInteractive = hasActiveFilters();
+        
         return (
           <div 
-            onClick={() => setSelectedCourse(course)}
-            onKeyDown={(e) => {
+            onClick={isInteractive ? () => setSelectedCourse(course) : undefined}
+            onKeyDown={isInteractive ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 setSelectedCourse(course);
               }
-            }}
-            tabIndex={0}
-            role="button"
-            aria-label={`View details for ${course.code}: ${course.title}`}
-            className={`${theme.card} border ${theme.cardBorder} rounded-lg p-3 border-l-4 ${statusColors[course.ztcStatus]} ${theme.cardHover} transition-all cursor-pointer`}
+            } : undefined}
+            tabIndex={isInteractive ? 0 : -1}
+            role={isInteractive ? "button" : undefined}
+            aria-label={isInteractive ? `View details for ${course.code}: ${course.title}` : undefined}
+            className={`course-card ${theme.card} border ${theme.cardBorder} rounded-lg p-3 border-l-4 ${CARD_STATUS_COLORS[course.ztcStatus]} ${isInteractive ? `${theme.cardHover} cursor-pointer` : 'opacity-90'}`}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex-1 min-w-0">
@@ -1889,7 +1911,7 @@
 
         return (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
             role="dialog"
             aria-modal="true"
             aria-labelledby="course-detail-title"
@@ -2082,7 +2104,7 @@
             </div>
             
             <div 
-              className="space-y-2 flex-1 overflow-y-auto max-h-[600px]" 
+              className="area-scroll-container space-y-2 flex-1 overflow-y-auto max-h-[600px]" 
               style={{ 
                 margin: '1px', 
                 borderRadius: '0.75rem', 
@@ -2120,7 +2142,7 @@
         const filtersActive = hasActiveFilters();
         
         return (
-          <div className={`mb-6 bg-gradient-to-br ${theme.dashboard} backdrop-blur-sm border ${theme.cardBorder} rounded-xl p-6`}>
+          <div className={`mb-6 bg-gradient-to-br ${theme.dashboard} border ${theme.cardBorder} rounded-xl p-6`}>
             {/* Pathway title with Filtered View badge */}
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-2xl font-bold">{pathway.name}</h2>
@@ -2321,7 +2343,7 @@
           ></div>
           
           {/* Header */}
-          <header className={`sticky top-0 z-50 ${theme.header} backdrop-blur-sm border-b ${theme.headerBorder}`} role="banner">
+          <header className={`sticky top-0 z-50 ${theme.header} border-b ${theme.headerBorder}`} role="banner">
             <div className="px-4 py-3">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
@@ -2577,14 +2599,20 @@
               <>
                 <ProgressDashboard />
                 
+                {/* Filter hint banner - shows when no filters active */}
+                {selectedPathway && !hasActiveFilters() && (
+                  <div className={`mb-4 p-3 ${darkMode ? 'bg-blue-900/30 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border rounded-lg flex items-center gap-3`}>
+                    <Icons.Filter className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} flex-shrink-0`} />
+                    <p className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                      <span className="font-medium">Tip:</span> Use the search box or filters above to narrow results, then click any course card for details.
+                    </p>
+                  </div>
+                )}
+                
                 {/* Area columns */}
                 {selectedPathway && (
                   <div 
                     className="overflow-x-auto pb-4"
-                    style={{ 
-                      transform: 'translateZ(0)', // Force GPU layer for smooth scrolling
-                      willChange: 'scroll-position'
-                    }}
                   >
                     <div className="flex gap-4 min-w-min">
                       {pathways.find(p => p.name === selectedPathway)?.areas.map(area => (
@@ -2600,7 +2628,7 @@
           {/* Column Mapping Modal */}
           {showMapping && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+              className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
               role="dialog"
               aria-modal="true"
               aria-labelledby="mapping-modal-title"
@@ -2757,7 +2785,7 @@
           {/* Project Manager Modal */}
           {showProjectManager && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+              className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
               role="dialog"
               aria-modal="true"
               aria-labelledby="project-manager-title"
@@ -2839,7 +2867,7 @@
           {/* Export Modal */}
           {showExportModal && selectedPathway && (
             <div 
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+              className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
               role="dialog"
               aria-modal="true"
               aria-labelledby="export-modal-title"
