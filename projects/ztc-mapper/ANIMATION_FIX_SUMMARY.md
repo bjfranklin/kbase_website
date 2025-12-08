@@ -180,6 +180,8 @@ All of the following improvements from the Cursor work remain intact:
    - ESC key closes modals
    - Tab navigation works
    - Screen reader announcements function
+7. **Verify loading spinner appears during CSV processing**
+8. **Verify close button tooltips show "Close (Esc)" on hover**
 
 ---
 
@@ -187,7 +189,7 @@ All of the following improvements from the Cursor work remain intact:
 
 A centralized scroll lock was added to prevent the background from scrolling while any modal is open. This improves the user experience by keeping focus on the modal content.
 
-### Implementation (Lines 558-577)
+### Implementation (Lines 605-624)
 ```javascript
 // ========================================
 // SCROLL LOCK FOR MODALS
@@ -195,10 +197,10 @@ A centralized scroll lock was added to prevent the background from scrolling whi
 
 /**
  * Prevents background scrolling when any modal is open
- * Centralized handler for all modals to avoid conflicts
+ * Centralized handler for all modals and loading state to avoid conflicts
  */
 useEffect(() => {
-  const isAnyModalOpen = showMapping || showProjectManager || showExportModal || selectedCourse;
+  const isAnyModalOpen = showMapping || showProjectManager || showExportModal || selectedCourse || isLoading;
   if (isAnyModalOpen) {
     document.body.style.overflow = 'hidden';
   } else {
@@ -208,14 +210,42 @@ useEffect(() => {
   return () => {
     document.body.style.overflow = '';
   };
-}, [showMapping, showProjectManager, showExportModal, selectedCourse]);
+}, [showMapping, showProjectManager, showExportModal, selectedCourse, isLoading]);
 ```
 
 ### Why Centralized?
-- Single effect handles all four modals (Course Detail, Export, Project Manager, Column Mapping)
+- Single effect handles all four modals plus loading state
 - Avoids potential race conditions from multiple effects
 - Clean cleanup when component unmounts
 - Follows React best practices for side effects
+
+---
+
+## Additional Enhancement: Loading State for CSV Processing
+
+A loading overlay with spinner was added to provide visual feedback during CSV processing.
+
+### Features
+- **Visual Spinner**: Animated loader icon during processing
+- **Screen Reader Support**: `aria-live="assertive"` announces loading state immediately
+- **Descriptive Text**: Shows "Processing CSV data..." message
+- **Theme-Aware**: Respects dark/light mode settings
+- **Scroll Lock**: Background scroll locked during loading
+
+---
+
+## Additional Enhancement: Keyboard Shortcut Tooltips
+
+Tooltips were added to all modal close buttons to improve keyboard shortcut discoverability.
+
+### Implementation
+All four modal close buttons now include `title="Close (Esc)"`:
+- Course Detail Modal
+- Column Mapping Modal  
+- Project Manager Modal
+- Export Modal
+
+This provides a visual hint for mouse users while complementing the existing `aria-label` for screen readers.
 
 ---
 

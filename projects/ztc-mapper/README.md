@@ -294,6 +294,9 @@ The application uses simple `transform: scale()` and `opacity` animations for mo
 - Skip to main content link
 - Enhanced focus indicators
 - Background scroll lock when modals are open
+- Loading state with screen reader announcements (`aria-live="assertive"`)
+- Tooltips on close buttons showing keyboard shortcut (`title="Close (Esc)"`)
+- Conditional card interactivity (cards only interactive when filters applied)
 
 ## Maintenance Notes
 
@@ -344,7 +347,8 @@ Potential enhancements for future development:
 
 - **v1.0**: Initial release
 - **v2.0**: Added scalability improvements, ADA compliance, code refactoring
-- **v2.1**: Animation performance fix, background scroll lock for modals
+- **v2.1**: Animation performance fix, background scroll lock for modals, conditional card interactivity
+- **v2.2**: Loading state for CSV processing, tooltips on close buttons, enhanced screen reader support
 
 ## Support
 

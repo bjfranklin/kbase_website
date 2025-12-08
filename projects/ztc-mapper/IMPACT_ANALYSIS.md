@@ -108,6 +108,39 @@ All scalability improvements have been implemented using the backward-compatible
 
 ---
 
+### 7. Loading State for CSV Processing
+**What Changed:**
+- Added `isLoading` state variable
+- Added loading overlay with spinner during CSV processing
+- Screen reader announcement via `aria-live="assertive"`
+- Background scroll locked during loading
+
+**UI Impact:** **IMPROVED UX**
+- Users see visual feedback during CSV processing
+- Screen readers announce processing state
+- Prevents interaction during data loading
+
+**Risk Level:** 🟢 **LOW** - UX enhancement
+
+**Status:** ✅ Implemented and tested
+
+---
+
+### 8. Tooltips on Close Buttons
+**What Changed:**
+- Added `title="Close (Esc)"` to all 4 modal close buttons
+- Provides visual hint for keyboard shortcut
+
+**UI Impact:** **IMPROVED DISCOVERABILITY**
+- Mouse users see keyboard shortcut on hover
+- Complements existing `aria-label` for screen readers
+
+**Risk Level:** 🟢 **LOW** - Additive enhancement
+
+**Status:** ✅ Implemented and tested
+
+---
+
 ## Detailed Impact Matrix
 
 | Change | UI Visible? | Functionality Impact | Breaking Risk | Status |
@@ -118,6 +151,8 @@ All scalability improvements have been implemented using the backward-compatible
 | Requirements Display | ✅ Yes** | None | 🟢 None | ✅ Done |
 | Animation Performance Fix | ✅ Improved | Better performance | 🟢 None | ✅ Done |
 | Background Scroll Lock | ✅ Improved | Better UX | 🟢 None | ✅ Done |
+| Loading State | ✅ Improved | Better feedback | 🟢 None | ✅ Done |
+| Close Button Tooltips | ✅ Improved | Better discoverability | 🟢 None | ✅ Done |
 
 \* Only shows enhanced structure if CSV has requirements columns  
 \** New UI element, additive only
@@ -223,6 +258,9 @@ With 50+ course cards, this created 50+ GPU compositor layers. When the modal an
 - [x] Keyboard navigation (ESC, Tab, Enter, Space) works
 - [x] Focus trap in modals works
 - [x] Dark/light theme switching works
+- [x] Loading spinner displays during CSV processing
+- [x] Screen readers announce loading state
+- [x] Close button tooltips display on hover
 
 ---
 
@@ -234,6 +272,8 @@ With 50+ course cards, this created 50+ GPU compositor layers. When the modal an
 - ✅ **Works with existing data** (old CSV files, saved projects)
 - ✅ **Animation performance fixed** (smooth with 50+ cards)
 - ✅ **UX improved** with background scroll lock
+- ✅ **Loading feedback** for CSV processing operations
+- ✅ **Keyboard shortcut discoverability** via tooltips
 - ✅ **New features appear automatically** when data supports them
 - ✅ **Full backward compatibility** maintained throughout
 
