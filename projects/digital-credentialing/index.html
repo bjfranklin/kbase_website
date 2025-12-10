@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACES Credentials Analytics Dashboard</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React and ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
+  <!-- Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <style>
+    /* ============================================
+       ACCESSIBILITY STYLES
+       ============================================ */
+    
+    /* Skip to main content link for keyboard users */
+    .skip-link {
+      position: absolute;
+      top: -50px;
+      left: 16px;
+      background: #3b82f6;
+      color: white;
+      padding: 12px 24px;
+      z-index: 100;
+      border-radius: 0 0 8px 8px;
+      font-weight: 600;
+      transition: top 0.2s ease;
+      text-decoration: none;
+    }
+    .skip-link:focus {
+      top: 0;
+      outline: 3px solid #60a5fa;
+      outline-offset: 2px;
+    }
+    
+    /* Screen reader only content */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+    
+    /* Enhanced focus indicators for keyboard navigation */
+    *:focus-visible {
+      outline: 3px solid #3b82f6;
+      outline-offset: 2px;
+    }
+    
+    /* Reduce motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      .card-border { border-width: 2px; }
+      button { border: 2px solid currentColor; }
+    }
+    
+    /* ============================================
+       MODAL & SCROLL LOCK STYLES
+       ============================================ */
+    
+    /* Scroll lock when modal is open */
+    body.modal-open {
+      overflow: hidden;
+      padding-right: 8px; /* Prevent layout shift from scrollbar */
+    }
+    
+    /* ============================================
+       SCROLLBAR STYLES
+       ============================================ */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    
+    /* Light mode scrollbar */
+    .light-scrollbar::-webkit-scrollbar-track { background: #e5e7eb; }
+    .light-scrollbar::-webkit-scrollbar-thumb { background: #9ca3af; }
+
+    /* ============================================
+       ANIMATION KEYFRAMES
+       ============================================ */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes slideRight { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes glow { 0%, 100% { box-shadow: 0 0 5px currentColor; } 50% { box-shadow: 0 0 20px currentColor; } }
+
+    /* ============================================
+       ANIMATION CLASSES
+       ============================================ */
+    .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+    .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
+    .animate-slideUp { animation: slideUp 0.3s ease-out; }
+    .animate-slideRight { animation: slideRight 0.3s ease-out; }
+    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+    .animate-spin { animation: spin 1s linear infinite; }
+    .animate-glow { animation: glow 2s ease-in-out infinite; }
+
+    /* ============================================
+       COMPONENT STYLES
+       ============================================ */
+    
+    /* Card hover effects */
+    .skill-card { transition: all 0.2s ease; }
+    .skill-card:hover,
+    .skill-card:focus-visible { transform: translateY(-2px); }
+
+    /* Pathway visualization */
+    .pathway-connector {
+      position: relative;
+    }
+    .pathway-connector::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: -12px;
+      width: 24px;
+      height: 2px;
+      background: linear-gradient(90deg, currentColor, transparent);
+    }
+
+    /* Badge image styles */
+    .badge-image {
+      transition: transform 0.2s ease;
+    }
+    .badge-image:hover {
+      transform: scale(1.1);
+    }
+
+    /* Progress ring */
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    /* Tab styles */
+    .tab-active {
+      position: relative;
+    }
+    .tab-active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #3b82f6;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Skip to main content link for keyboard/screen reader users -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <div id="root"></div>
+
+  <script type="text/babel">
+    /**
+     * ============================================
+     * ACES CREDENTIALS ANALYTICS DASHBOARD
+     * ============================================
+     * 
+     * A React-based dashboard for visualizing ACES
+     * (Academic and Career/Community Employability Skills)
+     * digital credential data from Canvas Credentials exports.
+     * 
+     * @version 3.0.0
+     * @author Chaffey College Workforce Innovations
+     * 
+     * TABLE OF CONTENTS:
+     * ------------------
+     * 1. React Hooks & Imports
+     * 2. SVG Icon Components  
+     * 3. ACES Skills Configuration
+     * 4. Theme Configuration
+     * 5. Utility Functions (CSV parsing, data extraction)
+     * 6. UI Components (ProgressRing, BadgeImage, StatCard, Charts)
+     * 7. Feature Components (Pathway, Gallery, Export, YearComparison)
+     * 8. Main App Component
+     * 9. App Initialization
+     */
+
+    // ============================================
+    // 1. REACT HOOKS & IMPORTS
+    // ============================================
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+    // ============================================
+    // 2. SVG ICON COMPONENTS
+    // ============================================
+    /**
+     * Accessible SVG icon components.
+     * All icons include aria-hidden="true" as they are decorative.
+     */
+    const Icons = {
+      Upload: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+      ),
+      Download: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+      ),
+      Sun: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      ),
+      Moon: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      ),
+      Award: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="8" r="6"></circle>
+          <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+        </svg>
+      ),
+      BarChart: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M3 3v18h18"></path>
+          <path d="M18 17V9"></path>
+          <path d="M13 17V5"></path>
+          <path d="M8 17v-3"></path>
+        </svg>
+      ),
+      TrendingUp: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+      ),
+      GitBranch: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="6" y1="3" x2="6" y2="15"></line>
+          <circle cx="18" cy="6" r="3"></circle>
+          <circle cx="6" cy="18" r="3"></circle>
+          <path d="M18 9a9 9 0 0 1-9 9"></path>
+        </svg>
+      ),
+      Target: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+      ),
+      CheckCircle: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      ),
+      Circle: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+      ),
+      ArrowRight: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      ),
+      X: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      ),
+      FileText: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+      ),
+      Image: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      ),
+      Loader: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <line x1="12" y1="2" x2="12" y2="6"></line>
+          <line x1="12" y1="18" x2="12" y2="22"></line>
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+          <line x1="2" y1="12" x2="6" y2="12"></line>
+          <line x1="18" y1="12" x2="22" y2="12"></line>
+          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+        </svg>
+      ),
+      Zap: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      ),
+      Layers: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      ),
+      Trash2: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      ),
+      TrendingUp: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+      ),
+      Calendar: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      ),
+      Grid: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      ),
+      // ACES Skill Icons (outline style)
+      Refresh: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 2v6h-6"></path>
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+          <path d="M3 22v-6h6"></path>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+      ),
+      Users2: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M14 19a6 6 0 0 0-12 0"></path>
+          <circle cx="8" cy="9" r="4"></circle>
+          <path d="M22 19a6 6 0 0 0-6-6 4 4 0 1 0 0-8"></path>
+        </svg>
+      ),
+      MessageCircle: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+      ),
+      Brain: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"></path>
+          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"></path>
+        </svg>
+      ),
+      Monitor: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+      ),
+      Heart: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+        </svg>
+      ),
+      Lightbulb: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+          <path d="M9 18h6"></path>
+          <path d="M10 22h4"></path>
+        </svg>
+      ),
+      Briefcase: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+      ),
+      Shield: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+      ),
+      Globe: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      ),
+      PieChart: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+          <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+        </svg>
+      ),
+      Leaf: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+        </svg>
+      )
+    };
+
+    // ========================================
+    // ACES SKILL CONFIGURATION
+    // ========================================
+    const ACES_SKILLS = {
+      'Adaptability': { 
+        color: '#22c55e', bgColor: 'bg-green-500', textColor: 'text-green-400', iconName: 'Refresh',
+        tokens: ['Recognizes Opportunities', 'Re-evaluating Goals', 'Considers Feedback', 'Adaptability']
+      },
+      'Collaboration': { 
+        color: '#a855f7', bgColor: 'bg-purple-500', textColor: 'text-purple-400', iconName: 'Users2',
+        tokens: ['Group Contribution', 'Team Climate', 'Conflict Management', 'Respect']
+      },
+      'Communication': { 
+        color: '#06b6d4', bgColor: 'bg-cyan-500', textColor: 'text-cyan-400', iconName: 'MessageCircle',
+        tokens: ['Clarity of Expression', 'Presentation Skills', 'Content Development', 'Listening']
+      },
+      'Critical Thinking': { 
+        color: '#f97316', bgColor: 'bg-orange-500', textColor: 'text-orange-400', iconName: 'Brain',
+        tokens: ['Evidence', 'Holistic Analysis', 'Identifies Solutions', 'Implements Solutions']
+      },
+      'Digital Fluency': { 
+        color: '#84cc16', bgColor: 'bg-lime-500', textColor: 'text-lime-400', iconName: 'Monitor',
+        tokens: ['Digital Tools Proficiency', 'Information Credibility', 'Online Investigation', 'Digital Ethics']
+      },
+      'Empathy': { 
+        color: '#ef4444', bgColor: 'bg-red-500', textColor: 'text-red-400', iconName: 'Heart',
+        tokens: ['Constructive Interactions', 'Recognize Differences', 'Emotional Intelligence', 'Empathy']
+      },
+      'Innovation': { 
+        color: '#eab308', bgColor: 'bg-yellow-500', textColor: 'text-yellow-400', iconName: 'Lightbulb',
+        tokens: ['Synthesize', 'Curiosity', 'Innovative Approach', 'Creation']
+      },
+      'Professionalism': { 
+        color: '#f97316', bgColor: 'bg-orange-600', textColor: 'text-orange-400', iconName: 'Briefcase',
+        tokens: ['Personal Strength', 'Professionalism', 'Self Directed', 'Professional/Discipline Norms']
+      },
+      'Resilience': { 
+        color: '#dc2626', bgColor: 'bg-red-600', textColor: 'text-red-500', iconName: 'Shield',
+        tokens: ['Growth Mindset', 'Perseverance', 'Utilizing Strengths', 'Coping Strategies']
+      },
+      'Social/Diversity Awareness': { 
+        color: '#ec4899', bgColor: 'bg-pink-500', textColor: 'text-pink-400', iconName: 'Globe',
+        tokens: ['Cultural Self Awareness', 'Inclusion', 'Diverse Perspectives', 'Positive Relationships']
+      },
+      'Data Utilization': { 
+        color: '#f59e0b', bgColor: 'bg-amber-500', textColor: 'text-amber-400', iconName: 'PieChart',
+        tokens: ['Interpretation', 'Representation', 'Communication', 'Analysis']
+      },
+      'Environmental Responsibility': { 
+        color: '#10b981', bgColor: 'bg-emerald-500', textColor: 'text-emerald-400', iconName: 'Leaf',
+        tokens: ['Interconnectedness', 'Climate Justice', 'Sustainability', 'Personal Action']
+      }
+    };
+
+    // ========================================
+    // THEME CONFIGURATION
+    // ========================================
+    const THEME_CONFIG = {
+      dark: {
+        bg: 'bg-slate-950',
+        text: 'text-slate-100',
+        textMuted: 'text-slate-400',
+        header: 'bg-slate-900/95',
+        headerBorder: 'border-slate-800',
+        card: 'bg-slate-800/50',
+        cardHover: 'hover:bg-slate-700/50',
+        cardBorder: 'border-slate-700/50',
+        modal: 'bg-slate-900',
+        modalBorder: 'border-slate-700',
+        input: 'bg-slate-800 border-slate-700',
+        button: 'bg-slate-800 hover:bg-slate-700',
+        chartGrid: 'rgba(148, 163, 184, 0.1)',
+        chartText: '#94a3b8',
+        progressBg: 'bg-slate-700'
+      },
+      light: {
+        bg: 'bg-gray-50',
+        text: 'text-gray-900',
+        textMuted: 'text-gray-500',
+        header: 'bg-white/95',
+        headerBorder: 'border-gray-200',
+        card: 'bg-white',
+        cardHover: 'hover:bg-gray-50',
+        cardBorder: 'border-gray-200',
+        modal: 'bg-white',
+        modalBorder: 'border-gray-200',
+        input: 'bg-white border-gray-300',
+        button: 'bg-gray-100 hover:bg-gray-200',
+        chartGrid: 'rgba(0, 0, 0, 0.1)',
+        chartText: '#4b5563',
+        progressBg: 'bg-gray-200'
+      }
+    };
+
+    // ========================================
+    // DATA PARSING UTILITIES
+    // ========================================
+    const parseCSV = (text) => {
+      const lines = text.split(/\r?\n/).filter(line => line.trim());
+      if (lines.length === 0) return [];
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const rows = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index]?.trim() || '';
+        });
+        rows.push(row);
+      }
+      
+      return rows;
+    };
+
+    const extractSkillFromBadge = (badgeName) => {
+      if (!badgeName) return { skill: 'Unknown', token: badgeName, isCredential: false };
+      
+      const isCredential = badgeName.includes('Skill Credential');
+      
+      for (const skill of Object.keys(ACES_SKILLS)) {
+        if (badgeName.startsWith(skill)) {
+          const token = badgeName.replace(skill, '').replace(' - ', '').replace(' Skill Credential', '').replace(' Token', '').trim();
+          return { skill, token: token || skill, isCredential };
+        }
+      }
+      
+      const match = badgeName.match(/^([^-]+)\s*-\s*(.+)$/);
+      if (match) {
+        return { skill: match[1].trim(), token: match[2].replace(' Token', '').trim(), isCredential };
+      }
+      
+      return { skill: 'Other', token: badgeName, isCredential };
+    };
+
+    const processData = (rawData) => {
+      const processed = rawData.map(row => {
+        const badgeName = row['Badge Class Name'] || '';
+        const { skill, token, isCredential } = extractSkillFromBadge(badgeName);
+        const issueDate = new Date(row['Issue Date'] || '');
+        
+        return {
+          ...row,
+          skill,
+          token,
+          isCredential,
+          issueDate,
+          month: issueDate.toLocaleString('default', { month: 'short', year: 'numeric' }),
+          revoked: row['Revoked'] === 'TRUE',
+          imageUrl: row['Image Url'] || '',
+          badgeClassUrl: row['Open Badge Class URL'] || ''
+        };
+      }).filter(row => !row.revoked && row.issueDate instanceof Date && !isNaN(row.issueDate));
+      
+      return processed;
+    };
+
+    // ============================================
+    // 5. UI COMPONENTS
+    // ============================================
+    
+    /**
+     * Generic chart component wrapper for Chart.js
+     * Handles creation, updates, and cleanup of chart instances.
+     */
+    const ChartComponent = ({ type, data, options, theme }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      useEffect(() => {
+        if (!canvasRef.current || !data) return;
+
+        if (chartRef.current) {
+          chartRef.current.destroy();
+        }
+
+        const ctx = canvasRef.current.getContext('2d');
+        const themeColors = THEME_CONFIG[theme];
+
+        const defaultOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: themeColors.chartText } }
+          },
+          scales: type !== 'doughnut' && type !== 'pie' ? {
+            x: {
+              grid: { color: themeColors.chartGrid },
+              ticks: { color: themeColors.chartText }
+            },
+            y: {
+              grid: { color: themeColors.chartGrid },
+              ticks: { color: themeColors.chartText }
+            }
+          } : undefined
+        };
+
+        chartRef.current = new Chart(ctx, {
+          type,
+          data,
+          options: { ...defaultOptions, ...options }
+        });
+
+        return () => {
+          if (chartRef.current) {
+            chartRef.current.destroy();
+          }
+        };
+      }, [data, type, options, theme]);
+
+      return <canvas ref={canvasRef} />;
+    };
+
+    /**
+     * Circular progress indicator for showing completion percentages.
+     * Accessible with role="progressbar" and appropriate ARIA attributes.
+     */
+    const ProgressRing = ({ progress, size = 80, strokeWidth = 8, color, theme = 'dark', label = 'Progress' }) => {
+      const radius = (size - strokeWidth) / 2;
+      const circumference = radius * 2 * Math.PI;
+      const offset = circumference - (progress / 100) * circumference;
+      const bgClass = theme === 'light' ? 'text-gray-300' : 'text-slate-700';
+
+      return (
+        <svg 
+          width={size} 
+          height={size} 
+          className="progress-ring"
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label={`${label}: ${Math.round(progress)}%`}
+        >
+          <circle
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            r={radius}
+            cx={size / 2}
+            cy={size / 2}
+            className={`${bgClass} opacity-30`}
+            aria-hidden="true"
+          />
+          <circle
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            fill="transparent"
+            r={radius}
+            cx={size / 2}
+            cy={size / 2}
+            className="progress-ring-circle"
+            style={{
+              strokeDasharray: circumference,
+              strokeDashoffset: offset
+            }}
+            aria-hidden="true"
+          />
+        </svg>
+      );
+    };
+
+    /**
+     * Badge image component with loading state and fallback.
+     * Shows placeholder while loading and fallback icon on error.
+     */
+    const BadgeImage = ({ src, alt, size = 'md', className = '', theme = 'dark' }) => {
+      const [loaded, setLoaded] = useState(false);
+      const [error, setError] = useState(false);
+      
+      const sizeClasses = {
+        sm: 'w-8 h-8',
+        md: 'w-12 h-12',
+        lg: 'w-16 h-16',
+        xl: 'w-24 h-24'
+      };
+
+      const fallbackBg = theme === 'light' ? 'bg-gray-200' : 'bg-slate-700';
+      const fallbackIcon = theme === 'light' ? 'text-gray-400' : 'text-slate-500';
+
+      if (error || !src) {
+        return (
+          <div 
+            className={`${sizeClasses[size]} rounded-full ${fallbackBg} flex items-center justify-center ${className}`}
+            role="img"
+            aria-label={alt || 'Badge image unavailable'}
+          >
+            <Icons.Award className={`w-1/2 h-1/2 ${fallbackIcon}`} aria-hidden="true" />
+          </div>
+        );
+      }
+
+      return (
+        <div className={`${sizeClasses[size]} relative rounded-full ${className}`}>
+          {!loaded && (
+            <div className={`absolute inset-0 rounded-full ${fallbackBg} animate-pulse`} aria-hidden="true" />
+          )}
+          <img
+            src={src}
+            alt={alt}
+            className={`${sizeClasses[size]} rounded-full badge-image object-cover ${loaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+          />
+        </div>
+      );
+    };
+
+    /**
+     * Statistics card component for displaying key metrics.
+     * Shows icon, label, value, and optional sub-value.
+     */
+    const StatCard = ({ icon: Icon, label, value, subValue, color, theme }) => {
+      const themeColors = THEME_CONFIG[theme];
+      return (
+        <div 
+          className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-5 animate-slideUp`}
+          role="region"
+          aria-label={`${label}: ${value}`}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`p-2 rounded-lg ${color || 'bg-blue-500/20'}`}>
+              <Icon className={`w-5 h-5 ${color ? color.replace('bg-', 'text-').replace('/20', '') : 'text-blue-400'}`} aria-hidden="true" />
+            </div>
+            <span className={`text-sm font-medium ${themeColors.textMuted}`}>{label}</span>
+          </div>
+          <div className={`text-3xl font-bold ${themeColors.text}`}>{value}</div>
+          {subValue && <div className={`text-sm ${themeColors.textMuted} mt-1`}>{subValue}</div>}
+        </div>
+      );
+    };
+
+    // ============================================
+    // 5B. SKILL PATHWAY CARD COMPONENT
+    // ============================================
+    const SkillPathwayCard = ({ skill, data, onSelect, isSelected, theme }) => {
+      const themeColors = THEME_CONFIG[theme];
+      const skillConfig = ACES_SKILLS[skill] || { color: '#6b7280', iconName: 'Award', tokens: [] };
+      const SkillIcon = Icons[skillConfig.iconName] || Icons.Award;
+      
+      // Calculate token completion stats
+      const skillData = data.filter(d => d.skill === skill);
+      const tokenCounts = {};
+      const tokenImages = {};
+      let credentialCount = 0;
+      
+      skillData.forEach(d => {
+        if (d.isCredential) {
+          credentialCount++;
+        } else {
+          tokenCounts[d.token] = (tokenCounts[d.token] || 0) + 1;
+          if (d.imageUrl && !tokenImages[d.token]) {
+            tokenImages[d.token] = d.imageUrl;
+          }
+        }
+      });
+
+      const uniqueTokens = Object.keys(tokenCounts).length;
+      const totalTokenAwards = Object.values(tokenCounts).reduce((a, b) => a + b, 0);
+      const expectedTokens = skillConfig.tokens?.length || 4;
+      const completionRate = Math.min((uniqueTokens / expectedTokens) * 100, 100);
+
+      // Theme-aware styling for overflow indicator
+      const badgeOverflowBg = theme === 'dark' ? 'bg-slate-700' : 'bg-gray-200';
+
+      return (
+        <button
+          onClick={() => onSelect(skill)}
+          className={`skill-card w-full text-left ${themeColors.card} border-2 ${
+            isSelected ? 'border-blue-500' : themeColors.cardBorder
+          } rounded-xl p-4 ${themeColors.cardHover} transition-all`}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg" style={{ backgroundColor: skillConfig.color + '20' }}>
+                <SkillIcon className="w-5 h-5" style={{ color: skillConfig.color }} />
+              </div>
+              <div>
+                <h3 className={`font-semibold ${themeColors.text} text-sm`}>{skill}</h3>
+                <p className={`text-xs ${themeColors.textMuted}`}>{uniqueTokens} of {expectedTokens} tokens active</p>
+              </div>
+            </div>
+            <ProgressRing progress={completionRate} size={48} strokeWidth={4} color={skillConfig.color} theme={theme} />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex -space-x-2">
+              {Object.entries(tokenImages).slice(0, 4).map(([token, url], i) => (
+                <BadgeImage key={token} src={url} alt={token} size="sm" theme={theme} className="shadow-sm" />
+              ))}
+              {Object.keys(tokenImages).length > 4 && (
+                <div className={`w-8 h-8 rounded-full ${badgeOverflowBg} flex items-center justify-center text-xs font-medium shadow-sm ${themeColors.text}`}>
+                  +{Object.keys(tokenImages).length - 4}
+                </div>
+              )}
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold" style={{ color: skillConfig.color }}>
+                {totalTokenAwards.toLocaleString()}
+              </div>
+              <div className={`text-xs ${themeColors.textMuted}`}>token awards</div>
+            </div>
+          </div>
+
+          {credentialCount > 0 && (
+            <div className={`mt-3 pt-3 border-t ${themeColors.cardBorder} flex items-center gap-2`}>
+              <Icons.Award className="w-4 h-4 text-yellow-500" />
+              <span className={`text-xs ${themeColors.text}`}>
+                <span className="font-semibold text-yellow-500">{credentialCount}</span> Skill Credentials earned
+              </span>
+            </div>
+          )}
+        </button>
+      );
+    };
+
+    // ========================================
+    // PATHWAY VISUALIZATION COMPONENT
+    // ========================================
+    const PathwayVisualization = ({ skill, data, theme }) => {
+      const themeColors = THEME_CONFIG[theme];
+      const skillConfig = ACES_SKILLS[skill] || { color: '#6b7280', iconName: 'Award', tokens: [] };
+      const SkillIcon = Icons[skillConfig.iconName] || Icons.Award;
+      
+      // Get token data
+      const skillData = data.filter(d => d.skill === skill);
+      const tokenStats = {};
+      const tokenImages = {};
+      let credentialData = null;
+      
+      skillData.forEach(d => {
+        if (d.isCredential) {
+          credentialData = d;
+        } else {
+          if (!tokenStats[d.token]) {
+            tokenStats[d.token] = { count: 0, firstAwarded: d.issueDate, lastAwarded: d.issueDate };
+          }
+          tokenStats[d.token].count++;
+          if (d.issueDate < tokenStats[d.token].firstAwarded) {
+            tokenStats[d.token].firstAwarded = d.issueDate;
+          }
+          if (d.issueDate > tokenStats[d.token].lastAwarded) {
+            tokenStats[d.token].lastAwarded = d.issueDate;
+          }
+          if (d.imageUrl && !tokenImages[d.token]) {
+            tokenImages[d.token] = d.imageUrl;
+          }
+        }
+      });
+
+      // Find credential image
+      const credentialImage = skillData.find(d => d.isCredential)?.imageUrl;
+      const credentialCount = skillData.filter(d => d.isCredential).length;
+
+      // Sort tokens by count
+      const sortedTokens = Object.entries(tokenStats).sort((a, b) => b[1].count - a[1].count);
+      const maxCount = sortedTokens[0]?.[1]?.count || 1;
+
+      return (
+        <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-6 animate-slideUp`}>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl" style={{ backgroundColor: skillConfig.color + '20' }}>
+                <SkillIcon className="w-7 h-7" style={{ color: skillConfig.color }} />
+              </div>
+              <div>
+                <h3 className={`text-xl font-bold ${themeColors.text}`}>{skill}</h3>
+                <p className={`text-sm ${themeColors.textMuted}`}>Token → Credential Pathway</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: skillConfig.color + '20' }}>
+              <Icons.Award className="w-4 h-4" style={{ color: skillConfig.color }} />
+              <span className="text-sm font-semibold" style={{ color: skillConfig.color }}>
+                {credentialCount} Credentials
+              </span>
+            </div>
+          </div>
+
+          {/* Pathway Flow */}
+          <div className="relative">
+            {/* Token Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {sortedTokens.map(([token, stats], index) => (
+                <div 
+                  key={token}
+                  className={`${themeColors.card} border ${themeColors.cardBorder} rounded-lg p-4 animate-slideRight`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <BadgeImage 
+                      src={tokenImages[token]} 
+                      alt={token} 
+                      size="md"
+                      theme={theme}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className={`font-medium ${themeColors.text} text-sm truncate`}>{token}</h4>
+                      <p className={`text-xs ${themeColors.textMuted}`}>Token</p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  <div className="mb-2">
+                    <div className={`h-2 rounded-full ${themeColors.progressBg}`}>
+                      <div 
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${(stats.count / maxCount) * 100}%`,
+                          backgroundColor: skillConfig.color
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold" style={{ color: skillConfig.color }}>
+                      {stats.count.toLocaleString()}
+                    </span>
+                    <span className={`text-xs ${themeColors.textMuted}`}>awards</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Flow Arrow */}
+            <div className="flex items-center justify-center gap-4 my-6">
+              <div className={`flex-1 h-px ${themeColors.progressBg}`} />
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: skillConfig.color + '20' }}>
+                <Icons.ArrowRight className="w-5 h-5" style={{ color: skillConfig.color }} />
+                <span className={`text-sm font-medium ${themeColors.text}`}>
+                  Earn 4 tokens (2× each) to unlock
+                </span>
+                <Icons.ArrowRight className="w-5 h-5" style={{ color: skillConfig.color }} />
+              </div>
+              <div className={`flex-1 h-px ${themeColors.progressBg}`} />
+            </div>
+
+            {/* Credential Card */}
+            <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-6 text-center`}>
+              <div className="flex flex-col items-center">
+                {credentialImage ? (
+                  <div className="mb-4 p-1 rounded-full ring-2 ring-yellow-500 ring-offset-2" style={{ ringOffsetColor: theme === 'dark' ? '#1e293b' : '#ffffff' }}>
+                    <BadgeImage src={credentialImage} alt={`${skill} Credential`} size="xl" theme={theme} className={`${theme === 'dark' ? 'ring-offset-slate-800' : 'ring-offset-white'}`} />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4 ring-2 ring-yellow-500 ring-offset-2" style={{ backgroundColor: skillConfig.color + '20', ringOffsetColor: theme === 'dark' ? '#1e293b' : '#ffffff' }}>
+                    <Icons.Award className="w-12 h-12" style={{ color: skillConfig.color }} />
+                  </div>
+                )}
+                <h4 className={`text-lg font-bold ${themeColors.text} mb-1`}>{skill} Skill Credential</h4>
+                <p className={`text-sm ${themeColors.textMuted} mb-4`}>
+                  Demonstrates mastery across all {skill.toLowerCase()} competencies
+                </p>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{ backgroundColor: skillConfig.color + '20' }}>
+                  <Icons.CheckCircle className="w-5 h-5" style={{ color: skillConfig.color }} />
+                  <span className="font-semibold" style={{ color: skillConfig.color }}>
+                    {credentialCount.toLocaleString()} Earned
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline Stats */}
+          <div className={`mt-6 pt-6 border-t ${themeColors.cardBorder} grid grid-cols-3 gap-4`}>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${themeColors.text}`}>
+                {sortedTokens.length}
+              </div>
+              <div className={`text-xs ${themeColors.textMuted}`}>Active Tokens</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${themeColors.text}`}>
+                {sortedTokens.reduce((sum, [, s]) => sum + s.count, 0).toLocaleString()}
+              </div>
+              <div className={`text-xs ${themeColors.textMuted}`}>Total Token Awards</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${themeColors.text}`}>
+                {credentialCount > 0 ? ((credentialCount / sortedTokens.reduce((sum, [, s]) => sum + s.count, 0)) * 100).toFixed(1) : 0}%
+              </div>
+              <div className={`text-xs ${themeColors.textMuted}`}>Credential Rate</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================
+    // 6. BADGE GALLERY COMPONENT
+    // ============================================
+    /**
+     * Displays all badges organized by ACES skill.
+     * Features: scroll lock on detail view, keyboard navigation, ARIA support.
+     */
+    const BadgeGallery = ({ data, theme }) => {
+      const themeColors = THEME_CONFIG[theme];
+      const [selectedBadge, setSelectedBadge] = useState(null);
+      const closeButtonRef = useRef(null);
+      
+      // Handle scroll lock when badge detail modal is open
+      useEffect(() => {
+        if (selectedBadge) {
+          document.body.classList.add('modal-open');
+          setTimeout(() => closeButtonRef.current?.focus(), 100);
+          
+          const handleEscape = (e) => {
+            if (e.key === 'Escape') setSelectedBadge(null);
+          };
+          document.addEventListener('keydown', handleEscape);
+          
+          return () => {
+            document.body.classList.remove('modal-open');
+            document.removeEventListener('keydown', handleEscape);
+          };
+        }
+      }, [selectedBadge]);
+      
+      // Group badges by skill and get unique badge images
+      const badgesBySkill = useMemo(() => {
+        const grouped = {};
+        const seen = new Set();
+        
+        data.forEach(d => {
+          const key = d['Badge Class Name'];
+          if (seen.has(key) || !d.imageUrl) return;
+          seen.add(key);
+          
+          if (!grouped[d.skill]) {
+            grouped[d.skill] = [];
+          }
+          grouped[d.skill].push({
+            name: d['Badge Class Name'],
+            imageUrl: d.imageUrl,
+            token: d.token,
+            isCredential: d.isCredential,
+            count: data.filter(x => x['Badge Class Name'] === key).length
+          });
+        });
+        
+        // Sort by count within each skill
+        Object.keys(grouped).forEach(skill => {
+          grouped[skill].sort((a, b) => b.count - a.count);
+        });
+        
+        return grouped;
+      }, [data]);
+
+      return (
+        <div 
+          className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-6`}
+          role="region"
+          aria-label="Badge Gallery"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Icons.Grid className="w-5 h-5 text-purple-400" aria-hidden="true" />
+            <h3 className={`font-semibold ${themeColors.text}`}>Badge Gallery</h3>
+            <span className={`text-sm ${themeColors.textMuted}`}>
+              ({Object.values(badgesBySkill).flat().length} unique badges)
+            </span>
+          </div>
+
+          <div className="space-y-6 max-h-[600px] overflow-y-auto overflow-x-visible pr-2">
+            {Object.entries(badgesBySkill).map(([skill, badges]) => {
+              const skillConfig = ACES_SKILLS[skill] || { color: '#6b7280', iconName: 'Award' };
+              const SkillIcon = Icons[skillConfig.iconName] || Icons.Award;
+              
+              return (
+                <div key={skill} role="group" aria-label={`${skill} badges`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1 rounded" style={{ backgroundColor: skillConfig.color + '20' }}>
+                      <SkillIcon className="w-4 h-4" style={{ color: skillConfig.color }} aria-hidden="true" />
+                    </div>
+                    <h4 className={`font-medium ${themeColors.text}`}>{skill}</h4>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${themeColors.textMuted}`} style={{ backgroundColor: skillConfig.color + '20' }}>
+                      {badges.length} badges
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-4 pb-2" role="list">
+                    {badges.map((badge, index) => (
+                      <button
+                        key={badge.name}
+                        className={`relative group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-full`}
+                        onClick={() => setSelectedBadge(badge)}
+                        aria-label={`${badge.name}, awarded ${badge.count} times${badge.isCredential ? ', Skill Credential' : ''}`}
+                        title={badge.name}
+                      >
+                        <BadgeImage 
+                          src={badge.imageUrl} 
+                          alt=""
+                          size="lg"
+                          theme={theme}
+                          className={badge.isCredential ? `ring-2 ring-yellow-500 ring-offset-2 ${theme === 'dark' ? 'ring-offset-slate-900' : 'ring-offset-white'}` : ''}
+                        />
+                        <div 
+                          className={`absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-xs font-medium shadow-sm ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'} ${themeColors.text}`}
+                          aria-hidden="true"
+                        >
+                          {badge.count}
+                        </div>
+                        
+                        {/* Tooltip - positioned below badge */}
+                        <div 
+                          className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity pointer-events-none z-20 border shadow-lg ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}
+                          role="tooltip"
+                          aria-hidden="true"
+                        >
+                          <div className={`font-medium ${themeColors.text}`}>{badge.token || badge.name}</div>
+                          <div className={themeColors.textMuted}>{badge.count.toLocaleString()} awarded</div>
+                          {badge.isCredential && <div className="text-yellow-500">★ Skill Credential</div>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Badge Detail Modal */}
+          {selectedBadge && (
+            <div 
+              className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
+              onClick={() => setSelectedBadge(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="badge-detail-title"
+            >
+              <div 
+                className={`${themeColors.modal} rounded-xl border ${themeColors.modalBorder} max-w-md w-full p-6 animate-scaleIn`}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-start gap-4">
+                  <BadgeImage 
+                    src={selectedBadge.imageUrl} 
+                    alt={`${selectedBadge.name} badge`} 
+                    size="xl" 
+                    theme={theme} 
+                  />
+                  <div className="flex-1">
+                    <h3 id="badge-detail-title" className={`font-bold ${themeColors.text} mb-1`}>
+                      {selectedBadge.name}
+                    </h3>
+                    <p className={`text-sm ${themeColors.textMuted} mb-4`}>
+                      {selectedBadge.isCredential ? 'Skill Credential' : 'Outcome Token'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Icons.Award className="w-5 h-5 text-blue-400" aria-hidden="true" />
+                      <span className={`text-lg font-semibold ${themeColors.text}`}>
+                        {selectedBadge.count.toLocaleString()}
+                      </span>
+                      <span className={themeColors.textMuted}>times awarded</span>
+                    </div>
+                  </div>
+                  <button
+                    ref={closeButtonRef}
+                    onClick={() => setSelectedBadge(null)}
+                    className={`p-2 rounded-lg ${themeColors.button}`}
+                    aria-label="Close badge details"
+                  >
+                    <Icons.X className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ============================================
+    // 7. EXPORT MODAL COMPONENT
+    // ============================================
+    /**
+     * Modal dialog for exporting dashboard data in various formats.
+     * Features: scroll lock, focus trap, keyboard navigation, ARIA support.
+     */
+    const ExportModal = ({ isOpen, onClose, data, theme }) => {
+      const themeColors = THEME_CONFIG[theme];
+      const modalRef = useRef(null);
+      const firstFocusRef = useRef(null);
+      
+      // Handle scroll lock and keyboard events
+      useEffect(() => {
+        if (isOpen) {
+          // Lock body scroll
+          document.body.classList.add('modal-open');
+          // Focus first interactive element
+          setTimeout(() => firstFocusRef.current?.focus(), 100);
+          
+          // Handle escape key
+          const handleEscape = (e) => {
+            if (e.key === 'Escape') onClose();
+          };
+          document.addEventListener('keydown', handleEscape);
+          
+          return () => {
+            document.body.classList.remove('modal-open');
+            document.removeEventListener('keydown', handleEscape);
+          };
+        }
+      }, [isOpen, onClose]);
+      
+      if (!isOpen) return null;
+
+      const exportToCSV = () => {
+        const headers = ['Issue Date', 'Skill', 'Token', 'Badge Class Name', 'Is Credential', 'Image URL'];
+        const rows = data.map(d => [
+          d.issueDate.toISOString(),
+          d.skill,
+          d.token,
+          d['Badge Class Name'],
+          d.isCredential,
+          d.imageUrl
+        ]);
+        
+        const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aces-credentials-export-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+      };
+
+      const exportToPNG = async () => {
+        const dashboard = document.getElementById('dashboard-content');
+        if (!dashboard) return;
+        
+        try {
+          const canvas = await html2canvas(dashboard, {
+            backgroundColor: theme === 'dark' ? '#020617' : '#f9fafb',
+            scale: 2
+          });
+          const url = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `aces-dashboard-${new Date().toISOString().split('T')[0]}.png`;
+          a.click();
+          onClose();
+        } catch (err) {
+          console.error('PNG export failed:', err);
+        }
+      };
+
+      const exportToPDF = async () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape', 'mm', 'a4');
+        
+        doc.setFontSize(20);
+        doc.text('ACES Credentials Analytics Report', 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
+        doc.text(`Total Credentials: ${data.length.toLocaleString()}`, 14, 34);
+
+        const skillCounts = {};
+        data.forEach(d => {
+          skillCounts[d.skill] = (skillCounts[d.skill] || 0) + 1;
+        });
+        
+        const tableData = Object.entries(skillCounts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([skill, count]) => [skill, count.toLocaleString(), ((count / data.length) * 100).toFixed(1) + '%']);
+
+        doc.autoTable({
+          startY: 42,
+          head: [['ACES Skill', 'Awards', 'Percentage']],
+          body: tableData,
+          theme: 'striped',
+          headStyles: { fillColor: [59, 130, 246] }
+        });
+
+        doc.save(`aces-credentials-report-${new Date().toISOString().split('T')[0]}.pdf`);
+        onClose();
+      };
+
+      return (
+        <div 
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-modal-title"
+        >
+          <div 
+            ref={modalRef}
+            className={`${themeColors.modal} rounded-xl border ${themeColors.modalBorder} max-w-lg w-full animate-scaleIn`}
+          >
+            <div className="p-6">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 id="export-modal-title" className={`text-xl font-bold ${themeColors.text}`}>
+                  Export Options
+                </h2>
+                <button 
+                  ref={firstFocusRef}
+                  onClick={onClose} 
+                  className={`p-2 rounded-lg ${themeColors.button}`}
+                  aria-label="Close export dialog"
+                >
+                  <Icons.X className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </div>
+              
+              {/* Export Format Options */}
+              <div 
+                className="grid grid-cols-3 gap-4"
+                role="group"
+                aria-label="Export format options"
+              >
+                <button
+                  onClick={exportToCSV}
+                  className={`flex flex-col items-center gap-3 p-6 ${themeColors.card} border ${themeColors.cardBorder} rounded-lg ${themeColors.cardHover} transition-all`}
+                  aria-label="Export data as CSV spreadsheet file"
+                >
+                  <Icons.FileText className="w-8 h-8 text-green-400" aria-hidden="true" />
+                  <div className="text-center">
+                    <div className={`font-semibold text-sm ${themeColors.text}`}>CSV</div>
+                    <div className={`text-xs ${themeColors.textMuted}`}>Raw data</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={exportToPNG}
+                  className={`flex flex-col items-center gap-3 p-6 ${themeColors.card} border ${themeColors.cardBorder} rounded-lg ${themeColors.cardHover} transition-all`}
+                  aria-label="Export dashboard as PNG image"
+                >
+                  <Icons.Image className="w-8 h-8 text-purple-400" aria-hidden="true" />
+                  <div className="text-center">
+                    <div className={`font-semibold text-sm ${themeColors.text}`}>PNG</div>
+                    <div className={`text-xs ${themeColors.textMuted}`}>Screenshot</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={exportToPDF}
+                  className={`flex flex-col items-center gap-3 p-6 ${themeColors.card} border ${themeColors.cardBorder} rounded-lg ${themeColors.cardHover} transition-all`}
+                  aria-label="Export data as PDF report"
+                >
+                  <Icons.FileText className="w-8 h-8 text-red-400" aria-hidden="true" />
+                  <div className="text-center">
+                    <div className={`font-semibold text-sm ${themeColors.text}`}>PDF</div>
+                    <div className={`text-xs ${themeColors.textMuted}`}>Report</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================
+    // 8. DONUT CHART COMPONENT
+    // ============================================
+    /**
+     * Donut/doughnut chart for visualizing skill distribution.
+     * Uses muted colors for improved accessibility.
+     */
+    const DonutChart = ({ data, theme }) => {
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+      const themeColors = THEME_CONFIG[theme];
+
+      useEffect(() => {
+        if (!chartRef.current || !data) return;
+
+        if (chartInstance.current) {
+          chartInstance.current.destroy();
+        }
+
+        const ctx = chartRef.current.getContext('2d');
+        chartInstance.current = new Chart(ctx, {
+          type: 'doughnut',
+          data: data,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  color: themeColors.chartText,
+                  font: { size: 11 },
+                  padding: 12,
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((context.raw / total) * 100).toFixed(1);
+                    return `${context.label}: ${context.raw.toLocaleString()} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartInstance.current) {
+            chartInstance.current.destroy();
+          }
+        };
+      }, [data, theme]);
+
+      return <canvas ref={chartRef} aria-label="Skill distribution donut chart" role="img" />;
+    };
+
+    // ============================================
+    // 9. YEAR COMPARISON COMPONENT
+    // ============================================
+    /**
+     * Year-over-year comparison cards showing annual growth.
+     * Displays total awards, credentials vs tokens, and top skill per year.
+     */
+    const YearComparison = ({ data, theme }) => {
+      const themeColors = THEME_CONFIG[theme];
+
+      if (!data || data.years.length === 0) {
+        return (
+          <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-6 text-center`}>
+            <Icons.Calendar className="w-12 h-12 mx-auto mb-3 text-slate-600" />
+            <p className={themeColors.textMuted}>Not enough data for year-over-year comparison</p>
+          </div>
+        );
+      }
+
+      return (
+        <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-5`}>
+          <h3 className={`font-semibold ${themeColors.text} mb-4 flex items-center gap-2`}>
+            <Icons.Calendar className="w-5 h-5 text-purple-400" />
+            Year-over-Year Comparison
+          </h3>
+          
+          <div className="grid gap-4">
+            {data.growthData.map((yearData, index) => (
+              <div 
+                key={yearData.year}
+                className={`p-4 rounded-lg border ${themeColors.cardBorder} ${theme === 'dark' ? 'bg-slate-800/30' : 'bg-gray-50'}`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-2xl font-bold ${themeColors.text}`}>{yearData.year}</span>
+                    {yearData.growth !== null && (
+                      <span className={`flex items-center gap-1 text-sm font-medium px-2 py-0.5 rounded-full ${
+                        parseFloat(yearData.growth) >= 0 
+                          ? 'text-green-400 bg-green-500/20' 
+                          : 'text-red-400 bg-red-500/20'
+                      }`}>
+                        <Icons.TrendingUp className={`w-3 h-3 ${parseFloat(yearData.growth) < 0 ? 'rotate-180' : ''}`} />
+                        {yearData.growth > 0 ? '+' : ''}{yearData.growth}%
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-xl font-bold text-blue-400`}>
+                    {yearData.total.toLocaleString()}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className={themeColors.textMuted}>Credentials</span>
+                    <div className={`font-semibold ${themeColors.text}`}>
+                      {yearData.credentials.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className={themeColors.textMuted}>Tokens</span>
+                    <div className={`font-semibold ${themeColors.text}`}>
+                      {yearData.tokens.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className={themeColors.textMuted}>Top Skill</span>
+                    <div className={`font-semibold truncate`} style={{ color: ACES_SKILLS[yearData.topSkill?.[0]]?.color || '#6b7280' }}>
+                      {yearData.topSkill?.[0] || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Progress bar showing relative size */}
+                <div className="mt-3">
+                  <div className={`h-2 rounded-full ${themeColors.progressBg}`}>
+                    <div 
+                      className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                      style={{ width: `${(yearData.total / Math.max(...data.growthData.map(d => d.total))) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {data.years.length === 1 && (
+            <p className={`text-sm ${themeColors.textMuted} mt-4 text-center`}>
+              Upload data from multiple years to see growth trends
+            </p>
+          )}
+        </div>
+      );
+    };
+
+    // ============================================
+    // 10. MAIN APP COMPONENT
+    // ============================================
+    /**
+     * Main dashboard application component.
+     * Manages state, data processing, and renders all UI components.
+     */
+    const ACESCredentialsDashboard = () => {
+      const [theme, setTheme] = useState(() => localStorage.getItem('aces-theme') || 'dark');
+      const [rawData, setRawData] = useState([]);
+      const [processedData, setProcessedData] = useState([]);
+      const [selectedSkill, setSelectedSkill] = useState(null);
+      const [activeTab, setActiveTab] = useState('overview');
+      const [showExportModal, setShowExportModal] = useState(false);
+      const [isLoading, setIsLoading] = useState(false);
+      const [dateRange, setDateRange] = useState({ start: null, end: null });
+
+      const themeColors = THEME_CONFIG[theme];
+
+      useEffect(() => {
+        localStorage.setItem('aces-theme', theme);
+      }, [theme]);
+
+      useEffect(() => {
+        if (rawData.length > 0) {
+          const processed = processData(rawData);
+          setProcessedData(processed);
+          
+          const dates = processed.map(d => d.issueDate).filter(d => d);
+          if (dates.length > 0) {
+            setDateRange({
+              start: new Date(Math.min(...dates)),
+              end: new Date(Math.max(...dates))
+            });
+          }
+        }
+      }, [rawData]);
+
+      const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setIsLoading(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = parseCSV(e.target.result);
+            setRawData(data);
+          } catch (err) {
+            console.error('Error parsing CSV:', err);
+          }
+          setIsLoading(false);
+        };
+        reader.readAsText(file);
+      };
+
+      /**
+       * Clears all data and resets the application to initial state
+       */
+      const clearDatasource = () => {
+        if (confirm('Are you sure you want to clear all data? This will reset the dashboard.')) {
+          setRawData([]);
+          setProcessedData([]);
+          setSelectedSkill(null);
+          setActiveTab('overview');
+          setDateRange({ start: null, end: null });
+        }
+      };
+
+      const stats = useMemo(() => {
+        if (processedData.length === 0) return null;
+
+        const skillCounts = {};
+        const monthCounts = {};
+        let credentialCount = 0;
+
+        processedData.forEach(d => {
+          skillCounts[d.skill] = (skillCounts[d.skill] || 0) + 1;
+          monthCounts[d.month] = (monthCounts[d.month] || 0) + 1;
+          if (d.isCredential) credentialCount++;
+        });
+
+        return {
+          total: processedData.length,
+          skillCounts,
+          monthCounts,
+          credentialCount,
+          tokenCount: processedData.length - credentialCount,
+          uniqueSkills: Object.keys(skillCounts).length
+        };
+      }, [processedData]);
+
+      const skillChartData = useMemo(() => {
+        if (!stats) return null;
+
+        const sortedSkills = Object.entries(stats.skillCounts).sort((a, b) => b[1] - a[1]);
+
+        return {
+          labels: sortedSkills.map(([skill]) => skill),
+          datasets: [{
+            label: 'Credentials Awarded',
+            data: sortedSkills.map(([, count]) => count),
+            backgroundColor: sortedSkills.map(([skill]) => 
+              (ACES_SKILLS[skill]?.color || '#6b7280') + '80'
+            ),
+            borderColor: sortedSkills.map(([skill]) => 
+              ACES_SKILLS[skill]?.color || '#6b7280'
+            ),
+            borderWidth: 2,
+            borderRadius: 6
+          }]
+        };
+      }, [stats]);
+
+      const timelineChartData = useMemo(() => {
+        if (!stats) return null;
+
+        const sortedMonths = Object.entries(stats.monthCounts).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+        return {
+          labels: sortedMonths.map(([month]) => month),
+          datasets: [{
+            label: 'Awards per Month',
+            data: sortedMonths.map(([, count]) => count),
+            fill: true,
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: 'rgb(59, 130, 246)',
+            tension: 0.4,
+            pointBackgroundColor: 'rgb(59, 130, 246)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4
+          }]
+        };
+      }, [stats]);
+
+      // Donut chart data for skill distribution (muted colors for easier viewing)
+      const donutChartData = useMemo(() => {
+        if (!stats) return null;
+
+        const sortedSkills = Object.entries(stats.skillCounts).sort((a, b) => b[1] - a[1]);
+        
+        // Helper to convert hex to rgba with opacity
+        const hexToRgba = (hex, opacity) => {
+          const r = parseInt(hex.slice(1, 3), 16);
+          const g = parseInt(hex.slice(3, 5), 16);
+          const b = parseInt(hex.slice(5, 7), 16);
+          return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        };
+
+        return {
+          labels: sortedSkills.map(([skill]) => skill),
+          datasets: [{
+            data: sortedSkills.map(([, count]) => count),
+            backgroundColor: sortedSkills.map(([skill]) => 
+              hexToRgba(ACES_SKILLS[skill]?.color || '#6b7280', 0.7)
+            ),
+            borderColor: sortedSkills.map(([skill]) => 
+              hexToRgba(ACES_SKILLS[skill]?.color || '#6b7280', 0.9)
+            ),
+            borderWidth: 2,
+            hoverOffset: 8,
+            hoverBackgroundColor: sortedSkills.map(([skill]) => 
+              hexToRgba(ACES_SKILLS[skill]?.color || '#6b7280', 0.85)
+            )
+          }]
+        };
+      }, [stats]);
+
+      // Year-over-year comparison data
+      const yearComparisonData = useMemo(() => {
+        if (processedData.length === 0) return null;
+
+        const yearCounts = {};
+        const yearSkillCounts = {};
+        const yearCredentialCounts = {};
+
+        processedData.forEach(d => {
+          if (!d.issueDate) return;
+          const year = d.issueDate.getFullYear();
+          
+          // Total by year
+          yearCounts[year] = (yearCounts[year] || 0) + 1;
+          
+          // Skills by year
+          if (!yearSkillCounts[year]) yearSkillCounts[year] = {};
+          yearSkillCounts[year][d.skill] = (yearSkillCounts[year][d.skill] || 0) + 1;
+          
+          // Credentials vs tokens by year
+          if (!yearCredentialCounts[year]) yearCredentialCounts[year] = { credentials: 0, tokens: 0 };
+          if (d.isCredential) {
+            yearCredentialCounts[year].credentials++;
+          } else {
+            yearCredentialCounts[year].tokens++;
+          }
+        });
+
+        const years = Object.keys(yearCounts).sort();
+        
+        // Calculate growth rates
+        const growthData = years.map((year, index) => {
+          const current = yearCounts[year];
+          const previous = index > 0 ? yearCounts[years[index - 1]] : null;
+          const growth = previous ? (((current - previous) / previous) * 100).toFixed(1) : null;
+          return {
+            year,
+            total: current,
+            growth,
+            credentials: yearCredentialCounts[year]?.credentials || 0,
+            tokens: yearCredentialCounts[year]?.tokens || 0,
+            topSkill: Object.entries(yearSkillCounts[year] || {}).sort((a, b) => b[1] - a[1])[0]
+          };
+        });
+
+        return {
+          years,
+          yearCounts,
+          yearSkillCounts,
+          growthData,
+          chartData: {
+            labels: years,
+            datasets: [{
+              label: 'Total Awards',
+              data: years.map(y => yearCounts[y]),
+              backgroundColor: 'rgba(59, 130, 246, 0.7)',
+              borderColor: 'rgb(59, 130, 246)',
+              borderWidth: 2,
+              borderRadius: 6
+            }]
+          }
+        };
+      }, [processedData]);
+
+      // Empty state
+      if (processedData.length === 0) {
+        return (
+          <div className={`min-h-screen ${themeColors.bg} ${themeColors.text} flex flex-col`}>
+            <header className={`${themeColors.header} border-b ${themeColors.headerBorder} px-6 py-4 sticky top-0 z-40 backdrop-blur-sm`}>
+              <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                    <Icons.Award className="w-6 h-6 text-blue-400" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold">ACES Credentials Analytics</h1>
+                    <p className={`text-sm ${themeColors.textMuted}`}>Digital Credentialing Dashboard v3</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className={`p-2 rounded-lg ${themeColors.button} transition-colors`}
+                  aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                >
+                  {theme === 'dark' ? <Icons.Sun className="w-5 h-5" aria-hidden="true" /> : <Icons.Moon className="w-5 h-5" aria-hidden="true" />}
+                </button>
+              </div>
+            </header>
+
+            <main id="main-content" className="flex-1 flex items-center justify-center p-8">
+              <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-2xl p-12 max-w-xl w-full text-center animate-slideUp`}>
+                <div className="p-4 bg-blue-500/20 rounded-2xl w-fit mx-auto mb-6">
+                  <Icons.Upload className="w-12 h-12 text-blue-400" aria-hidden="true" />
+                </div>
+                <h2 className={`text-2xl font-bold ${themeColors.text} mb-3`}>Upload Credentials Data</h2>
+                <p className={`${themeColors.textMuted} mb-8`}>
+                  Import your Canvas Credentials export (CSV) to visualize ACES skill badge analytics
+                </p>
+                <label className="cursor-pointer">
+                  <input 
+                    type="file" 
+                    accept=".csv" 
+                    onChange={handleFileUpload} 
+                    className="hidden" 
+                    aria-label="Select CSV file to upload"
+                  />
+                  <span 
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+                    role="button"
+                    tabIndex="0"
+                  >
+                    <Icons.Upload className="w-5 h-5" aria-hidden="true" />
+                    Choose CSV File
+                  </span>
+                </label>
+                <p className={`text-xs ${themeColors.textMuted} mt-4`}>Supports exports from Canvas Credentials / Badgr</p>
+              </div>
+            </main>
+          </div>
+        );
+      }
+
+      // Main dashboard
+      return (
+        <div className={`min-h-screen ${themeColors.bg} ${themeColors.text}`}>
+          {/* Header */}
+          <header className={`${themeColors.header} border-b ${themeColors.headerBorder} px-6 py-4 sticky top-0 z-40 backdrop-blur-sm`}>
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Icons.Award className="w-6 h-6 text-blue-400" aria-hidden="true" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">ACES Credentials Analytics</h1>
+                  <p className={`text-sm ${themeColors.textMuted}`}>
+                    {dateRange.start && dateRange.end && (
+                      <span aria-label={`Data from ${dateRange.start.toLocaleDateString()} to ${dateRange.end.toLocaleDateString()}`}>
+                        {dateRange.start.toLocaleDateString()} - {dateRange.end.toLocaleDateString()}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Tab Navigation */}
+              <nav 
+                className={`flex items-center gap-1 p-1 rounded-lg ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-gray-200'}`}
+                role="tablist"
+                aria-label="Dashboard sections"
+              >
+                {[
+                  { id: 'overview', label: 'Overview', icon: Icons.BarChart },
+                  { id: 'pathways', label: 'Pathways', icon: Icons.GitBranch },
+                  { id: 'badges', label: 'Badges', icon: Icons.Award }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === tab.id 
+                        ? 'bg-blue-600 text-white' 
+                        : `${themeColors.textMuted} ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-900'}`
+                    }`}
+                    aria-current={activeTab === tab.id ? 'page' : undefined}
+                    aria-label={`View ${tab.label} tab`}
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                  >
+                    <tab.icon className="w-4 h-4" aria-hidden="true" />
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer">
+                  <input 
+                    type="file" 
+                    accept=".csv" 
+                    onChange={handleFileUpload} 
+                    className="hidden" 
+                    aria-label="Upload CSV data file"
+                  />
+                  <span 
+                    className={`inline-flex items-center gap-2 px-4 py-2 ${themeColors.button} rounded-lg transition-colors text-sm`}
+                    role="button"
+                    tabIndex="0"
+                  >
+                    <Icons.Upload className="w-4 h-4" aria-hidden="true" />
+                    Upload
+                  </span>
+                </label>
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className={`flex items-center gap-2 px-4 py-2 ${themeColors.button} rounded-lg transition-colors text-sm`}
+                  aria-label="Export dashboard data"
+                >
+                  <Icons.Download className="w-4 h-4" aria-hidden="true" />
+                  Export
+                </button>
+                <button
+                  onClick={clearDatasource}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-sm text-white"
+                  aria-label="Clear all data and reset dashboard"
+                >
+                  <Icons.Trash2 className="w-4 h-4" aria-hidden="true" />
+                  Clear
+                </button>
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className={`p-2 rounded-lg ${themeColors.button} transition-colors`}
+                  aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                >
+                  {theme === 'dark' ? <Icons.Sun className="w-5 h-5" aria-hidden="true" /> : <Icons.Moon className="w-5 h-5" aria-hidden="true" />}
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* Dashboard Content */}
+          <main id="main-content" className="max-w-7xl mx-auto px-6 py-8">
+            <div id="dashboard-content">
+            {/* Stats Row - Always visible */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" role="region" aria-label="Dashboard statistics">
+              <StatCard icon={Icons.Award} label="Total Awards" value={stats.total.toLocaleString()} subValue="credentials issued" color="bg-blue-500/20" theme={theme} />
+              <StatCard icon={Icons.Zap} label="Skill Credentials" value={stats.credentialCount.toLocaleString()} subValue="full skill badges" color="bg-green-500/20" theme={theme} />
+              <StatCard icon={Icons.Layers} label="Token Awards" value={stats.tokenCount.toLocaleString()} subValue="outcome tokens" color="bg-purple-500/20" theme={theme} />
+              <StatCard icon={Icons.TrendingUp} label="ACES Skills" value={stats.uniqueSkills} subValue="categories tracked" color="bg-orange-500/20" theme={theme} />
+            </div>
+
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <>
+                <div className="grid lg:grid-cols-2 gap-6 mb-8" role="region" aria-label="Charts overview">
+                  <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-5`}>
+                    <h3 className={`font-semibold ${themeColors.text} mb-4 flex items-center gap-2`}>
+                      <Icons.BarChart className="w-5 h-5 text-blue-400" aria-hidden="true" />
+                      Credentials by ACES Skill
+                    </h3>
+                    <div className="h-80" role="img" aria-label="Bar chart showing credentials by ACES skill">
+                      <ChartComponent type="bar" data={skillChartData} theme={theme} options={{ indexAxis: 'y', plugins: { legend: { display: false } } }} />
+                    </div>
+                  </div>
+
+                  <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-5`}>
+                    <h3 className={`font-semibold ${themeColors.text} mb-4 flex items-center gap-2`}>
+                      <Icons.TrendingUp className="w-5 h-5 text-green-400" />
+                      Awards Over Time
+                    </h3>
+                    <div className="h-80">
+                      <ChartComponent type="line" data={timelineChartData} theme={theme} options={{ plugins: { legend: { display: false } } }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Second Row: Donut Chart and Year-over-Year */}
+                <div className="grid lg:grid-cols-2 gap-6 mb-8">
+                  <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-5`}>
+                    <h3 className={`font-semibold ${themeColors.text} mb-4 flex items-center gap-2`}>
+                      <Icons.PieChart className="w-5 h-5 text-amber-400" />
+                      Skill Distribution
+                    </h3>
+                    <div className="h-80">
+                      <DonutChart data={donutChartData} theme={theme} />
+                    </div>
+                  </div>
+
+                  <YearComparison data={yearComparisonData} theme={theme} />
+                </div>
+              </>
+            )}
+
+            {/* Pathways Tab */}
+            {activeTab === 'pathways' && (
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Skill Selection */}
+                <div className="lg:col-span-1 space-y-4">
+                  <h3 className={`font-semibold ${themeColors.text} mb-2 flex items-center gap-2`}>
+                    <Icons.Target className="w-5 h-5 text-purple-400" />
+                    Select ACES Skill
+                  </h3>
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                    {Object.entries(stats.skillCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([skill]) => (
+                        <SkillPathwayCard
+                          key={skill}
+                          skill={skill}
+                          data={processedData}
+                          onSelect={setSelectedSkill}
+                          isSelected={selectedSkill === skill}
+                          theme={theme}
+                        />
+                      ))
+                    }
+                  </div>
+                </div>
+
+                {/* Pathway Visualization */}
+                <div className="lg:col-span-2">
+                  {selectedSkill ? (
+                    <PathwayVisualization skill={selectedSkill} data={processedData} theme={theme} />
+                  ) : (
+                    <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-12 text-center`}>
+                      <Icons.GitBranch className="w-16 h-16 mx-auto mb-4 text-slate-600" />
+                      <h3 className={`text-xl font-semibold ${themeColors.text} mb-2`}>Select a Skill</h3>
+                      <p className={themeColors.textMuted}>
+                        Choose an ACES skill from the left to view its token → credential pathway
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Badges Tab */}
+            {activeTab === 'badges' && (
+              <BadgeGallery data={processedData} theme={theme} />
+            )}
+            </div>{/* End dashboard-content */}
+          </main>
+
+          <ExportModal isOpen={showExportModal} onClose={() => setShowExportModal(false)} data={processedData} theme={theme} />
+
+          {isLoading && (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" role="alert" aria-busy="true">
+              <div className={`${themeColors.card} rounded-xl p-8 flex flex-col items-center gap-4`}>
+                <Icons.Loader className="w-8 h-8 animate-spin text-blue-400" aria-hidden="true" />
+                <p className={themeColors.text}>Processing data...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ============================================
+    // 11. APP INITIALIZATION
+    // ============================================
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ACESCredentialsDashboard />);
+  </script>
+</body>
+</html>
