@@ -463,6 +463,13 @@
           <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
           <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
         </svg>
+      ),
+      ExternalLink: (props) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
       )
     };
 
@@ -887,15 +894,42 @@
     // ========================================
     // PATHWAY VISUALIZATION COMPONENT
     // ========================================
+    /**
+     * Displays the token → credential pathway for a selected ACES skill.
+     * Features: clickable token tiles with detail modal, scroll lock, keyboard navigation.
+     */
     const PathwayVisualization = ({ skill, data, theme }) => {
       const themeColors = THEME_CONFIG[theme];
       const skillConfig = ACES_SKILLS[skill] || { color: '#6b7280', iconName: 'Award', tokens: [] };
       const SkillIcon = Icons[skillConfig.iconName] || Icons.Award;
       
+      // State for token detail modal
+      const [selectedToken, setSelectedToken] = useState(null);
+      const closeButtonRef = useRef(null);
+      
+      // Handle scroll lock and keyboard events when token modal is open
+      useEffect(() => {
+        if (selectedToken) {
+          document.body.classList.add('modal-open');
+          setTimeout(() => closeButtonRef.current?.focus(), 100);
+          
+          const handleEscape = (e) => {
+            if (e.key === 'Escape') setSelectedToken(null);
+          };
+          document.addEventListener('keydown', handleEscape);
+          
+          return () => {
+            document.body.classList.remove('modal-open');
+            document.removeEventListener('keydown', handleEscape);
+          };
+        }
+      }, [selectedToken]);
+      
       // Get token data
       const skillData = data.filter(d => d.skill === skill);
       const tokenStats = {};
       const tokenImages = {};
+      const tokenBadgeClassUrls = {};
       let credentialData = null;
       
       skillData.forEach(d => {
@@ -915,6 +949,9 @@
           if (d.imageUrl && !tokenImages[d.token]) {
             tokenImages[d.token] = d.imageUrl;
           }
+          if (d.badgeClassUrl && !tokenBadgeClassUrls[d.token]) {
+            tokenBadgeClassUrls[d.token] = d.badgeClassUrl;
+          }
         }
       });
 
@@ -927,6 +964,7 @@
       const maxCount = sortedTokens[0]?.[1]?.count || 1;
 
       return (
+        <>
         <div className={`${themeColors.card} border ${themeColors.cardBorder} rounded-xl p-6 animate-slideUp`}>
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -949,18 +987,29 @@
 
           {/* Pathway Flow */}
           <div className="relative">
-            {/* Token Cards */}
+            {/* Token Cards - Clickable for details */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {sortedTokens.map(([token, stats], index) => (
-                <div 
+                <button 
                   key={token}
-                  className={`${themeColors.card} border ${themeColors.cardBorder} rounded-lg p-4 animate-slideRight`}
+                  onClick={() => setSelectedToken({
+                    name: token,
+                    fullName: `${skill} - ${token} Token`,
+                    skill: skill,
+                    imageUrl: tokenImages[token],
+                    badgeClassUrl: tokenBadgeClassUrls[token],
+                    count: stats.count,
+                    firstAwarded: stats.firstAwarded,
+                    lastAwarded: stats.lastAwarded
+                  })}
+                  className={`${themeColors.card} border ${themeColors.cardBorder} rounded-lg p-4 animate-slideRight text-left transition-all hover:scale-[1.02] hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${theme === 'dark' ? 'focus-visible:ring-offset-slate-900' : 'focus-visible:ring-offset-white'}`}
                   style={{ animationDelay: `${index * 0.1}s` }}
+                  aria-label={`View details for ${token} token, ${stats.count.toLocaleString()} awards`}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <BadgeImage 
                       src={tokenImages[token]} 
-                      alt={token} 
+                      alt="" 
                       size="md"
                       theme={theme}
                     />
@@ -989,7 +1038,7 @@
                     </span>
                     <span className={`text-xs ${themeColors.textMuted}`}>awards</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -1054,6 +1103,105 @@
             </div>
           </div>
         </div>
+        
+        {/* Token Detail Modal */}
+        {selectedToken && (
+          <div 
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
+            onClick={() => setSelectedToken(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="token-detail-title"
+          >
+            <div 
+              className={`${themeColors.modal} rounded-xl border ${themeColors.modalBorder} max-w-lg w-full p-6 animate-scaleIn`}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-start gap-4 mb-6">
+                <div className="p-1 rounded-full" style={{ backgroundColor: skillConfig.color + '20' }}>
+                  <BadgeImage 
+                    src={selectedToken.imageUrl} 
+                    alt={`${selectedToken.fullName} badge`} 
+                    size="xl" 
+                    theme={theme} 
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 id="token-detail-title" className={`text-lg font-bold ${themeColors.text} mb-1`}>
+                    {selectedToken.fullName}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{ backgroundColor: skillConfig.color + '20', color: skillConfig.color }}
+                    >
+                      {selectedToken.skill}
+                    </span>
+                    <span className={`text-xs ${themeColors.textMuted}`}>Outcome Token</span>
+                  </div>
+                </div>
+                <button
+                  ref={closeButtonRef}
+                  onClick={() => setSelectedToken(null)}
+                  className={`p-2 rounded-lg ${themeColors.button} transition-colors`}
+                  aria-label="Close token details"
+                >
+                  <Icons.X className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </div>
+              
+              {/* Award Statistics */}
+              <div className={`grid grid-cols-3 gap-4 p-4 rounded-lg mb-6 ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-gray-100'}`}>
+                <div className="text-center">
+                  <div className="text-2xl font-bold" style={{ color: skillConfig.color }}>
+                    {selectedToken.count.toLocaleString()}
+                  </div>
+                  <div className={`text-xs ${themeColors.textMuted}`}>Total Awards</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-sm font-semibold ${themeColors.text}`}>
+                    {selectedToken.firstAwarded.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div className={`text-xs ${themeColors.textMuted}`}>First Awarded</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-sm font-semibold ${themeColors.text}`}>
+                    {selectedToken.lastAwarded.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div className={`text-xs ${themeColors.textMuted}`}>Most Recent</div>
+                </div>
+              </div>
+              
+              {/* Token Description */}
+              <div className={`mb-6 p-4 rounded-lg border ${themeColors.cardBorder}`}>
+                <h4 className={`text-sm font-semibold ${themeColors.text} mb-2 flex items-center gap-2`}>
+                  <Icons.FileText className="w-4 h-4" style={{ color: skillConfig.color }} aria-hidden="true" />
+                  About This Token
+                </h4>
+                <p className={`text-sm ${themeColors.textMuted}`}>
+                  This outcome token is part of the {selectedToken.skill} skill pathway. 
+                  Students earn this token by demonstrating competency in {selectedToken.name.toLowerCase()} 
+                  through their academic coursework at Chaffey College.
+                </p>
+              </div>
+              
+              {/* Action Button */}
+              {selectedToken.badgeClassUrl && (
+                <a
+                  href={selectedToken.badgeClassUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                >
+                  <Icons.ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  View Full Badge Details
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+        </>
       );
     };
 
