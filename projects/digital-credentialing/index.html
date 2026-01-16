@@ -810,7 +810,7 @@
     // ============================================
     // 5B. SKILL PATHWAY CARD COMPONENT
     // ============================================
-    const SkillPathwayCard = ({ skill, data, onSelect, isSelected, theme }) => {
+    const SkillPathwayCard = ({ skill, data, onSelect, isSelected, theme, index = 0 }) => {
       const themeColors = THEME_CONFIG[theme];
       const skillConfig = ACES_SKILLS[skill] || { color: '#6b7280', iconName: 'Award', tokens: [] };
       const SkillIcon = Icons[skillConfig.iconName] || Icons.Award;
@@ -845,7 +845,8 @@
           onClick={() => onSelect(skill)}
           className={`skill-card w-full text-left ${themeColors.card} border-2 ${
             isSelected ? 'border-blue-500' : themeColors.cardBorder
-          } rounded-xl p-4 ${themeColors.cardHover} transition-all`}
+          } rounded-xl p-4 ${themeColors.cardHover} transition-all animate-slideRight`}
+          style={{ animationDelay: `${index * 0.05}s` }}
         >
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -1181,7 +1182,7 @@
                 </h4>
                 <p className={`text-sm ${themeColors.textMuted}`}>
                   This outcome token is part of the {selectedToken.skill} skill pathway. 
-                  Students earn this token by demonstrating competency in {selectedToken.name.toLowerCase()} 
+                  Students earn this token by demonstrating competency in {selectedToken.name.toLowerCase()}{' '}
                   through their academic coursework at Chaffey College.
                 </p>
               </div>
@@ -2180,7 +2181,7 @@
                   <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                     {Object.entries(stats.skillCounts)
                       .sort((a, b) => b[1] - a[1])
-                      .map(([skill]) => (
+                      .map(([skill], index) => (
                         <SkillPathwayCard
                           key={skill}
                           skill={skill}
@@ -2188,6 +2189,7 @@
                           onSelect={setSelectedSkill}
                           isSelected={selectedSkill === skill}
                           theme={theme}
+                          index={index}
                         />
                       ))
                     }
