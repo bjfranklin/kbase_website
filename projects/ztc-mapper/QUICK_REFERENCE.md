@@ -1,5 +1,7 @@
 # Quick Reference: Adding New Features
 
+> **Historical — v2.3 only.** v3 uses dual CSV upload, `buildPrograms` / `buildAnalytics`, and view-specific filters. See `kbase_dev/ztc-mapper/README.md` and [[2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-v3-two-datasource-architecture|v3 architecture]].
+
 ## Adding a New Filter Dropdown
 
 ### Example: Adding "Pathway Progression" Filter

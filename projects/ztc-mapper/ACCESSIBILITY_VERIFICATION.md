@@ -1,5 +1,7 @@
 # Accessibility & ADA Compliance Verification Report
 
+> **Historical — v2.3 UI.** Re-verify against v3 after promotion. v3 adds Dashboard/Courses views, custom ThemedSelect, and dual-file loader.
+
 ## Verification Date
 Last Updated: December 2025
 Review completed after animation performance fix, scroll lock, loading state, and tooltip enhancements.
