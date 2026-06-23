@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="author" content="Bradley Franklin, Chaffey College" />
+  <meta name="description" content="ZTC Pathway Mapper v3 end-user guide — loading data, navigating views, reading adoption metrics, and exporting reports. Chaffey College, June 22, 2026." />
+  <title>ZTC Pathway Mapper — End-User Guide · Chaffey College</title>
+  <style>
+    :root {
+      --navy: #0c2340;
+      --navy-mid: #1a3a5c;
+      --accent: #0072ce;
+      --accent-soft: #e8f2fa;
+      --text: #1a1a1a;
+      --muted: #4a5568;
+      --border: #cbd5e1;
+      --surface: #f8fafc;
+      --white: #ffffff;
+      --complete: #1b5e20;
+      --complete-bg: #e8f5e9;
+      --critical: #b71c1c;
+      --critical-bg: #ffebee;
+      --degraded: #8a6d00;
+      --degraded-bg: #fff8e1;
+      --not-started: #424242;
+      --not-started-bg: #f5f5f5;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(12, 35, 64, 0.08), 0 4px 16px rgba(12, 35, 64, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(160deg, #eef2f7 0%, #f8fafc 40%, #ffffff 100%);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 1000;
+    }
+    .skip-link:focus {
+      left: 1rem;
+      top: 1rem;
+      background: var(--navy);
+      color: var(--white);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+    }
+
+    .masthead {
+      background: var(--navy);
+      color: var(--white);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .masthead-kicker {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin: 0 0 0.35rem;
+    }
+    .masthead h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .masthead-meta {
+      margin: 0;
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+    .masthead-meta strong { font-weight: 600; }
+
+    .bluf {
+      background: var(--white);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .bluf h2 {
+      margin: 0 0 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .bluf p {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.55;
+      color: var(--navy);
+    }
+
+    .section-heading {
+      margin: 0 0 0.85rem;
+      font-size: 1.05rem;
+      color: var(--navy);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.35rem;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      margin: 0 0 0.85rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy);
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--accent-soft);
+    }
+    .card p, .card li {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .card ol, .card ul {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+    .card ol li, .card ul li { margin-bottom: 0.45rem; }
+    .card ol li:last-child, .card ul li:last-child { margin-bottom: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    thead th {
+      background: var(--navy);
+      color: var(--white);
+      font-weight: 600;
+    }
+    tbody th[scope="row"] {
+      background: var(--surface);
+      font-weight: 600;
+      color: var(--navy);
+      width: 28%;
+    }
+    tbody tr:nth-child(even) td { background: #fafbfc; }
+
+    .priorities {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 900px) {
+      .priorities { grid-template-columns: 1fr; }
+    }
+    .priority-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      border-top: 3px solid var(--accent);
+    }
+    .priority-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: var(--accent);
+      color: var(--white);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      margin-bottom: 0.5rem;
+    }
+    .priority-card h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.9rem;
+      color: var(--navy);
+      line-height: 1.3;
+    }
+    .priority-card p, .priority-card ul {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.4;
+      padding-left: 1rem;
+    }
+    .priority-card li { margin-bottom: 0.3rem; }
+
+    .status {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .status-complete { color: var(--complete); background: var(--complete-bg); border-color: var(--complete); }
+    .status-critical { color: var(--critical); background: var(--critical-bg); border-color: var(--critical); }
+    .status-degraded { color: var(--degraded); background: var(--degraded-bg); border-color: var(--degraded); }
+    .status-not-started { color: var(--not-started); background: var(--not-started-bg); border-color: var(--not-started); }
+
+    .note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+      margin: 0.75rem 0 0;
+    }
+
+    .asks-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .asks-list li {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      margin-bottom: 0.65rem;
+      font-size: 0.9rem;
+    }
+    .asks-list li:last-child { margin-bottom: 0; }
+    .ask-num {
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      background: var(--navy-mid);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+    a:hover { color: var(--navy-mid); }
+
+    footer {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    footer p { margin: 0.25rem 0; }
+
+    @media print {
+      body { background: white; }
+      .page { max-width: none; padding: 0; }
+      .masthead, .card, .bluf, .priority-card { box-shadow: none; break-inside: avoid; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <div class="page">
+    <header class="masthead" role="banner">
+      <p class="masthead-kicker">Chaffey College · Instructional Systems &amp; Pathways Innovation</p>
+      <h1>ZTC Pathway Mapper — End-User Guide</h1>
+      <p class="masthead-meta">
+        <strong>Version:</strong> 3.0 &nbsp;·&nbsp;
+        <strong>Date:</strong> June 22, 2026 &nbsp;·&nbsp;
+        <strong>Prepared by:</strong> Bradley Franklin &nbsp;·&nbsp;
+        <strong>Audience:</strong> ZTC committee, deans, curriculum &amp; IR staff
+      </p>
+    </header>
+
+    <main id="main-content" role="main">
+
+      <section class="bluf" aria-labelledby="bluf-heading">
+        <h2 id="bluf-heading">What this tool does</h2>
+        <p>
+          The <strong>ZTC Pathway Mapper</strong> shows how close each <strong>active degree, certificate, and transfer pathway</strong>
+          is to being fully <strong>Zero Textbook Cost (ZTC)</strong>. Upload two institutional CSV exports, click
+          <strong>Build dashboard</strong>, and explore adoption by term — all processing stays <strong>in your browser</strong>;
+          data is not uploaded to a server.
+          <strong>Open the app:</strong>
+          <a href="https://bjfranklin.github.io/kbase_website/projects/ztc-mapper/">GitHub Pages</a>.
+        </p>
+      </section>
+
+      <div class="grid-2">
+        <section class="card" aria-labelledby="data-heading">
+          <h2 id="data-heading">Two data files required</h2>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">File</th>
+                <th scope="col">What it contains</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Program Summary</th>
+                <td>Pathway structure — courses, requirement areas, blocks, and units (<strong>Active</strong> programs only)</td>
+              </tr>
+              <tr>
+                <th scope="row">IE ZTC Course Analytics</th>
+                <td>Per-course, per-term ZTC adoption %, survey completion, and section counts (MASTER export)</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note">After the first successful build, your session is saved locally until you choose <strong>Load new data</strong>.</p>
+        </section>
+
+        <section class="card" aria-labelledby="start-heading">
+          <h2 id="start-heading">Quick start — 5 steps</h2>
+          <ol>
+            <li>Open the app in <strong>Chrome</strong> or <strong>Edge</strong> (Firefox/Safari for spot checks).</li>
+            <li>Upload the <strong>Program Summary</strong> CSV — wait for the green <strong>Loaded</strong> state.</li>
+            <li>Upload the <strong>IE ZTC Course Analytics</strong> CSV.</li>
+            <li>Click <strong>Build dashboard</strong> (enabled only when both files are loaded).</li>
+            <li>Use the <strong>Term</strong> selector in the header (defaults to the latest term with data).</li>
+          </ol>
+          <p class="note">A red error banner usually names a missing column or file read problem — fix the export and try again.</p>
+        </section>
+      </div>
+
+      <section aria-labelledby="views-heading">
+        <h2 id="views-heading" class="section-heading">Three views — use the tabs in the top navigation</h2>
+        <div class="priorities" role="list">
+          <article class="priority-card" role="listitem">
+            <span class="priority-num" aria-hidden="true">1</span>
+            <h3>Dashboard</h3>
+            <ul>
+              <li><strong>Needs attention</strong> — pathways below 50% adoption (click to open)</li>
+              <li><strong>Institution overview</strong> — KPIs and fully ZTC-able count</li>
+              <li><strong>Compare pathways</strong> — distribution, ranking, term trend</li>
+              <li><strong>Export:</strong> All pathways summary (CSV) only</li>
+            </ul>
+          </article>
+          <article class="priority-card" role="listitem">
+            <span class="priority-num" aria-hidden="true">2</span>
+            <h3>Pathway</h3>
+            <ul>
+              <li>Select a pathway in the <strong>sidebar</strong> (search &amp; type filters)</li>
+              <li><strong>Adoption ring</strong> and nested areas (e.g. Cal-GETC AREA 1 → 1A)</li>
+              <li>Click a <strong>course row</strong> for detail modal + catalog link</li>
+              <li><strong>Export:</strong> Current pathway CSV &amp; PDF</li>
+            </ul>
+          </article>
+          <article class="priority-card" role="listitem">
+            <span class="priority-num" aria-hidden="true">3</span>
+            <h3>Courses</h3>
+            <ul>
+              <li>Search, filter by ZTC status, sort by ZTC % / name / survey</li>
+              <li><strong>Detail panel</strong> matches the pathway course modal</li>
+              <li><strong>View in course catalog</strong> opens Colleague in a new tab</li>
+              <li><strong>Term</strong> selector applies to all three views</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <div class="grid-2">
+        <section class="card" aria-labelledby="badges-heading">
+          <h2 id="badges-heading">Course badges</h2>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Indicator</th>
+                <th scope="col">Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row"><span class="status status-complete" role="status">ZTC</span></th>
+                <td>≥ <strong>75%</strong> of sections zero textbook cost (Chaffey internal bar)</td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="status status-degraded" role="status">Partial</span></th>
+                <td><strong>51–74%</strong> of sections ZTC</td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="status status-critical" role="status">Not ZTC</span></th>
+                <td>Below 51%</td>
+              </tr>
+              <tr>
+                <th scope="row">Purple <strong>CO ZTC</strong></th>
+                <td>≥ <strong>one</strong> ZTC section (Chancellor's Office) — may appear without green ZTC</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card" aria-labelledby="adoption-heading">
+          <h2 id="adoption-heading">Pathway adoption %</h2>
+          <p>Adoption is <strong>requirement-based</strong>, not a simple course average:</p>
+          <ol>
+            <li>Each <strong>scored requirement</strong> (area or choice block) must be met with a ZTC course.</li>
+            <li>In <strong>choice</strong> blocks, the block counts as ZTC if <strong>≥1 valid option</strong> meets the 75% bar.</li>
+            <li><strong>100%</strong> = every scored requirement can be satisfied with ZTC courses in the selected term.</li>
+          </ol>
+          <p class="note">Courses not offered in the selected term show as not offered; other terms may still appear in trend charts.</p>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="card" aria-labelledby="session-heading">
+          <h2 id="session-heading">Session, theme &amp; reset</h2>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Action</th>
+                <th scope="col">How</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Save session</th>
+                <td>Automatic after <strong>Build dashboard</strong> — reload to restore data and term</td>
+              </tr>
+              <tr>
+                <th scope="row">Dark / light theme</th>
+                <td>Sun/moon control on landing or header — preference remembered</td>
+              </tr>
+              <tr>
+                <th scope="row">Load new data</th>
+                <td>Refresh icon in header → confirm → clears storage, returns to upload screen</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card" aria-labelledby="exports-heading">
+          <h2 id="exports-heading">Exports</h2>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Export</th>
+                <th scope="col">From</th>
+                <th scope="col">Contents</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>All pathways summary (CSV)</strong></td>
+                <td>Dashboard</td>
+                <td>One row per pathway: adoption %, requirements, survey avg, CO ZTC count</td>
+              </tr>
+              <tr>
+                <td><strong>Current pathway (CSV)</strong></td>
+                <td>Pathway</td>
+                <td>Course-level rows with Chaffey ZTC and CO ZTC columns</td>
+              </tr>
+              <tr>
+                <td><strong>Current pathway (PDF)</strong></td>
+                <td>Pathway</td>
+                <td>Printable summary with program name, term, stats, course table</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note"><strong>Not in v3.0:</strong> Excel, PNG, multi-project save/load (v3.1 backlog).</p>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="tips-heading">
+        <h2 id="tips-heading">Tips &amp; troubleshooting</h2>
+        <ol class="asks-list">
+          <li>
+            <span class="ask-num" aria-hidden="true">1</span>
+            <span><strong>Build dashboard disabled</strong> — both CSVs must show green Loaded before build unlocks.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">2</span>
+            <span><strong>No pathways after build</strong> — confirm Program Summary includes <strong>Active</strong> programs only.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">3</span>
+            <span><strong>Course shows “no data”</strong> — not in Course Analytics for that term, or not offered.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">4</span>
+            <span><strong>Wrong term</strong> — change <strong>Term</strong> in the header; all views update together.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">5</span>
+            <span><strong>Stale session</strong> — use <strong>Load new data</strong> and upload fresh exports.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">6</span>
+            <span><strong>Accessibility</strong> — Tab to skip link; Esc closes modals; keyboard works in nav, term select, and export menu.</span>
+          </li>
+        </ol>
+      </section>
+
+    </main>
+
+    <footer role="contentinfo">
+      <p><strong>Contact:</strong> Bradley Franklin · Instructional Systems &amp; Pathways Innovation</p>
+      <p>Internal — ZTC / OER · WCAG 2.1 AA · Status labels include text, not color alone</p>
+    </footer>
+  </div>
+</body>
+</html>

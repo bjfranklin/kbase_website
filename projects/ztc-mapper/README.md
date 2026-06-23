@@ -51,6 +51,10 @@ Canonical source: **kbase_dev** → synced to **kbase_website** (`projects/ztc-m
 
 Or push `main` with `KBASE_WEBSITE_SYNC_TOKEN` set (see root `CLAUDE.md`).
 
+## End-user guide
+
+**[ZTC-Pathway-Mapper-End-User-Guide.html](ZTC-Pathway-Mapper-End-User-Guide.html)** — concise v3 guide for committee, deans, and IR staff (source also in vault `2-projects/ztc-pathway-mapper/`).
+
 ## Vault docs
 
 Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-mapper/`.
