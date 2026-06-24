@@ -134,6 +134,13 @@
     const STORAGE_KEY = 'ztc-pathway-mapper-v3';
     const LEGACY_STORAGE_KEY = 'ztc-pathway-mapper-v2';
     const COURSE_CATALOG_URL = 'https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=';
+    const APP_META = {
+      contact: 'Bradley Franklin',
+      department: 'Instructional Systems & Pathways Innovation',
+      useLine: 'Internal — ZTC / OER',
+      accessibility: 'WCAG 2.1 Level AA',
+      a11yNote: 'Status labels include text, not color alone.'
+    };
 
     const SORT_BY_OPTIONS = [
       { value: 'adoption', label: 'ZTC %' },
@@ -148,6 +155,7 @@
     const COURSE_STATUS_OPTIONS = [
       { value: 'all', label: 'All statuses' },
       { value: 'ztc', label: 'ZTC' },
+      { value: 'co', label: 'CO ZTC' },
       { value: 'partial', label: 'Partial' },
       { value: 'not-ztc', label: 'Not ZTC' },
       { value: 'no-data', label: 'No data' }
@@ -160,8 +168,7 @@
         card: 'bg-slate-800/50', cardHover: 'hover:bg-slate-800', cardBorder: 'border-slate-700/60',
         panel: 'bg-slate-900', panelBorder: 'border-slate-800',
         input: 'bg-slate-800 border-slate-700 text-slate-100', divider: 'border-slate-800',
-        chip: 'bg-slate-800 text-slate-200', sidebar: 'bg-slate-900/60', track: 'bg-slate-700/50',
-        dashboard: 'from-slate-800/80 to-slate-900/80'
+        chip: 'bg-slate-800 text-slate-200', sidebar: 'bg-slate-900/60', track: 'bg-slate-700/50'
       },
       light: {
         bg: 'bg-gray-50', text: 'text-gray-900', textMuted: 'text-gray-600', faint: 'text-gray-600',
@@ -169,8 +176,7 @@
         card: 'bg-white', cardHover: 'hover:bg-gray-50', cardBorder: 'border-gray-200',
         panel: 'bg-white', panelBorder: 'border-gray-200',
         input: 'bg-white border-gray-300 text-gray-900', divider: 'border-gray-200',
-        chip: 'bg-gray-200 text-gray-800', sidebar: 'bg-gray-100/60', track: 'bg-gray-200',
-        dashboard: 'from-blue-50/50 to-gray-100/50'
+        chip: 'bg-gray-200 text-gray-800', sidebar: 'bg-gray-100/60', track: 'bg-gray-200'
       }
     };
 
@@ -289,6 +295,26 @@
       if (ax == null) return 1;
       if (ay == null) return -1;
       return ay - ax;
+    };
+
+    const pathwayAdoptionMatches = (pct, filter) => {
+      if (filter === 'all') return true;
+      if (filter === 'scored') return pct !== null && pct !== undefined;
+      if (filter === 'full') return pct === 100;
+      if (filter === 'high') return pct !== null && pct !== undefined && pct >= ZTC_THRESHOLDS.ZTC_MIN;
+      return true;
+    };
+
+    const courseStatusMatches = (c, filter) => {
+      if (filter === 'all') return true;
+      if (filter === 'co') return c.coZtc;
+      return c.status === filter;
+    };
+
+    const PATHWAY_ADOPTION_FILTER_LABELS = {
+      scored: 'Scored pathways',
+      full: '100% adoption',
+      high: '≥75% adoption'
     };
 
     // Program type classification (from program title)
@@ -633,7 +659,7 @@
       };
     };
 
-    // Institution rollup for a program list (Dashboard respects sidebar filters).
+    // Institution rollup from all active pathways (institution KPIs are not sidebar-filtered).
     const computeInstitutionStats = (programList, adoptionMap) => {
       const vals = programList.map(p => adoptionMap[p.name]?.pct).filter(v => v !== null && v !== undefined);
       const avg = vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
@@ -663,6 +689,18 @@
         </div>
         {children}
       </section>
+    );
+
+    const AppFooter = ({ t }) => (
+      <footer role="contentinfo" className={`flex-shrink-0 border-t ${t.headerBorder} ${t.header} px-4 py-2 text-center`}>
+        <h2 className="sr-only">Application information</h2>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          <strong className={`font-semibold ${t.text}`}>Contact:</strong> {APP_META.contact} · {APP_META.department}
+        </p>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          {APP_META.useLine} · {APP_META.accessibility} · {APP_META.a11yNote}
+        </p>
+      </footer>
     );
 
     const SidebarSearch = ({ value, onChange, label, placeholder, t }) => (
@@ -1013,6 +1051,7 @@
       const [selectedProgram, setSelectedProgram] = useState(null);
       const [search, setSearch] = useState('');
       const [typeFilter, setTypeFilter] = useState('all');
+      const [pathwayAdoptionFilter, setPathwayAdoptionFilter] = useState('all');
       const [sortBy, setSortBy] = useState('adoption');
       const [view, setView] = useState('dashboard'); // 'dashboard' | 'program' | 'courses'
       const [selectedCourseKey, setSelectedCourseKey] = useState(null);
@@ -1206,10 +1245,16 @@
 
       const filteredPrograms = useMemo(() => {
         if (!programs) return [];
-        let list = programs.filter(p =>
-          (typeFilter === 'all' || p.type === typeFilter) &&
-          (search.trim() === '' || p.name.toLowerCase().includes(search.toLowerCase()))
-        );
+        let list = programs.filter(p => {
+          const pct = programAdoption[p.name]?.pct;
+          return (typeFilter === 'all' || p.type === typeFilter)
+            && (search.trim() === '' || p.name.toLowerCase().includes(search.toLowerCase()))
+            && pathwayAdoptionMatches(pct, pathwayAdoptionFilter);
+        });
+        if (selectedProgram && !list.some(p => p.name === selectedProgram)) {
+          const sel = programs.find(p => p.name === selectedProgram);
+          if (sel) list = [sel, ...list];
+        }
         const a = (n) => programAdoption[n]?.pct;
         list = list.slice().sort((x, y) => {
           if (sortBy === 'name') return x.name.localeCompare(y.name);
@@ -1217,7 +1262,7 @@
           return cmpNullLast(a(x.name), a(y.name), () => x.name.localeCompare(y.name));
         });
         return list;
-      }, [programs, typeFilter, search, sortBy, programAdoption]);
+      }, [programs, typeFilter, pathwayAdoptionFilter, search, sortBy, programAdoption, selectedProgram]);
 
       const allCourses = useMemo(() => {
         if (!analytics || !selectedTerm) return [];
@@ -1228,7 +1273,7 @@
         const q = search.trim().toLowerCase();
         let list = allCourses.filter(c => {
           const label = `${c.subject}-${c.number} ${c.courseTitle || c.analyticsTitle || ''}`.toLowerCase();
-          const statusOk = courseStatusFilter === 'all' || c.status === courseStatusFilter;
+          const statusOk = courseStatusMatches(c, courseStatusFilter);
           const searchOk = q === '' || label.includes(q);
           return statusOk && searchOk;
         });
@@ -1257,8 +1302,20 @@
       // institution-wide stats (all active pathways — global dashboard)
       const institution = useMemo(() => {
         if (!programs) return null;
-        return computeInstitutionStats(programs, programAdoption);
-      }, [programs, programAdoption]);
+        const base = computeInstitutionStats(programs, programAdoption);
+        let chaffeyZtcCourses = 0, coZtcCourses = 0, coursesOffered = 0;
+        if (analytics && selectedTerm) {
+          for (const key of Object.keys(analytics.index)) {
+            const c = enrichCourseFromKey(key, analytics, selectedTerm);
+            if (c.offered) {
+              coursesOffered++;
+              if (c.ztcPct !== null && c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN) chaffeyZtcCourses++;
+              if (c.coZtc) coZtcCourses++;
+            }
+          }
+        }
+        return { ...base, chaffeyZtcCourses, coZtcCourses, coursesOffered };
+      }, [programs, programAdoption, analytics, selectedTerm]);
 
       const needsAttention = useMemo(() => {
         if (!programs) return [];
@@ -1303,7 +1360,36 @@
         if ((view === 'program' && next === 'courses') || (view === 'courses' && next === 'program')) {
           setSearch('');
         }
+        if (view === 'program' && next !== 'program') setPathwayAdoptionFilter('all');
+        if (view === 'courses' && next !== 'courses') setCourseStatusFilter('all');
+        if (next === 'courses' && sortBy === 'units') setSortBy('adoption');
+        if (next === 'program' && sortBy === 'survey') setSortBy('adoption');
         setView(next);
+      };
+
+      const navigateFromOverviewKpi = (action) => {
+        setSearch('');
+        if (action.view === 'program') {
+          setTypeFilter('all');
+          setPathwayAdoptionFilter(action.pathwayAdoptionFilter || 'all');
+          setSortBy(action.sortBy || 'adoption');
+          setCourseStatusFilter('all');
+          const pctOf = (n) => programAdoption[n]?.pct;
+          const list = programs.slice().filter(p => pathwayAdoptionMatches(programAdoption[p.name]?.pct, action.pathwayAdoptionFilter || 'all')).sort((x, y) => {
+            if ((action.sortBy || 'adoption') === 'name') return x.name.localeCompare(y.name);
+            return cmpNullLast(pctOf(x.name), pctOf(y.name), () => x.name.localeCompare(y.name));
+          });
+          if (list.length) setSelectedProgram(list[0].name);
+          switchView('program');
+        } else {
+          setPathwayAdoptionFilter('all');
+          setTypeFilter('all');
+          setCourseStatusFilter(action.courseStatusFilter || 'all');
+          setSortBy('adoption');
+          const list = allCourses.slice().filter(c => courseStatusMatches(c, action.courseStatusFilter || 'all')).sort((x, y) => cmpNullLast(x.ztcPct, y.ztcPct, () => `${x.subject}-${x.number}`.localeCompare(`${y.subject}-${y.number}`)));
+          if (list.length) setSelectedCourseKey(list[0].key);
+          switchView('courses');
+        }
       };
 
       const trendSummary = (labels, series) => labels.map((l, i) => {
@@ -1316,7 +1402,8 @@
       // ============================================================
       if (!programs || !analytics) {
         return (
-          <div className={`min-h-screen ${t.bg} ${t.text} flex items-center justify-center p-6`}>
+          <div className={`h-screen ${t.bg} ${t.text} flex flex-col overflow-hidden`}>
+            <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center p-6 pb-3">
             <div className="max-w-2xl w-full">
               <div className="flex items-center gap-3 mb-2">
                 <Icons.Landmark className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />
@@ -1365,6 +1452,8 @@
                 {darkMode ? <Icons.Sun className="w-4 h-4" aria-hidden="true" /> : <Icons.Moon className="w-4 h-4" aria-hidden="true" />} Toggle theme
               </button>
             </div>
+            </div>
+            <AppFooter t={t} />
           </div>
         );
       }
@@ -1389,7 +1478,7 @@
           <div className="p-6 pb-10 space-y-8">
             <div className={`rounded-xl border ${t.cardBorder} ${t.card} px-4 py-3.5 sm:px-5`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+                <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center gap-1.5 rounded-lg border ${t.cardBorder} ${t.input} px-3 py-1.5 text-sm font-semibold`}>
                     <Icons.Layers className={`w-4 h-4 ${t.faint}`} aria-hidden="true" />
@@ -1409,7 +1498,7 @@
                 <div className="flex flex-wrap gap-2">
                   {needsAttention.map(p => (
                     <button key={p.name} type="button"
-                      onClick={() => { setSelectedProgram(p.name); setView('program'); }}
+                      onClick={() => { setPathwayAdoptionFilter('all'); setSelectedProgram(p.name); setView('program'); }}
                       aria-label={`${p.name}. ZTC adoption ${p.pct}%. Open pathway view.`}
                       className={`inline-flex items-center gap-2 rounded-lg border ${t.cardBorder} ${t.card} px-3 py-2 text-sm ${t.cardHover} transition-colors`}>
                       <span className={`font-bold ${pctColor(p.pct, darkMode)}`}>{p.pct}%</span>
@@ -1422,18 +1511,23 @@
 
             {/* —— Institution overview —— */}
             <DashboardSection title="Institution overview" subtitle={instSub}>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[
-                  { label: 'Active pathways', val: institution.total, sub: `for ${selectedTerm}`, color: t.text, title: 'All active degree, certificate, and transfer pathways.' },
-                  { label: 'Avg ZTC adoption', val: institution.avg === null ? '—' : institution.avg + '%', sub: `across ${institution.scored} scored`, color: pctColor(institution.avg, darkMode), title: 'Mean requirement-based ZTC adoption across all scored pathways.' },
-                  { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.' },
-                  { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.' }
+                  { label: 'Active pathways', val: institution.total, sub: `for ${selectedTerm}`, color: t.text, title: 'All active degree, certificate, and transfer pathways.', action: { view: 'program', pathwayAdoptionFilter: 'all', sortBy: 'name' } },
+                  { label: 'Avg ZTC adoption', val: institution.avg === null ? '—' : institution.avg + '%', sub: `across ${institution.scored} scored`, color: pctColor(institution.avg, darkMode), title: 'Mean requirement-based ZTC adoption across all scored pathways.', action: { view: 'program', pathwayAdoptionFilter: 'scored', sortBy: 'adoption' } },
+                  { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' } },
+                  { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' } },
+                  { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' } },
+                  { label: "Chancellor's Office ZTC courses", val: institution.coZtcCourses, sub: `≥1 ZTC section · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-violet-200' : 'text-violet-800', title: "Courses offered this term with at least one zero textbook cost section (Chancellor's Office ZTC threshold).", action: { view: 'courses', courseStatusFilter: 'co' } }
                 ].map((kpi, i) => (
-                  <div key={i} title={kpi.title} className={`rounded-xl border ${t.cardBorder} ${t.card} p-5`}>
+                  <button key={i} type="button" onClick={() => navigateFromOverviewKpi(kpi.action)}
+                    aria-label={`${kpi.label}: ${kpi.val}. ${kpi.sub}. Open ${kpi.action.view === 'program' ? 'Pathway' : 'Courses'} view.`}
+                    title={kpi.title}
+                    className={`rounded-xl border ${t.cardBorder} ${t.card} p-5 text-left w-full ${t.cardHover} transition-colors cursor-pointer`}>
                     <div className={`text-xs uppercase tracking-wide ${t.textMuted} mb-1`}>{kpi.label}</div>
                     <div className={`text-3xl font-bold ${kpi.color}`}>{kpi.val}</div>
                     <div className={`text-[11px] ${t.faint} mt-1`}>{kpi.sub}</div>
-                  </div>
+                  </button>
                 ))}
               </div>
               {institution.noData > 0 && (
@@ -1448,16 +1542,16 @@
                   <h3 className="font-semibold mb-1 flex items-center gap-2"><Icons.LineChart className="w-4 h-4 text-blue-400" aria-hidden="true" /> ZTC adoption &amp; survey completion over time</h3>
                   <p className={`text-xs ${t.textMuted} mb-3`}>Mean requirement-based adoption and average survey completion across all pathways, by term</p>
                   <TrendChart dark={darkMode} height={220}
-                    ariaLabel="Line chart: institution-wide average ZTC adoption and average survey completion by term"
+                    ariaLabel="Line chart: institution-wide average ZTC adoption and average survey completion by term, with scored pathway counts per term"
                     summary={'By term: ' + trendSummary(institutionTrend.labels, [
                       { name: 'Avg ZTC adoption', data: institutionTrend.avg },
                       { name: 'Avg survey completion', data: institutionTrend.survey }
-                    ]) + '.'}
+                    ]) + '. Scored pathways per term: ' + institutionTrend.labels.map((l, i) => `${l}: ${institutionTrend.scored[i]}`).join('; ') + '.'}
                     series={[
                       { label: 'Avg ZTC adoption', labels: institutionTrend.labels, data: institutionTrend.avg, color: '#22c55e' },
                       { label: 'Avg survey completion', labels: institutionTrend.labels, data: institutionTrend.survey, color: '#3b82f6' }
                     ]} />
-                  <div className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] ${t.faint}`}>
+                  <div className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] ${t.faint}`} aria-hidden="true">
                     <span className="font-semibold uppercase tracking-wide">Scored per term:</span>
                     {institutionTrend.labels.map((l, i) => (
                       <span key={l}>{l} <span className="font-semibold">{institutionTrend.scored[i]}</span></span>
@@ -1512,7 +1606,7 @@
                       const surveyLabel = p.survey === null ? 'no survey data' : p.survey + '% survey completion';
                       return (
                       <button key={p.name} type="button"
-                        onClick={() => { setSelectedProgram(p.name); setView('program'); }}
+                        onClick={() => { setPathwayAdoptionFilter('all'); setSelectedProgram(p.name); setView('program'); }}
                         aria-label={`${i + 1}. ${p.name}. ZTC adoption ${p.pct}%. ${surveyLabel}.`}
                         className={`w-full text-left grid grid-cols-[2rem_1fr_auto] sm:grid-cols-[2rem_1fr_4.5rem_3rem_2.5rem] gap-2 items-center rounded-lg px-2 py-2 ${t.cardHover} transition-colors ${p.name === selectedProgram ? (darkMode ? 'bg-blue-500/10 border border-blue-500/40' : 'bg-blue-50 border border-blue-200') : 'border border-transparent'}`}>
                         <span className={`text-xs font-bold ${t.faint}`} aria-hidden="true">{i + 1}</span>
@@ -1659,6 +1753,13 @@
       // COURSES VIEW
       // ============================================================
       const renderCourseView = () => {
+        if (!filteredCourses.length) {
+          return (
+            <div className="p-6 pb-10">
+              <p className={`text-sm ${t.textMuted}`}>No courses match the current filters for term {selectedTerm}.</p>
+            </div>
+          );
+        }
         const c = activeCourse;
         if (!c) return null;
         return (
@@ -1745,7 +1846,11 @@
         downloadFile(rows.map(r => r.map(csvEscape).join(',')).join('\n'), `ztc-all-programs-${selectedTerm.replace('/', '')}.csv`, 'text/csv');
       };
       const exportProgramPDF = () => {
-        if (!programView || !window.jspdf) return;
+        if (!programView) return;
+        if (!window.jspdf) {
+          setStorageNotice('PDF export is unavailable — the PDF library did not load. Try refreshing the page.');
+          return;
+        }
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         doc.setFontSize(14); doc.text(activeProgram.name, 14, 16);
@@ -1879,7 +1984,12 @@
                         ariaLabel="Sort pathways by" t={t} dark={darkMode}
                         buttonClassName="text-xs py-1.5 px-2" menuClassName="w-32" />
                     </div>
-                    <div className={`text-[11px] ${t.textMuted} px-1`} aria-live="polite">{filteredPrograms.length} of {programs.length} active pathways</div>
+                    <div className={`text-[11px] ${t.textMuted} px-1`} aria-live="polite">
+                      {filteredPrograms.length} of {programs.length} active pathways
+                      {pathwayAdoptionFilter !== 'all' && (
+                        <span className={`block ${t.faint} mt-0.5`}>Filter: {PATHWAY_ADOPTION_FILTER_LABELS[pathwayAdoptionFilter]}</span>
+                      )}
+                    </div>
                   </div>
                   <ul className="flex-1 overflow-auto p-2 space-y-1 list-none m-0">
                     {filteredPrograms.map(p => {
@@ -1915,6 +2025,8 @@
               {view === 'dashboard' ? renderDashboard() : view === 'courses' ? renderCourseView() : renderProgram()}
             </main>
           </div>
+
+          <AppFooter t={t} />
 
           {selectedCourse && renderCourseModal()}
         </div>

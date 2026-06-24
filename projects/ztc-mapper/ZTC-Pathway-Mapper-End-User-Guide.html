@@ -309,8 +309,8 @@
       <p class="masthead-kicker">Chaffey College · Instructional Systems &amp; Pathways Innovation</p>
       <h1>ZTC Pathway Mapper — End-User Guide</h1>
       <p class="masthead-meta">
-        <strong>Version:</strong> 3.0 &nbsp;·&nbsp;
-        <strong>Date:</strong> June 22, 2026 &nbsp;·&nbsp;
+        <strong>Version:</strong> 3.1 &nbsp;·&nbsp;
+        <strong>Date:</strong> June 24, 2026 &nbsp;·&nbsp;
         <strong>Prepared by:</strong> Bradley Franklin &nbsp;·&nbsp;
         <strong>Audience:</strong> ZTC committee, deans, curriculum &amp; IR staff
       </p>
@@ -326,7 +326,8 @@
           <strong>Build dashboard</strong>, and explore adoption by term — all processing stays <strong>in your browser</strong>;
           data is not uploaded to a server.
           <strong>Open the app:</strong>
-          <a href="https://bjfranklin.github.io/kbase_website/projects/ztc-mapper/">GitHub Pages</a>.
+          <a href="https://bjfranklin.github.io/kbase_website/projects/ztc-mapper/">GitHub Pages</a>
+          · <a href="https://www.chairmanx.tech/projects/ztc-mapper/">chairmanx.tech</a>.
         </p>
       </section>
 
@@ -375,7 +376,7 @@
             <h3>Dashboard</h3>
             <ul>
               <li><strong>Needs attention</strong> — pathways below 50% adoption (click to open)</li>
-              <li><strong>Institution overview</strong> — KPIs and fully ZTC-able count</li>
+              <li><strong>Institution overview</strong> — six KPI tiles; click to drill into Pathway or Courses (sidebar shows active filter)</li>
               <li><strong>Compare pathways</strong> — distribution, ranking, term trend</li>
               <li><strong>Export:</strong> All pathways summary (CSV) only</li>
             </ul>
@@ -394,7 +395,7 @@
             <span class="priority-num" aria-hidden="true">3</span>
             <h3>Courses</h3>
             <ul>
-              <li>Search, filter by ZTC status, sort by ZTC % / name / survey</li>
+              <li>Search, filter by ZTC status (including <strong>CO ZTC</strong>), sort by ZTC % / name / survey</li>
               <li><strong>Detail panel</strong> matches the pathway course modal</li>
               <li><strong>View in course catalog</strong> opens Colleague in a new tab</li>
               <li><strong>Term</strong> selector applies to all three views</li>
@@ -469,6 +470,14 @@
                 <th scope="row">Load new data</th>
                 <td>Refresh icon in header → confirm → clears storage, returns to upload screen</td>
               </tr>
+              <tr>
+                <th scope="row">Sidebar cache</th>
+                <td>Timestamp footer when session was saved locally after build</td>
+              </tr>
+              <tr>
+                <th scope="row">Page footer</th>
+                <td>Contact, internal-use notice, and WCAG 2.1 AA accessibility standard</td>
+              </tr>
             </tbody>
           </table>
         </section>
@@ -501,7 +510,7 @@
               </tr>
             </tbody>
           </table>
-          <p class="note"><strong>Not in v3.0:</strong> Excel, PNG, multi-project save/load (v3.1 backlog).</p>
+          <p class="note"><strong>Not yet available (on stakeholder request):</strong> Excel, PNG, multi-project save/load.</p>
         </section>
       </div>
 
@@ -530,6 +539,10 @@
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">6</span>
+            <span><strong>Storage limit banner</strong> — browser storage is full; export if needed, then <strong>Load new data</strong> or clear site data.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">7</span>
             <span><strong>Accessibility</strong> — Tab to skip link; Esc closes modals; keyboard works in nav, term select, and export menu.</span>
           </li>
         </ol>
