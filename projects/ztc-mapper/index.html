@@ -222,6 +222,7 @@
       return parseInt(m[1], 10) * 10 + (SEM_ORDER[m[2].toUpperCase()] ?? 9);
     };
     const sortTerms = (terms) => terms.slice().sort((a, b) => termRank(a) - termRank(b));
+    const getRecentTerms = (terms, count = 2) => sortTerms(terms).slice(-count);
 
     // Normalize a SUBJECT-NUMBER join key
     const normKey = (subject, number) => {
@@ -930,7 +931,7 @@
     // Stat cards, ZTC section count, OER type breakdown, per-term trend,
     // and catalog link. `compact` renders the tighter modal layout.
     // ============================================================
-    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false }) => {
+    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false, showCatalogLink = true }) => {
       const rec = analytics.index[c.key];
       const trend = rec ? sortTerms(Object.keys(rec.terms)).map(term => ({ term, pct: rec.terms[term].ztcPct })) : [];
       const m = c.metrics;
@@ -1021,10 +1022,17 @@
             )
           )}
 
-          <a href={`${COURSE_CATALOG_URL}${encodeURIComponent(c.subject + '-' + c.number)}`} target="_blank" rel="noopener noreferrer"
-            className={`${compact ? 'flex w-full' : 'inline-flex'} items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm`}>
-            <Icons.FileText className="w-4 h-4" aria-hidden="true" /> View in course catalog
-          </a>
+          {showCatalogLink ? (
+            <a href={`${COURSE_CATALOG_URL}${encodeURIComponent(c.subject + '-' + c.number)}`} target="_blank" rel="noopener noreferrer"
+              className={`${compact ? 'flex w-full' : 'inline-flex'} items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm`}>
+              <Icons.FileText className="w-4 h-4" aria-hidden="true" /> View in course catalog
+            </a>
+          ) : !compact && (
+            <div role="note" tabIndex={0}
+              className={`text-xs ${t.faint} text-center rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}>
+              Catalog link available for current and future term only.
+            </div>
+          )}
         </>
       );
     };
@@ -1062,6 +1070,8 @@
       const [showFullRanking, setShowFullRanking] = useState(false);
       const [announce, setAnnounce] = useState('');
       const [storageNotice, setStorageNotice] = useState('');
+      const [dragOverSlot, setDragOverSlot] = useState(null);
+      const [landingAnnounce, setLandingAnnounce] = useState('');
 
       const exportMenuRef = useRef(null);
       const exportBtnRef = useRef(null);
@@ -1163,17 +1173,59 @@
         reader.readAsText(file);
       });
 
+      const isCsvFile = (file) => {
+        const name = String(file.name || '').toLowerCase();
+        return name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/vnd.ms-excel';
+      };
+
+      const loadPendingCsv = async (slot, file) => {
+        const label = slot === 'prog' ? 'Program Summary' : 'Course Analytics';
+        if (!file || !isCsvFile(file)) {
+          setError(`${label} must be a .csv file.`);
+          return;
+        }
+        try {
+          setError('');
+          const rows = await readFile(file);
+          if (slot === 'prog') setPendingProgRows(rows);
+          else setPendingAnalRows(rows);
+          setLandingAnnounce(`${label} loaded, ${rows.length - 1} rows.`);
+        } catch (err) {
+          setError(`Could not read ${label} file.`);
+        }
+      };
+
       const handleProgFile = async (e) => {
-        const f = e.target.files[0]; if (!f) return;
-        try { setError(''); setPendingProgRows(await readFile(f)); }
-        catch (err) { setError('Could not read Program Summary file.'); }
+        const f = e.target.files[0];
+        if (f) await loadPendingCsv('prog', f);
         e.target.value = '';
       };
       const handleAnalFile = async (e) => {
-        const f = e.target.files[0]; if (!f) return;
-        try { setError(''); setPendingAnalRows(await readFile(f)); }
-        catch (err) { setError('Could not read Course Analytics file.'); }
+        const f = e.target.files[0];
+        if (f) await loadPendingCsv('anal', f);
         e.target.value = '';
+      };
+
+      const uploadDropHandlers = (slot) => ({
+        onDragEnter: (e) => { e.preventDefault(); e.stopPropagation(); setDragOverSlot(slot); },
+        onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
+        onDragLeave: (e) => {
+          e.preventDefault();
+          if (!e.currentTarget.contains(e.relatedTarget)) setDragOverSlot(s => s === slot ? null : s);
+        },
+        onDrop: async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOverSlot(null);
+          const file = e.dataTransfer?.files?.[0];
+          if (file) await loadPendingCsv(slot, file);
+        }
+      });
+
+      const uploadCardCls = (slot, loaded) => {
+        if (loaded) return 'border-green-500/60 bg-green-500/5';
+        if (dragOverSlot === slot) return darkMode ? 'border-blue-400 bg-blue-500/10' : 'border-blue-500 bg-blue-50';
+        return t.cardBorder;
       };
 
       const buildDataset = () => {
@@ -1258,6 +1310,8 @@
         });
         return list;
       }, [programs, typeFilter, pathwayAdoptionFilter, search, sortBy, programAdoption, selectedProgram]);
+
+      const recentTerms = useMemo(() => new Set(getRecentTerms(terms, 2)), [terms]);
 
       const allCourses = useMemo(() => {
         if (!analytics || !selectedTerm) return [];
@@ -1414,25 +1468,29 @@
                 </div>
               )}
 
+              <div className="sr-only" role="status" aria-live="polite">{landingAnnounce}</div>
+
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className={`cursor-pointer rounded-xl border-2 border-dashed ${pendingProgRows ? 'border-green-500/60 bg-green-500/5' : t.cardBorder} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
+                <label {...uploadDropHandlers('prog')}
+                  className={`cursor-pointer rounded-xl border-2 border-dashed ${uploadCardCls('prog', pendingProgRows)} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
                   {pendingProgRows ? <Icons.CheckCircle className={`w-8 h-8 mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`} aria-hidden="true" /> : <Icons.BookOpen className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />}
                   <div className="font-semibold mb-1">1. Program Summary</div>
                   <div className={`text-xs ${t.textMuted} mb-3`}>Program / certificate / degree structure (course blocks &amp; units)</div>
                   <div className={`text-xs font-medium ${pendingProgRows ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-blue-400' : 'text-blue-700')}`}>
-                    {pendingProgRows ? `Loaded · ${pendingProgRows.length - 1} rows` : 'Choose CSV…'}
+                    {pendingProgRows ? `Loaded · ${pendingProgRows.length - 1} rows` : 'Choose CSV or drop file…'}
                   </div>
-                  <input type="file" accept=".csv" className="sr-only" aria-label="Upload Program Summary CSV" onChange={handleProgFile} />
+                  <input type="file" accept=".csv,text/csv" className="sr-only" aria-label="Upload Program Summary CSV" onChange={handleProgFile} />
                 </label>
 
-                <label className={`cursor-pointer rounded-xl border-2 border-dashed ${pendingAnalRows ? 'border-green-500/60 bg-green-500/5' : t.cardBorder} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
+                <label {...uploadDropHandlers('anal')}
+                  className={`cursor-pointer rounded-xl border-2 border-dashed ${uploadCardCls('anal', pendingAnalRows)} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
                   {pendingAnalRows ? <Icons.CheckCircle className={`w-8 h-8 mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`} aria-hidden="true" /> : <Icons.BarChart3 className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />}
                   <div className="font-semibold mb-1">2. Course Analytics</div>
                   <div className={`text-xs ${t.textMuted} mb-3`}>ZTC adoption % &amp; survey completion by course &amp; term</div>
                   <div className={`text-xs font-medium ${pendingAnalRows ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-blue-400' : 'text-blue-700')}`}>
-                    {pendingAnalRows ? `Loaded · ${pendingAnalRows.length - 1} rows` : 'Choose CSV…'}
+                    {pendingAnalRows ? `Loaded · ${pendingAnalRows.length - 1} rows` : 'Choose CSV or drop file…'}
                   </div>
-                  <input type="file" accept=".csv" className="sr-only" aria-label="Upload Course Analytics CSV" onChange={handleAnalFile} />
+                  <input type="file" accept=".csv,text/csv" className="sr-only" aria-label="Upload Course Analytics CSV" onChange={handleAnalFile} />
                 </label>
               </div>
 
@@ -1773,7 +1831,8 @@
               </div>
             </div>
 
-            <CourseDetail c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode} />
+            <CourseDetail c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode}
+              showCatalogLink={recentTerms.has(selectedTerm)} />
           </div>
         );
       };

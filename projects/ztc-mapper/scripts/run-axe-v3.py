@@ -64,6 +64,10 @@ def main() -> None:
 
         page.locator('input[aria-label="Upload Program Summary CSV"]').set_input_files(str(PROG_CSV))
         page.locator('input[aria-label="Upload Course Analytics CSV"]').set_input_files(str(ANAL_CSV))
+        page.get_by_text("Loaded ·", exact=False).nth(1).wait_for(timeout=120_000)
+        page.wait_for_timeout(500)
+        report.append(run_axe(page, "Landing (both CSVs staged, light)"))
+
         page.get_by_role("button", name="Build dashboard").click()
         page.get_by_role("navigation", name="Views").get_by_role("button", name="Dashboard", exact=True).wait_for(timeout=120_000)
         page.wait_for_timeout(800)
@@ -76,6 +80,12 @@ def main() -> None:
         page.get_by_role("navigation", name="Views").get_by_role("button", name="Courses", exact=True).click()
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Courses view"))
+
+        page.get_by_role("button", name="Select term").click()
+        page.wait_for_timeout(200)
+        page.locator('ul[role="listbox"][aria-label="Select term"] button[role="option"]').first.click()
+        page.wait_for_timeout(500)
+        report.append(run_axe(page, "Courses view (oldest term, catalog note)"))
 
         course_btn = page.locator("aside ul li button").first
         if course_btn.count():
