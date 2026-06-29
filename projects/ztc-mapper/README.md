@@ -4,7 +4,11 @@ Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree
 
 ## Quick start
 
-1. Open `index.html` in a browser (or serve this folder locally).
+**End users (recommended):** open the hosted app — **[chairmanx.tech/projects/ztc-mapper](https://www.chairmanx.tech/projects/ztc-mapper/)** (Chaffey College · GitHub Pages). No install; includes all `vendor/` assets.
+
+**Maintainers / offline:** open `index.html` from the **full project folder** (must include `vendor/`). Sharing `index.html` alone will not run.
+
+1. Open the app (hosted URL above, or local folder).
 2. Upload **Program Summary** CSV and **Course Analytics** CSV (click or drag-and-drop onto each card).
 3. Click **Build dashboard**.
 
@@ -103,7 +107,9 @@ See `index.v2.3.html` and docs marked *v2.3 historical* for the previous single-
 
 ## Publishing (GitHub Pages)
 
-Canonical source: **kbase_dev** → synced to **kbase_website** (`projects/ztc-mapper/`).
+**End-user URL:** [https://www.chairmanx.tech/projects/ztc-mapper/](https://www.chairmanx.tech/projects/ztc-mapper/)
+
+Canonical source: **kbase_dev** → synced to **kbase_website** (`projects/ztc-mapper/`). Portfolio: [chairmanx.tech](https://www.chairmanx.tech/).
 
 ```bash
 ./scripts/sync-kbase-website-projects.sh

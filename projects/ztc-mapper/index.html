@@ -20,6 +20,32 @@
   <script src="vendor/chart.umd.min.js"></script>
 
   <script>
+    // If index.html was opened without the vendor/ folder, show a clear error (not a blank page).
+    (function () {
+      var missing = [];
+      if (typeof React === 'undefined') missing.push('React');
+      if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+      if (typeof Babel === 'undefined') missing.push('Babel');
+      if (!missing.length) return;
+      var hosted = 'https://www.chairmanx.tech/projects/ztc-mapper/';
+      var html = '<div role="alert" style="max-width:36rem;margin:2rem auto;padding:1.25rem 1.5rem;font-family:system-ui,sans-serif;line-height:1.5;color:#e2e8f0;background:#1e293b;border:1px solid #475569;border-radius:0.75rem">'
+        + '<h1 style="margin:0 0 0.75rem;font-size:1.125rem;font-weight:700;color:#f8fafc">ZTC Pathway Mapper — missing files</h1>'
+        + '<p style="margin:0 0 0.75rem">This copy of <strong>index.html</strong> cannot run alone. Required libraries in the <code style="color:#93c5fd">vendor/</code> folder did not load'
+        + (missing.length ? ' (' + missing.join(', ') + ').' : '.') + '</p>'
+        + '<p style="margin:0 0 0.75rem"><strong>For most users:</strong> open the hosted app (includes all files):<br>'
+        + '<a href="' + hosted + '" style="color:#60a5fa">' + hosted + '</a></p>'
+        + '<p style="margin:0;font-size:0.875rem;color:#94a3b8">Offline use: unzip or copy the <strong>entire</strong> <code>ztc-mapper</code> project folder, then open <code>index.html</code> from that folder.</p></div>';
+      function show() {
+        var el = document.getElementById('root');
+        if (el) el.innerHTML = html;
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show);
+      else show();
+      window.__ZTC_VENDOR_MISSING__ = true;
+    })();
+  </script>
+
+  <script>
     // Apply the saved theme before first paint to avoid a flash of the wrong theme.
     // Key must match STORAGE_KEY + '-theme' in the app script below.
     (function () {
@@ -129,12 +155,14 @@
     const STORAGE_KEY = 'ztc-pathway-mapper-v3';
     const LEGACY_STORAGE_KEY = 'ztc-pathway-mapper-v2';
     const COURSE_CATALOG_URL = 'https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=';
+    const APP_HOSTED_URL = 'https://www.chairmanx.tech/projects/ztc-mapper/';
     const APP_META = {
       contact: 'Bradley Franklin',
       department: 'Instructional Systems & Pathways Innovation',
       useLine: 'Internal — ZTC / OER',
       accessibility: 'WCAG 2.1 Level AA',
-      a11yNote: 'Status labels include text, not color alone.'
+      a11yNote: 'Status labels include text, not color alone.',
+      hostedUrl: APP_HOSTED_URL
     };
 
     const SORT_BY_OPTIONS = [
@@ -695,6 +723,10 @@
         </p>
         <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
           {APP_META.useLine} · {APP_META.accessibility} · {APP_META.a11yNote}
+        </p>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          <strong className={`font-semibold ${t.text}`}>Hosted app:</strong>{' '}
+          <a href={APP_META.hostedUrl} className="underline hover:opacity-90">{APP_META.hostedUrl}</a>
         </p>
       </footer>
     );
@@ -2087,7 +2119,9 @@
       );
     };
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    if (!window.__ZTC_VENDOR_MISSING__) {
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    }
   </script>
 </body>
 </html>
