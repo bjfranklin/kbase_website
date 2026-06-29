@@ -17,6 +17,7 @@ FLOATING_CDN_PATTERNS = (
     re.compile(r"unpkg\.com/react-dom@18(?!\.2\.0)"),
     re.compile(r"@babel/standalone(?!@7\.23\.5)"),
     re.compile(r"react@18/umd"),
+    re.compile(r"cdn\.tailwindcss\.com"),
 )
 
 SCRIPT_TAG_RE = re.compile(r"<script\b([^>]*)>", re.IGNORECASE)
@@ -90,6 +91,11 @@ def main() -> int:
                 f"{src} must not use integrity attribute (breaks file:// opens; "
                 "sha384 verified by this script instead)"
             )
+
+    cdn_only = manifest.get("cdn_only", [])
+    if cdn_only:
+        names = ", ".join(item.get("name", "?") for item in cdn_only)
+        errors.append(f"deps.json still lists cdn_only entries: {names}")
 
     if errors:
         print("check-deps: FAIL")

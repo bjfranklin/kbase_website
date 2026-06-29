@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ZTC Pathway Mapper</title>
 
-  <!-- Tailwind CSS (CDN — Phase 2: offline build deferred) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS (offline — regenerate: scripts/generate-tailwind-css.sh) -->
+  <link rel="stylesheet" href="vendor/tailwind.min.css">
 
   <!-- Vendored runtime (pinned — see vendor/deps.json; verify: scripts/check-deps.py) -->
   <!-- No crossorigin / no SRI integrity attrs: both break file:// opens; CI verifies sha384. -->
