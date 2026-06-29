@@ -9,6 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Vendored runtime (pinned — see vendor/deps.json; verify: scripts/check-deps.py) -->
+  <!-- No crossorigin / no SRI integrity attrs: both break file:// opens; CI verifies sha384. -->
   <script src="vendor/react.production.min.js"></script>
   <script src="vendor/react-dom.production.min.js"></script>
   <!-- Babel 7.x only: Babel 8 defaults preset-react to automatic JSX runtime,

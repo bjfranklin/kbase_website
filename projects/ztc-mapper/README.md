@@ -39,6 +39,10 @@ Re-fetch from upstream (after manifest edit):
 ./scripts/fetch-vendor.sh
 ```
 
+CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py` on `ztc-mapper/**` changes.
+
+**Note:** Runtime SRI `integrity=` attributes are intentionally omitted — they break `file://` opens (same as `crossorigin`). File tampering is caught by `check-deps` sha384 vs `deps.json`.
+
 ### ZTC thresholds
 
 - **Chaffey ZTC (green):** ≥75% of sections zero textbook cost
