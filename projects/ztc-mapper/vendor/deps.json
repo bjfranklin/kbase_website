@@ -1,0 +1,56 @@
+{
+  "app": "ztc-pathway-mapper",
+  "app_version": "3.2.0",
+  "updated": "2026-06-29",
+  "vendored": [
+    {
+      "name": "react",
+      "version": "18.2.0",
+      "file": "vendor/react.production.min.js",
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js",
+      "sha384": "b4c1fc87704611219c912015199f364fd9fdd33b4d5f1bddc2f74ce94a11e7a71871ffb48865c1962276f43fb067fc7c"
+    },
+    {
+      "name": "react-dom",
+      "version": "18.2.0",
+      "file": "vendor/react-dom.production.min.js",
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js",
+      "sha384": "6e6ecc9f3bcafbeca44b0549dadca7484e5345d37ec4be35f28b04545d8313f2ff81f5878fdd49d92a617b9f36075061"
+    },
+    {
+      "name": "@babel/standalone",
+      "version": "7.23.5",
+      "file": "vendor/babel.min.js",
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js",
+      "sha384": "d6a944ecc64f336a470ffa4164253fc81f1408fe764582fc6e07bfa8d75f3410964e8c92a7cfccf892f6c1a5d4e218c9"
+    },
+    {
+      "name": "jspdf",
+      "version": "2.5.1",
+      "file": "vendor/jspdf.umd.min.js",
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+      "sha384": "25c9ec8d43cfca59dad6cd5fbe2d6ed765f9aa363938be7a8b24a1ef915db6bc213bf4965e0323a15a9c2b220858e2e4"
+    },
+    {
+      "name": "jspdf-autotable",
+      "version": "3.5.31",
+      "file": "vendor/jspdf.plugin.autotable.min.js",
+      "source": "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js",
+      "sha384": "beecab4d5e6792c70ba7592716fb7e1481df28ace644e06ae6b7abba1311b256ae8f9e265be97607c6fab3330dea508b"
+    },
+    {
+      "name": "chart.js",
+      "version": "4.4.0",
+      "file": "vendor/chart.umd.min.js",
+      "source": "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js",
+      "sha384": "7ba9d464b06443ce8d27a4d554a01e49a2bc8d66b7361918599168984dfd02f0db4167a27bd3e542a337a66616e5dd60"
+    }
+  ],
+  "cdn_only": [
+    {
+      "name": "tailwindcss",
+      "note": "Play CDN — offline build deferred to v3.2 Phase 2",
+      "url": "https://cdn.tailwindcss.com"
+    }
+  ]
+}
