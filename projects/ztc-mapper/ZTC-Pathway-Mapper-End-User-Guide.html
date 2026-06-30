@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="author" content="Bradley Franklin, Chaffey College" />
-  <meta name="description" content="ZTC Pathway Mapper v3 end-user guide — loading data, navigating views, reading adoption metrics, and exporting reports. Chaffey College, June 22, 2026." />
+  <meta name="description" content="ZTC Pathway Mapper v3.4 end-user guide — loading data, navigating views, reading adoption metrics, exports, and how hosting keeps the app reliable. Chaffey College, June 29, 2026." />
   <title>ZTC Pathway Mapper — End-User Guide · Chaffey College</title>
   <style>
     :root {
@@ -309,8 +309,8 @@
       <p class="masthead-kicker">Chaffey College · Instructional Systems &amp; Pathways Innovation</p>
       <h1>ZTC Pathway Mapper — End-User Guide</h1>
       <p class="masthead-meta">
-        <strong>Version:</strong> 3.1 &nbsp;·&nbsp;
-        <strong>Date:</strong> June 24, 2026 &nbsp;·&nbsp;
+        <strong>Version:</strong> 3.4 &nbsp;·&nbsp;
+        <strong>Date:</strong> June 29, 2026 &nbsp;·&nbsp;
         <strong>Prepared by:</strong> Bradley Franklin &nbsp;·&nbsp;
         <strong>Audience:</strong> ZTC committee, deans, curriculum &amp; IR staff
       </p>
@@ -326,8 +326,8 @@
           <strong>Build dashboard</strong>, and explore adoption by term — all processing stays <strong>in your browser</strong>;
           data is not uploaded to a server.
           <strong>Open the app:</strong>
-          <a href="https://www.chairmanx.tech/projects/ztc-mapper/">chairmanx.tech/projects/ztc-mapper</a>
-          (recommended). Offline: copy the full <code>ztc-mapper</code> folder including <code>vendor/</code> — do not share <code>index.html</code> alone.
+          <a href="https://bjfranklin.github.io/kbase_website/projects/ztc-mapper/">GitHub Pages</a>
+          · <a href="https://www.chairmanx.tech/projects/ztc-mapper/">chairmanx.tech</a>.
         </p>
       </section>
 
@@ -359,8 +359,8 @@
           <h2 id="start-heading">Quick start — 5 steps</h2>
           <ol>
             <li>Open the app in <strong>Chrome</strong> or <strong>Edge</strong> (Firefox/Safari for spot checks).</li>
-            <li>Upload the <strong>Program Summary</strong> CSV — wait for the green <strong>Loaded</strong> state.</li>
-            <li>Upload the <strong>IE ZTC Course Analytics</strong> CSV.</li>
+            <li>Load the <strong>Program Summary</strong> CSV — click <strong>Choose CSV</strong> or <strong>drag-and-drop</strong> onto the card; wait for green <strong>Loaded</strong>.</li>
+            <li>Load the <strong>IE ZTC Course Analytics</strong> CSV the same way (click or drag-and-drop).</li>
             <li>Click <strong>Build dashboard</strong> (enabled only when both files are loaded).</li>
             <li>Use the <strong>Term</strong> selector in the header (defaults to the latest term with data).</li>
           </ol>
@@ -387,7 +387,7 @@
             <ul>
               <li>Select a pathway in the <strong>sidebar</strong> (search &amp; type filters)</li>
               <li><strong>Adoption ring</strong> and nested areas (e.g. Cal-GETC AREA 1 → 1A)</li>
-              <li>Click a <strong>course row</strong> for detail modal + catalog link</li>
+              <li>Click a <strong>course row</strong> for detail modal + catalog link (always available in Pathway modal)</li>
               <li><strong>Export:</strong> Current pathway CSV &amp; PDF</li>
             </ul>
           </article>
@@ -397,7 +397,7 @@
             <ul>
               <li>Search, filter by ZTC status (including <strong>CO ZTC</strong>), sort by ZTC % / name / survey</li>
               <li><strong>Detail panel</strong> matches the pathway course modal</li>
-              <li><strong>View in course catalog</strong> opens Colleague in a new tab</li>
+              <li><strong>View in course catalog</strong> — shown for the <strong>two most recent terms</strong> only; older terms show an availability note</li>
               <li><strong>Term</strong> selector applies to all three views</li>
             </ul>
           </article>
@@ -514,6 +514,49 @@
         </section>
       </div>
 
+      <section class="card" aria-labelledby="reliability-heading" style="margin-bottom: 1.25rem;">
+        <h2 id="reliability-heading">Reliability, security &amp; how to access the app</h2>
+        <p style="font-size: 0.9rem; margin: 0 0 1rem;">
+          The mapper is built for long-term committee and IR use. Recent hardening and hosting choices keep the tool
+          stable, auditable, and appropriate for institutional data — without sending your CSV exports to a cloud server.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Topic</th>
+              <th scope="col">What it means for you</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Your data stays local</th>
+              <td>CSV files are read and processed <strong>only in your browser</strong>. Nothing is uploaded to Chaffey servers or third-party analytics hosts when you build a dashboard.</td>
+            </tr>
+            <tr>
+              <th scope="row">Recommended access</th>
+              <td>Use the hosted app at <a href="https://www.chairmanx.tech/projects/ztc-mapper/">chairmanx.tech/projects/ztc-mapper</a>. It always includes the full application (not just a single HTML file).</td>
+            </tr>
+            <tr>
+              <th scope="row">Pinned, offline-ready libraries</th>
+              <td>Core libraries (React, charts, PDF export, styling) are <strong>version-locked and bundled</strong> with the app instead of loading from public CDNs that can change without notice. Committee demos work reliably even on restricted networks.</td>
+            </tr>
+            <tr>
+              <th scope="row">Deploy checks</th>
+              <td>Before each release, automated checks verify that bundled files match an integrity manifest — reducing supply-chain drift and “it worked yesterday” breakage.</td>
+            </tr>
+            <tr>
+              <th scope="row">Accessibility baseline</th>
+              <td>WCAG 2.1 Level AA target; regression-tested with axe-core across multiple UI states (landing, dashboard, pathway, courses, both themes).</td>
+            </tr>
+            <tr>
+              <th scope="row">If someone emails you a file</th>
+              <td>Do <strong>not</strong> open a lone <code>index.html</code> attachment — it will not run. Use the hosted link above, or unzip/copy the <strong>entire</strong> <code>ztc-mapper</code> folder (including <code>vendor/</code>) for offline use.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">Portfolio site: <a href="https://www.chairmanx.tech/">chairmanx.tech</a> describes the project; the mapper itself lives at the projects link above.</p>
+      </section>
+
       <section class="card" aria-labelledby="tips-heading">
         <h2 id="tips-heading">Tips &amp; troubleshooting</h2>
         <ol class="asks-list">
@@ -543,7 +586,15 @@
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">7</span>
-            <span><strong>Accessibility</strong> — Tab to skip link; Esc closes modals; keyboard works in nav, term select, and export menu.</span>
+            <span><strong>Catalog link missing (Courses tab)</strong> — the Colleague link appears only for the <strong>two most recent terms</strong> in your analytics export; use Pathway course modal for older terms, or switch term.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">8</span>
+            <span><strong>Blank page or “missing files”</strong> — you opened <code>index.html</code> without the <code>vendor/</code> folder; use the <a href="https://www.chairmanx.tech/projects/ztc-mapper/">hosted app</a> instead.</span>
+          </li>
+          <li>
+            <span class="ask-num" aria-hidden="true">9</span>
+            <span><strong>Accessibility</strong> — Tab to skip link; Esc closes modals; keyboard works in nav, term select, and export menu; drag-and-drop announces success via screen reader.</span>
           </li>
         </ol>
       </section>
@@ -553,6 +604,7 @@
     <footer role="contentinfo">
       <p><strong>Contact:</strong> Bradley Franklin · Instructional Systems &amp; Pathways Innovation</p>
       <p>Internal — ZTC / OER · WCAG 2.1 AA · Status labels include text, not color alone</p>
+      <p><strong>Hosted app:</strong> <a href="https://www.chairmanx.tech/projects/ztc-mapper/">chairmanx.tech/projects/ztc-mapper</a></p>
     </footer>
   </div>
 </body>
