@@ -1,14 +1,14 @@
 {
   "app": "ztc-pathway-mapper",
   "app_version": "3.4.0",
-  "updated": "2026-06-29",
+  "updated": "2026-07-02",
   "vendored": [
     {
       "name": "tailwindcss",
       "version": "3.4.17",
       "file": "vendor/tailwind.min.css",
       "source": "generated via scripts/generate-tailwind-css.sh (tailwindcss@3.4.17 CLI)",
-      "sha384": "a653fb27888135d6d89511231ad3895df50e69b42f04bfba49dd99ae1a3ead2d05d43104ffa38cbdbf050b3c51580bce"
+      "sha384": "55beaa962578d9454b2daf76bd0459d5ea9affde172a405a05650127fa37ba9f5830ff2c3a79735bd9c31da47d2fd96f"
     },
     {
       "name": "react",

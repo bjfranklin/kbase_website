@@ -28,13 +28,13 @@
       if (typeof Babel === 'undefined') missing.push('Babel');
       if (!missing.length) return;
       var hosted = 'https://www.chairmanx.tech/projects/ztc-mapper/';
-      var html = '<div role="alert" style="max-width:36rem;margin:2rem auto;padding:1.25rem 1.5rem;font-family:system-ui,sans-serif;line-height:1.5;color:#e2e8f0;background:#1e293b;border:1px solid #475569;border-radius:0.75rem">'
-        + '<h1 style="margin:0 0 0.75rem;font-size:1.125rem;font-weight:700;color:#f8fafc">ZTC Pathway Mapper — missing files</h1>'
+      var html = '<div role="alert" style="max-width:36rem;margin:2rem auto;padding:1.25rem 1.5rem;font-family:system-ui,sans-serif;line-height:1.5;color:#e4e4e7;background:#27272a;border:1px solid #52525b;border-radius:0.75rem">'
+        + '<h1 style="margin:0 0 0.75rem;font-size:1.125rem;font-weight:700;color:#fafafa">ZTC Pathway Mapper — missing files</h1>'
         + '<p style="margin:0 0 0.75rem">This copy of <strong>index.html</strong> cannot run alone. Required libraries in the <code style="color:#93c5fd">vendor/</code> folder did not load'
         + (missing.length ? ' (' + missing.join(', ') + ').' : '.') + '</p>'
         + '<p style="margin:0 0 0.75rem"><strong>For most users:</strong> open the hosted app (includes all files):<br>'
         + '<a href="' + hosted + '" style="color:#60a5fa">' + hosted + '</a></p>'
-        + '<p style="margin:0;font-size:0.875rem;color:#94a3b8">Offline use: unzip or copy the <strong>entire</strong> <code>ztc-mapper</code> project folder, then open <code>index.html</code> from that folder.</p></div>';
+        + '<p style="margin:0;font-size:0.875rem;color:#a1a1aa">Offline use: unzip or copy the <strong>entire</strong> <code>ztc-mapper</code> project folder, then open <code>index.html</code> from that folder.</p></div>';
       function show() {
         var el = document.getElementById('root');
         if (el) el.innerHTML = html;
@@ -60,12 +60,12 @@
     html { color-scheme: dark; }
     html.theme-light { color-scheme: light; }
 
-    /* Theme-aware scrollbars (default = dark). Firefox uses scrollbar-color. */
-    html { scrollbar-color: #475569 #0f172a; }
+    /* Theme-aware scrollbars (default = dark, graphite/zinc). Firefox uses scrollbar-color. */
+    html { scrollbar-color: #52525b #18181b; }
     ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    ::-webkit-scrollbar-track { background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #71717a; }
 
     html.theme-light { scrollbar-color: #94a3b8 #e2e8f0; }
     html.theme-light ::-webkit-scrollbar-track { background: #e2e8f0; }
@@ -186,12 +186,12 @@
 
     const THEME = {
       dark: {
-        bg: 'bg-slate-950', text: 'text-slate-100', textMuted: 'text-slate-300', faint: 'text-slate-400',
-        header: 'bg-slate-900/95', headerBorder: 'border-slate-800',
-        card: 'bg-slate-800/50', cardHover: 'hover:bg-slate-800', cardBorder: 'border-slate-700/60',
-        panel: 'bg-slate-900', panelBorder: 'border-slate-800',
-        input: 'bg-slate-800 border-slate-700 text-slate-100', divider: 'border-slate-800',
-        chip: 'bg-slate-800 text-slate-200', sidebar: 'bg-slate-900/60', track: 'bg-slate-700/50'
+        bg: 'bg-zinc-950', text: 'text-zinc-100', textMuted: 'text-zinc-300', faint: 'text-zinc-400',
+        header: 'bg-zinc-900/95', headerBorder: 'border-zinc-800',
+        card: 'bg-zinc-800/50', cardHover: 'hover:bg-zinc-800', cardBorder: 'border-zinc-700/60',
+        panel: 'bg-zinc-900', panelBorder: 'border-zinc-800',
+        input: 'bg-zinc-800 border-zinc-700 text-zinc-100', divider: 'border-zinc-800',
+        chip: 'bg-zinc-800 text-zinc-200', sidebar: 'bg-zinc-900/60', track: 'bg-zinc-700/50'
       },
       light: {
         bg: 'bg-gray-50', text: 'text-gray-900', textMuted: 'text-gray-600', faint: 'text-gray-600',
@@ -289,7 +289,7 @@
     };
     // Theme-aware so colored numbers meet >=4.5:1 contrast on light backgrounds too.
     const pctColor = (pct, dark = true) => {
-      if (pct === null || pct === undefined) return dark ? 'text-slate-400' : 'text-gray-600';
+      if (pct === null || pct === undefined) return dark ? 'text-zinc-400' : 'text-gray-600';
       if (pct >= ZTC_THRESHOLDS.ZTC_MIN) return dark ? 'text-green-400' : 'text-green-800';
       if (pct >= ZTC_THRESHOLDS.PARTIAL_MIN) return dark ? 'text-amber-400' : 'text-amber-800';
       return dark ? 'text-red-400' : 'text-red-800';
@@ -827,7 +827,7 @@
       }, [open, activeIdx, options, onChange, selectedIdx]);
 
       const pickedCls = dark ? 'bg-blue-600/30 font-semibold' : 'bg-blue-50 text-blue-900 font-semibold';
-      const activeCls = dark ? 'bg-slate-700/70' : 'bg-gray-100';
+      const activeCls = dark ? 'bg-zinc-700/70' : 'bg-gray-100';
 
       return (
         <div ref={rootRef} className={`relative ${className}`}>
@@ -1529,7 +1529,7 @@
               <button type="button"
                 onClick={buildDataset}
                 disabled={!pendingProgRows || !pendingAnalRows || loading}
-                className={`mt-6 w-full rounded-lg px-4 py-3 font-semibold transition-colors flex items-center justify-center gap-2 ${(!pendingProgRows || !pendingAnalRows || loading) ? (darkMode ? 'bg-slate-700 text-slate-300 cursor-not-allowed' : 'bg-gray-300 text-gray-600 cursor-not-allowed') : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                className={`mt-6 w-full rounded-lg px-4 py-3 font-semibold transition-colors flex items-center justify-center gap-2 ${(!pendingProgRows || !pendingAnalRows || loading) ? (darkMode ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' : 'bg-gray-300 text-gray-600 cursor-not-allowed') : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
                 {loading ? <><Icons.Refresh className="w-5 h-5 animate-spin" aria-hidden="true" /> Building…</> : <>Build dashboard <Icons.ChevronRight className="w-5 h-5" aria-hidden="true" /></>}
               </button>
 
