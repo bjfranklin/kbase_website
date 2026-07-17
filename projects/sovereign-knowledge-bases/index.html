@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sovereign Knowledge Bases — Bradley Franklin</title>
+  <meta name="description" content="From a personal Obsidian vault to production RAG, MCP agents, and offline continuity — and how to build yours." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09090b;
+      --bg-elevated: #111113;
+      --bg-panel: #18181b;
+      --border: rgba(255, 255, 255, 0.14);
+      --border-strong: rgba(196, 181, 253, 0.55);
+      --zinc-400: #a1a1aa;
+      --zinc-300: #d4d4d8;
+      --zinc-200: #e4e4e7;
+      --zinc-100: #f4f4f5;
+      --purple: #8b5cf6;
+      --purple-deep: #6d28d9;
+      --purple-soft: #c4b5fd; /* ≥4.5:1 on bg for small text */
+      --purple-glow: rgba(139, 92, 246, 0.28);
+      --focus-ring: #e9d5ff;
+      --font-display: "Instrument Serif", Georgia, serif;
+      --font-body: "Sora", ui-sans-serif, system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--zinc-200);
+      font-family: var(--font-body);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(109, 40, 217, 0.22), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(139, 92, 246, 0.12), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 110%, rgba(39, 39, 42, 0.9), transparent 60%),
+        linear-gradient(180deg, #09090b 0%, #0c0c0f 50%, #09090b 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 28% 62%, rgba(196,181,253,0.45), transparent),
+        radial-gradient(1.5px 1.5px at 71% 24%, rgba(255,255,255,0.25), transparent),
+        radial-gradient(1px 1px at 85% 78%, rgba(196,181,253,0.4), transparent),
+        radial-gradient(1px 1px at 44% 41%, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 58% 88%, rgba(255,255,255,0.18), transparent);
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 40s linear infinite;
+    }
+
+    @keyframes drift {
+      from { transform: translateY(0); }
+      to { transform: translateY(-24px); }
+    }
+
+    /* Skip link — WCAG 2.4.1 */
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      z-index: 100;
+      padding: 0.75rem 1.1rem;
+      background: var(--bg-panel);
+      color: var(--zinc-100);
+      border: 2px solid var(--focus-ring);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transform: translateY(-200%);
+      transition: transform 0.15s ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+      outline: none;
+    }
+
+    .deck {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(2rem, 6vw, 5rem) clamp(1.5rem, 8vw, 7rem);
+      padding-bottom: clamp(5rem, 10vh, 6.5rem);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(18px) scale(0.985);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.55s;
+      pointer-events: none;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide.is-leaving {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.99);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--purple-soft);
+      margin-bottom: 1.25rem;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 1.5rem;
+      height: 2px;
+      background: var(--purple-soft);
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2.6rem, 7vw, 5.2rem);
+      line-height: 1.05;
+      color: var(--zinc-100);
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--purple-soft);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2rem, 4.5vw, 3.4rem);
+      line-height: 1.12;
+      color: var(--zinc-100);
+      letter-spacing: -0.02em;
+      max-width: 22ch;
+      margin-bottom: 0.85rem;
+    }
+
+    .lede {
+      font-size: clamp(1rem, 1.6vw, 1.2rem);
+      font-weight: 400;
+      color: var(--zinc-300);
+      max-width: 42rem;
+      line-height: 1.65;
+      margin-top: 1.25rem;
+    }
+
+    .lede strong { color: var(--zinc-100); font-weight: 600; }
+
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 0.92em;
+      color: var(--purple-soft);
+    }
+
+    .meta {
+      margin-top: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 2rem;
+      font-size: 0.9rem;
+      color: var(--zinc-300);
+    }
+
+    .meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .meta .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple-soft);
+      box-shadow: 0 0 10px var(--purple-glow);
+      flex-shrink: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+      max-width: 56rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+      max-width: 60rem;
+    }
+
+    .panel {
+      background: linear-gradient(160deg, rgba(24,24,27,0.95), rgba(17,17,19,0.85));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.35rem 1.4rem;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+    .slide.active .panel {
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .slide.active .panel:nth-child(1) { animation-delay: 0.08s; }
+    .slide.active .panel:nth-child(2) { animation-delay: 0.16s; }
+    .slide.active .panel:nth-child(3) { animation-delay: 0.24s; }
+    .slide.active .panel:nth-child(4) { animation-delay: 0.32s; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (hover: hover) {
+      .panel:hover {
+        border-color: var(--border-strong);
+        box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.08), 0 18px 40px -24px var(--purple-glow);
+        transform: translateY(-2px);
+      }
+    }
+
+    .panel h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--zinc-100);
+      margin-bottom: 0.45rem;
+    }
+
+    .panel p, .panel li {
+      font-size: 0.9rem;
+      color: var(--zinc-300);
+      line-height: 1.55;
+    }
+
+    .panel ul {
+      list-style: disc;
+      padding-left: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .panel li::marker {
+      color: var(--purple-soft);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple-soft);
+      border: 1px solid rgba(196, 181, 253, 0.45);
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      margin-bottom: 0.65rem;
+    }
+
+    .arch-wrap {
+      margin-top: 1.75rem;
+      max-width: 48rem;
+    }
+
+    .arch-sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .arch {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: clamp(0.75rem, 1.1vw, 0.85rem);
+      line-height: 1.55;
+      color: var(--zinc-200);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem 1.5rem;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .arch .hl { color: var(--purple-soft); }
+    .arch .dim { color: var(--zinc-300); }
+
+    .stack-list {
+      margin-top: 1.75rem;
+      max-width: 52rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: minmax(7rem, 11rem) 1fr;
+      gap: 1rem;
+      align-items: start;
+      padding: 0.85rem 1.1rem;
+      border-left: 3px solid var(--purple-soft);
+      background: rgba(24, 24, 27, 0.7);
+      border-radius: 0 10px 10px 0;
+    }
+
+    .row dt {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--purple-soft);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .row dd {
+      font-size: 0.95rem;
+      color: var(--zinc-200);
+      line-height: 1.5;
+    }
+
+    .slide.active .row {
+      animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .slide.active .row:nth-child(1) { animation-delay: 0.05s; }
+    .slide.active .row:nth-child(2) { animation-delay: 0.12s; }
+    .slide.active .row:nth-child(3) { animation-delay: 0.19s; }
+    .slide.active .row:nth-child(4) { animation-delay: 0.26s; }
+    .slide.active .row:nth-child(5) { animation-delay: 0.33s; }
+    .slide.active .row:nth-child(6) { animation-delay: 0.4s; }
+
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.85rem;
+      margin-top: 2rem;
+      max-width: 58rem;
+    }
+
+    .pillar {
+      text-align: left;
+      padding: 1.25rem 1.15rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.1), transparent 70%);
+    }
+
+    .pillar .num {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      color: var(--purple-soft);
+      line-height: 1;
+      margin-bottom: 0.6rem;
+    }
+
+    .pillar h3 {
+      font-size: 0.95rem;
+      color: var(--zinc-100);
+      margin-bottom: 0.35rem;
+    }
+
+    .pillar p {
+      font-size: 0.85rem;
+      color: var(--zinc-300);
+      line-height: 1.45;
+    }
+
+    .cta-block {
+      margin-top: 2rem;
+      max-width: 36rem;
+    }
+
+    .cta-line {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      color: var(--zinc-100);
+      line-height: 1.3;
+      margin-bottom: 1rem;
+    }
+
+    .cta-line em { font-style: italic; color: var(--purple-soft); }
+
+    .contact {
+      font-size: 0.95rem;
+      color: var(--zinc-300);
+    }
+
+    .chrome {
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1.25rem 1.1rem;
+      background: linear-gradient(transparent, rgba(9, 9, 11, 0.96) 35%);
+      pointer-events: none;
+    }
+
+    .chrome > * { pointer-events: auto; }
+
+    .brand {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--zinc-300);
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 0;
+    }
+
+    .brand .mark {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: linear-gradient(135deg, var(--purple-deep), var(--purple-soft));
+      box-shadow: 0 0 14px var(--purple-glow);
+      flex-shrink: 0;
+    }
+
+    .progress {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0.95rem;
+      display: flex;
+      gap: 0.15rem;
+      align-items: center;
+    }
+
+    /* 2.5.8 Target Size: ≥24×24 hit area */
+    .progress button {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s ease;
+    }
+
+    .progress button::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #a1a1aa; /* ≥3:1 UI contrast on #09090b */
+      transition: width 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, border-radius 0.25s ease;
+    }
+
+    .progress button[aria-current="true"]::before {
+      width: 22px;
+      border-radius: 999px;
+      background: var(--purple-soft);
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+
+    .nav {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .nav button {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--zinc-100);
+      background: rgba(24, 24, 27, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    @media (hover: hover) {
+      .nav button:hover:not(:disabled) {
+        border-color: var(--border-strong);
+        color: var(--zinc-100);
+        background: rgba(39, 39, 42, 0.98);
+      }
+    }
+
+    .nav button:disabled {
+      color: var(--zinc-400);
+      border-color: rgba(255, 255, 255, 0.08);
+      cursor: not-allowed;
+      opacity: 1; /* keep readable; do not rely on opacity alone */
+    }
+
+    /* 2.4.7 Focus Visible + 1.4.11 Non-text Contrast */
+    :focus { outline: none; }
+
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    .progress button:focus-visible {
+      border-color: var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    .hint {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.75rem;
+      z-index: 10;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--zinc-300); /* ≥4.5:1 */
+      max-width: 42vw;
+      text-align: right;
+    }
+
+    .status {
+      position: fixed;
+      top: 1.25rem;
+      left: 1.75rem;
+      z-index: 10;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+      color: var(--zinc-300);
+      max-width: min(48vw, 28rem);
+    }
+
+    .status .num { color: var(--purple-soft); font-weight: 600; }
+
+    .slide-title .title-glow {
+      position: absolute;
+      width: min(42vw, 480px);
+      height: min(42vw, 480px);
+      right: 5%;
+      top: 50%;
+      transform: translateY(-50%);
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 65%);
+      filter: blur(20px);
+      pointer-events: none;
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.7; transform: translateY(-50%) scale(1); }
+      50% { opacity: 1; transform: translateY(-50%) scale(1.06); }
+    }
+
+    .orbit {
+      position: absolute;
+      right: 8%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: min(36vw, 360px);
+      height: min(36vw, 360px);
+      border: 1px solid rgba(196, 181, 253, 0.2);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .orbit::before,
+    .orbit::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(196, 181, 253, 0.16);
+    }
+
+    .orbit::before {
+      inset: 12%;
+      animation: spin 48s linear infinite;
+    }
+
+    .orbit::after {
+      inset: 28%;
+      animation: spin 32s linear infinite reverse;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .orbit .node {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--purple-soft);
+      box-shadow: 0 0 16px var(--purple-glow);
+      top: 8%;
+      left: 50%;
+      margin-left: -5px;
+    }
+
+    /* 2.3.3 Animation from Interactions — honor reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+
+      body::after,
+      .title-glow,
+      .orbit::before,
+      .orbit::after {
+        animation: none !important;
+      }
+
+      .slide {
+        transform: none !important;
+        transition: opacity 0.01ms, visibility 0.01ms !important;
+      }
+
+      .slide.active .panel,
+      .slide.active .row {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .pillars {
+        grid-template-columns: 1fr;
+      }
+      .orbit, .slide-title .title-glow { display: none; }
+      .row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+      }
+      .hint { display: none; }
+      .slide {
+        justify-content: flex-start;
+        padding-top: 3.5rem;
+      }
+      h1 { max-width: none; }
+      .brand span:not(.mark) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 28vw;
+      }
+    }
+
+    @media print {
+      body::before, body::after, .chrome, .hint, .status, .orbit, .title-glow, .skip-link { display: none !important; }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        page-break-after: always;
+        min-height: 100vh;
+        padding: 2rem;
+        overflow: visible !important;
+      }
+      html, body { overflow: visible; height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#deck">Skip to presentation</a>
+
+  <div class="status" id="status" aria-live="polite" aria-atomic="true">
+    <span class="num" id="cur">1</span> of <span class="num" id="total">10</span>
+    <span aria-hidden="true"> · </span>
+    <span id="status-title">Title</span>
+  </div>
+  <p class="hint" id="kbd-hint">Arrow keys or Space to navigate · Home or End for first or last</p>
+
+  <main
+    class="deck"
+    id="deck"
+    role="region"
+    aria-roledescription="carousel"
+    aria-labelledby="deck-label"
+    tabindex="-1"
+  >
+    <p id="deck-label" class="arch-sr">Sovereign Knowledge Bases presentation</p>
+
+    <!-- 01 -->
+    <section class="slide slide-title active" id="slide-1" data-title="Title" aria-label="Slide 1 of 10: Title" aria-hidden="false">
+      <div class="title-glow" aria-hidden="true"></div>
+      <div class="orbit" aria-hidden="true"><span class="node"></span></div>
+      <p class="eyebrow">Knowledge architecture · RAG · Agents</p>
+      <h1>Build a <em>sovereign</em> AI-powered knowledge base</h1>
+      <p class="lede">
+        How a personal Obsidian vault became production RAG with PostgreSQL, MCP agents, and offline continuity —
+        and how I guide others to do the same <strong>without surrendering their notes to the model</strong>.
+      </p>
+      <div class="meta">
+        <span><span class="dot" aria-hidden="true"></span> Bradley Franklin</span>
+        <span><span class="dot" aria-hidden="true"></span> Vault: kbase_professional</span>
+        <span><span class="dot" aria-hidden="true"></span> Updated 2026-07-14</span>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section class="slide" id="slide-2" data-title="Why sovereign" aria-label="Slide 2 of 10: Why sovereign" aria-hidden="true" inert>
+      <p class="eyebrow">The opportunity</p>
+      <h2>Own the vault. Teach the agents. Keep Git as truth.</h2>
+      <p class="lede">
+        Most “AI knowledge bases” quietly invert the stack: the LLM becomes the store. A sovereign design keeps
+        <strong>your markdown, your repo, your boundaries</strong> — and layers retrieval and agents on top.
+      </p>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="num" aria-hidden="true">01</div>
+          <h3>Queryable</h3>
+          <p>Hybrid + vector search over your own notes — not a chat memory dump.</p>
+        </div>
+        <div class="pillar">
+          <div class="num" aria-hidden="true">02</div>
+          <h3>Durable</h3>
+          <p>Postgres + incremental indexing so knowledge survives sessions and outages.</p>
+        </div>
+        <div class="pillar">
+          <div class="num" aria-hidden="true">03</div>
+          <h3>Agent-operable</h3>
+          <p>MCP tools with security boundaries — agents work the vault on purpose.</p>
+        </div>
+        <div class="pillar">
+          <div class="num" aria-hidden="true">04</div>
+          <h3>Offline-capable</h3>
+          <p>Snapshot tiers when the live API is dark — continuity without cloud lock-in.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section class="slide" id="slide-3" data-title="The knowledge base" aria-label="Slide 3 of 10: The knowledge base" aria-hidden="true" inert>
+      <p class="eyebrow">Section 01 · The knowledge base</p>
+      <h2>PARA vault. Git as system of record.</h2>
+      <p class="lede">
+        <strong>kbase_professional</strong> is a PARA-structured Obsidian knowledge base: projects, areas, resources, archive —
+        YAML frontmatter, path-qualified wikilinks, and CI (<code>check_vault.py</code>) as the quality gate.
+      </p>
+      <div class="grid-2">
+        <div class="panel">
+          <span class="tag">Source of truth</span>
+          <h3>Markdown in Git</h3>
+          <p>Obsidian is the editing surface. The repo — not chat history — is what lasts.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">Implementation home</span>
+          <h3>kbase_dev monorepo</h3>
+          <ul>
+            <li>obsidian-rag / obsidian-rag-postgres</li>
+            <li>obsidian-mcp-server</li>
+            <li>obsidian-devops-copilot</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section class="slide" id="slide-4" data-title="From notes to RAG" aria-label="Slide 4 of 10: From notes to RAG" aria-hidden="true" inert>
+      <p class="eyebrow">Section 02 · From notes to RAG</p>
+      <h2>Semantic RAG, hardened to production.</h2>
+      <p class="lede">Born in an AI literacy build cycle, then shipped as <strong>Obsidian RAG v2.0</strong> — vault stays local; only query context and truncated matches reach the LLM.</p>
+      <dl class="stack-list">
+        <div class="row"><dt>Embeddings</dt><dd>sentence-transformers/all-MiniLM-L6-v2 (384-dim), cached locally</dd></div>
+        <div class="row"><dt>Hybrid search</dt><dd>Tags (TF-IDF) + semantic similarity — Auto / Hybrid / Tags / Semantic modes</dd></div>
+        <div class="row"><dt>Generation</dt><dd>Claude via Anthropic API on retrieved snippets</dd></div>
+        <div class="row"><dt>Web enhance</dt><dd>Optional Brave Search, merged with vault hits (vault preferred)</dd></div>
+        <div class="row"><dt>Interfaces</dt><dd>FastAPI (:8000), CLI (<code>ask</code>), web UI, cost tracking</dd></div>
+      </dl>
+    </section>
+
+    <!-- 05 -->
+    <section class="slide" id="slide-5" data-title="Postgres and pgvector" aria-label="Slide 5 of 10: Postgres and pgvector" aria-hidden="true" inert>
+      <p class="eyebrow">Homelab · Obsidian RAG Postgres</p>
+      <h2>pgvector replaced pickle caches.</h2>
+      <p class="lede">PostgreSQL 16 + pgvector on the Teleport stack — structured filters, full-text ranking, and vector similarity in one durable store.</p>
+      <div class="grid-3">
+        <div class="panel">
+          <h3>notes</h3>
+          <p>One row per file; frontmatter columns + JSONB; weighted tsvector (title / type / content).</p>
+        </div>
+        <div class="panel">
+          <h3>chunks</h3>
+          <p>Heading-aware segments with embedding vectors for precise retrieval.</p>
+        </div>
+        <div class="panel">
+          <h3>graph</h3>
+          <p>Normalized tags, note_tags, and resolved wikilink edges in note_links.</p>
+        </div>
+        <div class="panel">
+          <h3>vault-indexer</h3>
+          <p>Full + incremental indexing via content hashes — unchanged files skipped.</p>
+        </div>
+        <div class="panel">
+          <h3>Compose phases</h3>
+          <p>Schema → indexer → RAG API wired to the DB — shipable in layers.</p>
+        </div>
+        <div class="panel">
+          <h3>Homelab reach</h3>
+          <p>Production path on the self-hosted stack — your hardware, your boundaries.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section class="slide" id="slide-6" data-title="Offline continuity" aria-label="Slide 6 of 10: Offline continuity" aria-hidden="true" inert>
+      <p class="eyebrow">Continuity</p>
+      <h2>When the API goes dark, work continues.</h2>
+      <p class="lede">
+        Snapshot export (<code>POST /export-snapshot</code>) writes a portable index into
+        <code>.copilot/rag-snapshot/</code> for the DevOps Copilot plugin.
+      </p>
+      <div class="grid-3" style="max-width:48rem">
+        <div class="panel">
+          <span class="tag">Tier 1</span>
+          <h3>Live server</h3>
+          <p>Full hybrid + vector retrieval against Postgres.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">Tier 2</span>
+          <h3>Snapshot</h3>
+          <p>Portable index when the live API is unreachable.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">Tier 3</span>
+          <h3>Vault-native</h3>
+          <p>Fallback to local vault search — still operable offline.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section class="slide" id="slide-7" data-title="MCP and agents" aria-label="Slide 7 of 10: MCP and agents" aria-hidden="true" inert>
+      <p class="eyebrow">Section 03 · AI / MCP / agents</p>
+      <h2>Agents don’t scrape the vault blindly.</h2>
+      <p class="lede">
+        <strong>obsidian-mcp-server</strong> — FastMCP tools in a distroless Docker image: non-root, path traversal guards, extension allowlists.
+        Cursor and other hosts load trackers, search notes, and write only under contract.
+      </p>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Tool surface</h3>
+          <ul>
+            <li>get_file_contents · simple_search</li>
+            <li>create_file · periodic notes</li>
+            <li>HTML deliverable planner</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Governed write</h3>
+          <ul>
+            <li>Git remains system of record</li>
+            <li>Cloud / Slack agents stage to 0-inbox/</li>
+            <li>Desktop promotes into PARA</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section class="slide" id="slide-8" data-title="Operating model" aria-label="Slide 8 of 10: Operating model" aria-hidden="true" inert>
+      <p class="eyebrow">Operating model</p>
+      <h2>A deliberate tool stack — not vibes.</h2>
+      <dl class="stack-list">
+        <div class="row"><dt>Cursor</dt><dd>Daily frontier-model coding + MCP (user-obsidian)</dd></div>
+        <div class="row"><dt>Write contract</dt><dd>Git = SoR; inbox staging for cloud agents; human-led PARA promotion</dd></div>
+        <div class="row"><dt>AGENTS.md</dt><dd>Session-start: read monorepo + project trackers via MCP</dd></div>
+        <div class="row"><dt>DevOps Copilot</dt><dd>Obsidian plugin — multi-tier RAG (live / snapshot / vault)</dd></div>
+        <div class="row"><dt>Homelab inference</dt><dd>Ollama / ai-api-proxy for local models where configured</dd></div>
+        <div class="row"><dt>Ticket agent</dt><dd>Separate MCP agent for PDF / ticket workflows in the same vault ecosystem</dd></div>
+      </dl>
+    </section>
+
+    <!-- 09 -->
+    <section class="slide" id="slide-9" data-title="Architecture" aria-label="Slide 9 of 10: Architecture" aria-hidden="true" inert>
+      <p class="eyebrow">Section 04 · Architecture</p>
+      <h2>One vault. Two paths to intelligence.</h2>
+      <div class="arch-wrap">
+        <p class="arch-sr" id="arch-desc">
+          The Obsidian PARA markdown vault in Git feeds two paths.
+          Path one: vault-indexer loads PostgreSQL with pgvector, which powers the homelab RAG API for CLI, web UI, and offline snapshots used by DevOps Copilot.
+          Path two: Obsidian MCP in Docker connects Cursor and other agents for read, search, and governed write.
+        </p>
+        <pre class="arch" role="img" aria-labelledby="arch-desc" tabindex="0"><span class="hl">Obsidian vault</span> <span class="dim">(PARA markdown / Git)</span>
+        │
+        ├─► <span class="hl">vault-indexer</span> ──► <span class="hl">PostgreSQL + pgvector</span> ──► <span class="hl">RAG API</span> <span class="dim">(homelab)</span>
+        │                                              ├─ CLI / Web UI
+        │                                              └─ snapshot → Copilot offline
+        │
+        └─► <span class="hl">Obsidian MCP</span> <span class="dim">(Docker)</span> ──► <span class="hl">Cursor / agents</span>
+                                              <span class="dim">read · search · governed write</span></pre>
+      </div>
+      <p class="lede" style="margin-top:1.5rem;font-size:0.95rem">
+        Typical loop: agent reads the project tracker via MCP → uses RAG or vault search for deep context →
+        proposes or applies changes under write policy → <strong>human reviews Git and pushes</strong>.
+      </p>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" id="slide-10" data-title="Invitation" aria-label="Slide 10 of 10: Invitation" aria-hidden="true" inert>
+      <p class="eyebrow">Section 05 · Why it matters</p>
+      <h2>Personal notes become infrastructure.</h2>
+      <p class="lede">
+        Queryable · durable · agent-operable · offline-usable — <strong>without treating the LLM as the system of record</strong>.
+      </p>
+      <div class="cta-block">
+        <p class="cta-line">I design and guide these stacks — from PARA vault hygiene to RAG, Postgres, MCP, and agent write contracts — so you can build a knowledge base that <em>stays yours</em>.</p>
+        <p class="contact">Bradley Franklin · sovereign knowledge systems · Obsidian · RAG · MCP agents</p>
+      </div>
+      <div class="grid-2" style="margin-top:1.75rem;max-width:42rem">
+        <div class="panel">
+          <h3>What I help with</h3>
+          <ul>
+            <li>Vault schema &amp; CI quality gates</li>
+            <li>Hybrid RAG + pgvector migration</li>
+            <li>MCP hardening &amp; write contracts</li>
+            <li>Homelab / offline continuity tiers</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>What you keep</h3>
+          <ul>
+            <li>Your markdown and Git history</li>
+            <li>Clear security boundaries</li>
+            <li>Human review before push</li>
+            <li>Models as instruments — not owners</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="chrome">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><span>Sovereign KB · Franklin</span></div>
+    <nav class="progress" id="dots" aria-label="Slide picker"></nav>
+    <nav class="nav" aria-label="Slide controls">
+      <button type="button" id="prev" aria-label="Previous slide">Previous</button>
+      <button type="button" id="next" aria-label="Next slide">Next</button>
+    </nav>
+  </footer>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const dotsRoot = document.getElementById("dots");
+      const prevBtn = document.getElementById("prev");
+      const nextBtn = document.getElementById("next");
+      const curEl = document.getElementById("cur");
+      const totalEl = document.getElementById("total");
+      const statusTitle = document.getElementById("status-title");
+      const deck = document.getElementById("deck");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let index = 0;
+      let locked = false;
+
+      totalEl.textContent = String(slides.length);
+
+      slides.forEach((slide, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        const title = slide.dataset.title || ("Slide " + (i + 1));
+        b.setAttribute("aria-label", "Go to slide " + (i + 1) + ": " + title);
+        b.addEventListener("click", () => go(i));
+        dotsRoot.appendChild(b);
+      });
+
+      const dots = Array.from(dotsRoot.querySelectorAll("button"));
+
+      function setSlideState(slide, active) {
+        slide.classList.toggle("active", active);
+        slide.setAttribute("aria-hidden", active ? "false" : "true");
+        if (active) {
+          slide.removeAttribute("inert");
+        } else {
+          slide.setAttribute("inert", "");
+        }
+      }
+
+      function go(n, opts) {
+        opts = opts || {};
+        if (locked || n === index || n < 0 || n >= slides.length) return;
+        locked = true;
+        const from = slides[index];
+        const to = slides[n];
+        from.classList.add("is-leaving");
+        setSlideState(from, false);
+        setSlideState(to, true);
+        index = n;
+        updateChrome();
+        const delay = reduceMotion ? 0 : 480;
+        setTimeout(() => {
+          from.classList.remove("is-leaving");
+          locked = false;
+          if (opts.focusSlide) {
+            const heading = to.querySelector("h1, h2");
+            if (heading) {
+              if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+              heading.focus({ preventScroll: true });
+            } else {
+              deck.focus({ preventScroll: true });
+            }
+          }
+        }, delay);
+      }
+
+      function updateChrome() {
+        const title = slides[index].dataset.title || ("Slide " + (index + 1));
+        curEl.textContent = String(index + 1);
+        statusTitle.textContent = title;
+        slides[index].setAttribute(
+          "aria-label",
+          "Slide " + (index + 1) + " of " + slides.length + ": " + title
+        );
+        dots.forEach((d, i) => {
+          if (i === index) {
+            d.setAttribute("aria-current", "true");
+          } else {
+            d.removeAttribute("aria-current");
+          }
+        });
+        prevBtn.disabled = index === 0;
+        nextBtn.disabled = index === slides.length - 1;
+        document.title = title + " — Sovereign Knowledge Bases";
+      }
+
+      function isTypingTarget(el) {
+        if (!el || el === document.body) return false;
+        const tag = el.tagName;
+        return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+      }
+
+      prevBtn.addEventListener("click", () => go(index - 1));
+      nextBtn.addEventListener("click", () => go(index + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (isTypingTarget(e.target)) return;
+
+        const inControl =
+          e.target.closest &&
+          (e.target.closest(".nav") || e.target.closest(".progress") || e.target.closest(".skip-link"));
+
+        if (e.key === "ArrowRight" || e.key === "PageDown") {
+          e.preventDefault();
+          go(index + 1);
+        } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+          e.preventDefault();
+          go(index - 1);
+        } else if (e.key === " " || e.key === "Spacebar") {
+          // Do not steal Space from focused buttons/links (2.1.1)
+          if (inControl || e.target === prevBtn || e.target === nextBtn || e.target.tagName === "BUTTON" || e.target.tagName === "A") {
+            return;
+          }
+          e.preventDefault();
+          go(index + 1);
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          go(0);
+        } else if (e.key === "End") {
+          e.preventDefault();
+          go(slides.length - 1);
+        }
+      });
+
+      let touchX = null;
+      document.addEventListener("touchstart", (e) => {
+        touchX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      document.addEventListener("touchend", (e) => {
+        if (touchX == null) return;
+        const dx = e.changedTouches[0].screenX - touchX;
+        if (Math.abs(dx) > 50) go(dx < 0 ? index + 1 : index - 1);
+        touchX = null;
+      }, { passive: true });
+
+      updateChrome();
+    })();
+  </script>
+</body>
+</html>
