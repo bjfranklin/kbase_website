@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agentic AI Workflows — Bradley Franklin</title>
+  <meta name="description" content="How Bradley Franklin designs agentic workflows and LLM tooling — contracts, tool roles, trust boundaries, and human review gates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Cursor-dark inspired surface + brand orange accent */
+      --bg: #141414;
+      --bg-elevated: #1a1a1a;
+      --bg-panel: #1e1e1e;
+      --border: rgba(255, 255, 255, 0.10);
+      --border-strong: rgba(245, 78, 0, 0.55);
+      --zinc-400: #9b9b9b;
+      --zinc-300: #b5b5b5;
+      --zinc-200: #e4e4e4;
+      --zinc-100: #f2f2f2;
+      --purple: #f54e00;           /* Cursor orange (kept var names for CSS reuse) */
+      --purple-deep: #c43d00;
+      --purple-soft: #ff9a6b;     /* ≥4.5:1 on bg for small text */
+      --purple-glow: rgba(245, 78, 0, 0.32);
+      --focus-ring: #ffb089;
+      --font-display: "IBM Plex Serif", Georgia, serif;
+      --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--zinc-200);
+      font-family: var(--font-body);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(245, 78, 0, 0.16), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(245, 78, 0, 0.08), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 110%, rgba(30, 30, 30, 0.95), transparent 60%),
+        linear-gradient(180deg, #141414 0%, #171717 50%, #141414 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 28% 62%, rgba(255,154,107,0.45), transparent),
+        radial-gradient(1.5px 1.5px at 71% 24%, rgba(255,255,255,0.25), transparent),
+        radial-gradient(1px 1px at 85% 78%, rgba(255,154,107,0.4), transparent),
+        radial-gradient(1px 1px at 44% 41%, rgba(255,255,255,0.2), transparent),
+        radial-gradient(1px 1px at 58% 88%, rgba(255,255,255,0.18), transparent);
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 40s linear infinite;
+    }
+
+    @keyframes drift {
+      from { transform: translateY(0); }
+      to { transform: translateY(-24px); }
+    }
+
+    /* Skip link — WCAG 2.4.1 */
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      z-index: 100;
+      padding: 0.75rem 1.1rem;
+      background: var(--bg-panel);
+      color: var(--zinc-100);
+      border: 2px solid var(--focus-ring);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transform: translateY(-200%);
+      transition: transform 0.15s ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+      outline: none;
+    }
+
+    .deck {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(2rem, 6vw, 5rem) clamp(1.5rem, 8vw, 7rem);
+      padding-bottom: clamp(5rem, 10vh, 6.5rem);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(18px) scale(0.985);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.55s;
+      pointer-events: none;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide.is-leaving {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.99);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--purple-soft);
+      margin-bottom: 1.25rem;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 1.5rem;
+      height: 2px;
+      background: var(--purple-soft);
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2.6rem, 7vw, 5.2rem);
+      line-height: 1.05;
+      color: var(--zinc-100);
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--purple-soft);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2rem, 4.5vw, 3.4rem);
+      line-height: 1.12;
+      color: var(--zinc-100);
+      letter-spacing: -0.02em;
+      max-width: 22ch;
+      margin-bottom: 0.85rem;
+    }
+
+    .lede {
+      font-size: clamp(1rem, 1.6vw, 1.2rem);
+      font-weight: 400;
+      color: var(--zinc-300);
+      max-width: 42rem;
+      line-height: 1.65;
+      margin-top: 1.25rem;
+    }
+
+    .lede strong { color: var(--zinc-100); font-weight: 600; }
+
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 0.92em;
+      color: var(--purple-soft);
+    }
+
+    .meta {
+      margin-top: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 2rem;
+      font-size: 0.9rem;
+      color: var(--zinc-300);
+    }
+
+    .meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .meta .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple-soft);
+      box-shadow: 0 0 10px var(--purple-glow);
+      flex-shrink: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+      max-width: 56rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+      max-width: 60rem;
+    }
+
+    .panel {
+      background: linear-gradient(160deg, rgba(30,30,30,0.98), rgba(22,22,22,0.92));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.35rem 1.4rem;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+    .slide.active .panel {
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .slide.active .panel:nth-child(1) { animation-delay: 0.08s; }
+    .slide.active .panel:nth-child(2) { animation-delay: 0.16s; }
+    .slide.active .panel:nth-child(3) { animation-delay: 0.24s; }
+    .slide.active .panel:nth-child(4) { animation-delay: 0.32s; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (hover: hover) {
+      .panel:hover {
+        border-color: var(--border-strong);
+        box-shadow: 0 0 0 1px rgba(245, 78, 0, 0.10), 0 18px 40px -24px var(--purple-glow);
+        transform: translateY(-2px);
+      }
+    }
+
+    .panel h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--zinc-100);
+      margin-bottom: 0.45rem;
+    }
+
+    .panel p, .panel li {
+      font-size: 0.9rem;
+      color: var(--zinc-300);
+      line-height: 1.55;
+    }
+
+    .panel ul {
+      list-style: disc;
+      padding-left: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .panel li::marker {
+      color: var(--purple-soft);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--purple-soft);
+      border: 1px solid rgba(255, 154, 107, 0.45);
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      margin-bottom: 0.65rem;
+    }
+
+    .arch-wrap {
+      margin-top: 1.75rem;
+      max-width: 48rem;
+    }
+
+    .arch-sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .arch {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: clamp(0.75rem, 1.1vw, 0.85rem);
+      line-height: 1.55;
+      color: var(--zinc-200);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem 1.5rem;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .arch .hl { color: var(--purple-soft); }
+    .arch .dim { color: var(--zinc-300); }
+
+    .stack-list {
+      margin-top: 1.75rem;
+      max-width: 52rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: minmax(7rem, 11rem) 1fr;
+      gap: 1rem;
+      align-items: start;
+      padding: 0.85rem 1.1rem;
+      border-left: 3px solid var(--purple-soft);
+      background: rgba(30, 30, 30, 0.85);
+      border-radius: 0 10px 10px 0;
+    }
+
+    .row dt {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--purple-soft);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .row dd {
+      font-size: 0.95rem;
+      color: var(--zinc-200);
+      line-height: 1.5;
+    }
+
+    .slide.active .row {
+      animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .slide.active .row:nth-child(1) { animation-delay: 0.05s; }
+    .slide.active .row:nth-child(2) { animation-delay: 0.12s; }
+    .slide.active .row:nth-child(3) { animation-delay: 0.19s; }
+    .slide.active .row:nth-child(4) { animation-delay: 0.26s; }
+    .slide.active .row:nth-child(5) { animation-delay: 0.33s; }
+    .slide.active .row:nth-child(6) { animation-delay: 0.4s; }
+
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.85rem;
+      margin-top: 2rem;
+      max-width: 58rem;
+    }
+
+    .pillar {
+      text-align: left;
+      padding: 1.25rem 1.15rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(245, 78, 0, 0.12), transparent 70%);
+    }
+
+    .pillar .num {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      color: var(--purple-soft);
+      line-height: 1;
+      margin-bottom: 0.6rem;
+    }
+
+    .pillar h3 {
+      font-size: 0.95rem;
+      color: var(--zinc-100);
+      margin-bottom: 0.35rem;
+    }
+
+    .pillar p {
+      font-size: 0.85rem;
+      color: var(--zinc-300);
+      line-height: 1.45;
+    }
+
+    .cta-block {
+      margin-top: 2rem;
+      max-width: 36rem;
+    }
+
+    .cta-line {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      color: var(--zinc-100);
+      line-height: 1.3;
+      margin-bottom: 1rem;
+    }
+
+    .cta-line em { font-style: italic; color: var(--purple-soft); }
+
+    .contact {
+      font-size: 0.95rem;
+      color: var(--zinc-300);
+    }
+
+    .chrome {
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1.25rem 1.1rem;
+      background: linear-gradient(transparent, rgba(9, 9, 11, 0.96) 35%);
+      pointer-events: none;
+    }
+
+    .chrome > * { pointer-events: auto; }
+
+    .brand {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--zinc-300);
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 0;
+    }
+
+    .brand .mark {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: linear-gradient(135deg, var(--purple-deep), var(--purple-soft));
+      box-shadow: 0 0 14px var(--purple-glow);
+      flex-shrink: 0;
+    }
+
+    .progress {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0.95rem;
+      display: flex;
+      gap: 0.15rem;
+      align-items: center;
+    }
+
+    /* 2.5.8 Target Size: ≥24×24 hit area */
+    .progress button {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s ease;
+    }
+
+    .progress button::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #a1a1aa; /* ≥3:1 UI contrast on #141414 */
+      transition: width 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, border-radius 0.25s ease;
+    }
+
+    .progress button[aria-current="true"]::before {
+      width: 22px;
+      border-radius: 999px;
+      background: var(--purple-soft);
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+
+    .nav {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .nav button {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--zinc-100);
+      background: rgba(24, 24, 27, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    @media (hover: hover) {
+      .nav button:hover:not(:disabled) {
+        border-color: var(--border-strong);
+        color: var(--zinc-100);
+        background: rgba(39, 39, 42, 0.98);
+      }
+    }
+
+    .nav button:disabled {
+      color: var(--zinc-400);
+      border-color: rgba(255, 255, 255, 0.08);
+      cursor: not-allowed;
+      opacity: 1; /* keep readable; do not rely on opacity alone */
+    }
+
+    /* 2.4.7 Focus Visible + 1.4.11 Non-text Contrast */
+    :focus { outline: none; }
+
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    .progress button:focus-visible {
+      border-color: var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    .hint {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.75rem;
+      z-index: 10;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--zinc-300); /* ≥4.5:1 */
+      max-width: 42vw;
+      text-align: right;
+    }
+
+    .status {
+      position: fixed;
+      top: 1.25rem;
+      left: 1.75rem;
+      z-index: 10;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+      color: var(--zinc-300);
+      max-width: min(48vw, 28rem);
+    }
+
+    .status .num { color: var(--purple-soft); font-weight: 600; }
+
+    .slide-title .title-glow {
+      position: absolute;
+      width: min(42vw, 480px);
+      height: min(42vw, 480px);
+      right: 5%;
+      top: 50%;
+      transform: translateY(-50%);
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 65%);
+      filter: blur(20px);
+      pointer-events: none;
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.7; transform: translateY(-50%) scale(1); }
+      50% { opacity: 1; transform: translateY(-50%) scale(1.06); }
+    }
+
+    .orbit {
+      position: absolute;
+      right: 8%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: min(36vw, 360px);
+      height: min(36vw, 360px);
+      border: 1px solid rgba(196, 181, 253, 0.2);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .orbit::before,
+    .orbit::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(196, 181, 253, 0.16);
+    }
+
+    .orbit::before {
+      inset: 12%;
+      animation: spin 48s linear infinite;
+    }
+
+    .orbit::after {
+      inset: 28%;
+      animation: spin 32s linear infinite reverse;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .orbit .node {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--purple-soft);
+      box-shadow: 0 0 16px var(--purple-glow);
+      top: 8%;
+      left: 50%;
+      margin-left: -5px;
+    }
+
+    /* 2.3.3 Animation from Interactions — honor reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+
+      body::after,
+      .title-glow,
+      .orbit::before,
+      .orbit::after {
+        animation: none !important;
+      }
+
+      .slide {
+        transform: none !important;
+        transition: opacity 0.01ms, visibility 0.01ms !important;
+      }
+
+      .slide.active .panel,
+      .slide.active .row {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .pillars {
+        grid-template-columns: 1fr;
+      }
+      .orbit, .slide-title .title-glow { display: none; }
+      .row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+      }
+      .hint { display: none; }
+      .slide {
+        justify-content: flex-start;
+        padding-top: 3.5rem;
+      }
+      h1 { max-width: none; }
+      .brand span:not(.mark) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 28vw;
+      }
+    }
+
+    @media print {
+      body::before, body::after, .chrome, .hint, .status, .orbit, .title-glow, .skip-link { display: none !important; }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        page-break-after: always;
+        min-height: 100vh;
+        padding: 2rem;
+        overflow: visible !important;
+      }
+      html, body { overflow: visible; height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#deck">Skip to presentation</a>
+
+  <div class="status" id="status" aria-live="polite" aria-atomic="true">
+    <span class="num" id="cur">1</span> of <span class="num" id="total">10</span>
+    <span aria-hidden="true"> · </span>
+    <span id="status-title">Title</span>
+  </div>
+  <p class="hint" id="kbd-hint">Arrow keys or Space to navigate · Home or End for first or last</p>
+
+  <main
+    class="deck"
+    id="deck"
+    role="region"
+    aria-roledescription="carousel"
+    aria-labelledby="deck-label"
+    tabindex="-1"
+  >
+    <p id="deck-label" class="arch-sr">Agentic AI Workflows presentation</p>
+
+    <!-- 01 -->
+    <section class="slide slide-title active" id="slide-1" data-title="Title" aria-label="Slide 1 of 10: Title" aria-hidden="false">
+      <div class="title-glow" aria-hidden="true"></div>
+      <div class="orbit" aria-hidden="true"><span class="node"></span></div>
+      <p class="eyebrow">Methodology · Skill · Operating model</p>
+      <h1>Design the <em>envelope</em> agents must obey</h1>
+      <p class="lede">
+        How I work with frontier models, MCP, and agentic processes —
+        so tools stay instruments and <strong>Git remains the system of record</strong>.
+      </p>
+      <div class="meta">
+        <span><span class="dot" aria-hidden="true"></span> Bradley Franklin</span>
+        <span><span class="dot" aria-hidden="true"></span> Cursor · MCP · Homelab inference</span>
+        <span><span class="dot" aria-hidden="true"></span> Updated 2026-07-20</span>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section class="slide" id="slide-2" data-title="Thesis" aria-label="Slide 2 of 10: Thesis" aria-hidden="true" inert>
+      <p class="eyebrow">The stance</p>
+      <h2>Platform owner — not chat consumer.</h2>
+      <p class="lede">
+        The scarce skill is not better prompting alone. It is encoding
+        <strong>contracts, roles, and failure modes</strong> so agents behave correctly when you are not watching.
+      </p>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="num" aria-hidden="true">01</div>
+          <h3>Contracts first</h3>
+          <p>AGENTS.md, rules, and vault write classes before output.</p>
+        </div>
+        <div class="pillar">
+          <div class="num" aria-hidden="true">02</div>
+          <h3>Role-split tools</h3>
+          <p>Frontier IDE · prod Ollama · eval LM Studio · sensitive Pi.</p>
+        </div>
+        <div class="pillar">
+          <div class="num" aria-hidden="true">03</div>
+          <h3>Trust bounds</h3>
+          <p>No-push hooks, inbox staging, human review before origin.</p>
+        </div>
+        <div class="pillar">
+          <div class="num" aria-hidden="true">04</div>
+          <h3>External memory</h3>
+          <p>Vault trackers + MCP-16 JSON survive model switches.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section class="slide" id="slide-3" data-title="Skill set" aria-label="Slide 3 of 10: Skill set" aria-hidden="true" inert>
+      <p class="eyebrow">Evidence · Jun–Jul 2026</p>
+      <h2>Three roles. One operating system.</h2>
+      <p class="lede">
+        Baseline from ~72 Cursor sessions and a published proficiency review —
+        overall <strong>8.5 / 10</strong> as an individual practitioner.
+      </p>
+      <div class="grid-3">
+        <div class="panel">
+          <span class="tag">8.4 / 10</span>
+          <h3>AI-powered developer</h3>
+          <p>Production MCP, RAG/pgvector, API proxy; multi-phase product work with confirmation gates.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">8.1 / 10</span>
+          <h3>Professional</h3>
+          <p>Higher-ed deliverables — exec briefs, ACES/ZTC, WCAG HTML. Agent as capacity; human owns judgment.</p>
+        </div>
+        <div class="panel">
+          <span class="tag">9.0 / 10</span>
+          <h3>Administrator</h3>
+          <p>AI ops: governance layers, inference policy, credential hygiene, cloud-agent isolation.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section class="slide" id="slide-4" data-title="Contracts" aria-label="Slide 4 of 10: Contracts" aria-hidden="true" inert>
+      <p class="eyebrow">Methodology · Layered contracts</p>
+      <h2>Policy in files — not in memory.</h2>
+      <p class="lede">Agents load the stack at session start. Prose hopes fail; <strong>encoded rules scale</strong>.</p>
+      <dl class="stack-list">
+        <div class="row"><dt>AGENTS.md</dt><dd>Cross-tool session contract — monorepo map, MCP hosts, no-push policy</dd></div>
+        <div class="row"><dt>CLAUDE.md</dt><dd>Project routing index — status, paths, Obsidian tracker links</dd></div>
+        <div class="row"><dt>.cursor/rules</dt><dd>Scoped behavior — security, git, Python conventions</dd></div>
+        <div class="row"><dt>Vault write contract</dt><dd>Desktop vs Slack/cloud agent classes; inbox staging before PARA</dd></div>
+        <div class="row"><dt>check_vault.py</dt><dd>CI quality gate — frontmatter, links, structure</dd></div>
+      </dl>
+    </section>
+
+    <!-- 05 -->
+    <section class="slide" id="slide-5" data-title="Tool roles" aria-label="Slide 5 of 10: Tool roles" aria-hidden="true" inert>
+      <p class="eyebrow">Methodology · Tool-role separation</p>
+      <h2>Every surface has one job.</h2>
+      <p class="lede">Mixing eval, production, and sensitive work on one endpoint is how stacks rot. Roles stay explicit.</p>
+      <dl class="stack-list">
+        <div class="row"><dt>Cursor</dt><dd>Daily frontier models · Agent · MCP (Obsidian, Docker gateway)</dd></div>
+        <div class="row"><dt>Ollama</dt><dd>Production open models on docker-host — not on the Mac</dd></div>
+        <div class="row"><dt>LM Studio</dt><dd>Mac-only eval + offline travel — never wired to Pi or prod loops</dd></div>
+        <div class="row"><dt>Pi / ollmcp</dt><dd>Sensitive CLI and vault chat on homelab models via Teleport/LAN</dd></div>
+        <div class="row"><dt>ai-api-proxy</dt><dd>Unified OpenAI-compatible routing with ollama/ prefixes</dd></div>
+      </dl>
+    </section>
+
+    <!-- 06 -->
+    <section class="slide" id="slide-6" data-title="Trust" aria-label="Slide 6 of 10: Trust" aria-hidden="true" inert>
+      <p class="eyebrow">Methodology · Trust boundaries</p>
+      <h2>Security is operationalized.</h2>
+      <p class="lede">“Please don’t push” is not a control. Hooks, staging folders, and human-only remotes are.</p>
+      <div class="grid-2">
+        <div class="panel">
+          <span class="tag">Git</span>
+          <h3>Cloud never pushes</h3>
+          <ul>
+            <li>Pre-push hooks on agent VMs</li>
+            <li>GitLab origin = system of record</li>
+            <li>GitHub mirror for Cloud reachability</li>
+            <li>Desktop human promotes and pushes</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <span class="tag">Vault</span>
+          <h3>Write classes</h3>
+          <ul>
+            <li>Slack / Cloud → 0-inbox/ only</li>
+            <li>Desktop → PARA promotion authority</li>
+            <li>PII / credential hygiene in rules</li>
+            <li>MCP tools with path + extension guards</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section class="slide" id="slide-7" data-title="Loop" aria-label="Slide 7 of 10: Loop" aria-hidden="true" inert>
+      <p class="eyebrow">Methodology · Operating loop</p>
+      <h2>Phases and gates — not vibe thrash.</h2>
+      <p class="lede">Overloaded multi-goal prompts burn context. Explicit phases keep agents accurate and reviewable.</p>
+      <div class="grid-2">
+        <div class="panel">
+          <span class="tag">Turn design</span>
+          <h3>One goal or named phases</h3>
+          <ul>
+            <li>Baseline before optimize</li>
+            <li>“Confirm when done” gates</li>
+            <li>Do-not-edit locks on authorship surfaces</li>
+            <li>Ask sync vs dual-commit before acting</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <span class="tag">Closeout</span>
+          <h3>Durable session memory</h3>
+          <ul>
+            <li>MCP-16 session JSON under 4-resources/json/</li>
+            <li>Daily note completed tasks + summary</li>
+            <li>Tracker updates for active projects</li>
+            <li>Human push when ready</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section class="slide" id="slide-8" data-title="Knowledge" aria-label="Slide 8 of 10: Knowledge" aria-hidden="true" inert>
+      <p class="eyebrow">Memory architecture</p>
+      <h2>The model is not the archive.</h2>
+      <p class="lede">
+        <strong>kbase_professional</strong> (PARA vault) + <strong>kbase_dev</strong> (monorepo) hold continuity.
+        Agents read trackers via Obsidian MCP; RAG/pgvector deepens retrieval when needed.
+      </p>
+      <div class="grid-3">
+        <div class="panel">
+          <h3>Git SoR</h3>
+          <p>Markdown and code in repos — chat transcripts are disposable.</p>
+        </div>
+        <div class="panel">
+          <h3>MCP read path</h3>
+          <p>Session-start: load CLAUDE trackers and vault notes on purpose.</p>
+        </div>
+        <div class="panel">
+          <h3>Deliverables</h3>
+          <p>MCP-19 HTML-first briefs; publish tiers; WCAG contrast lint.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 -->
+    <section class="slide" id="slide-9" data-title="Architecture" aria-label="Slide 9 of 10: Architecture" aria-hidden="true" inert>
+      <p class="eyebrow">Stack at a glance</p>
+      <h2>Human intent. Governed agents. Durable truth.</h2>
+      <div class="arch-wrap">
+        <p class="arch-sr" id="arch-desc">
+          Human intent flows into Cursor Agent with frontier models.
+          Cursor calls Obsidian MCP in Docker against the vault with a write contract.
+          Homelab Ollama and ai-api-proxy serve Pi, ollmcp, and apps.
+          Trackers, MCP-16 JSON, and check_vault.py provide durable memory.
+          The human reviews Git and pushes to origin.
+        </p>
+        <pre class="arch" role="img" aria-labelledby="arch-desc" tabindex="0"><span class="hl">Human intent</span>
+    │
+    ├─► <span class="hl">Cursor Agent</span> <span class="dim">(frontier)</span> ──► <span class="hl">Obsidian MCP</span> <span class="dim">(Docker)</span>
+    │                                      └─► <span class="hl">Vault / Git</span> <span class="dim">(write contract)</span>
+    │
+    ├─► <span class="hl">Ollama + ai-api-proxy</span> <span class="dim">(homelab)</span> ──► Pi · ollmcp · apps
+    │
+    └─► <span class="hl">Trackers · MCP-16 · check_vault</span> ──► durable memory
+                                              <span class="dim">human reviews → git push origin</span></pre>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" id="slide-10" data-title="Close" aria-label="Slide 10 of 10: Close" aria-hidden="true" inert>
+      <p class="eyebrow">Principle</p>
+      <h2>Encode the envelope. Keep judgment human.</h2>
+      <p class="lede">
+        Agentic work scales when <strong>policy is operational</strong> — hooks, staging, roles, and gates —
+        not when prompts get longer.
+      </p>
+      <div class="cta-block">
+        <p class="cta-line">I design stacks where models are replaceable, knowledge stays yours, and <em>agents obey the archive</em>.</p>
+        <p class="contact">Bradley Franklin · agentic workflows · Cursor · MCP · sovereign knowledge systems</p>
+      </div>
+      <div class="grid-2" style="margin-top:1.75rem;max-width:42rem">
+        <div class="panel">
+          <h3>What I practice</h3>
+          <ul>
+            <li>Agent contracts &amp; write classes</li>
+            <li>Inference role matrices</li>
+            <li>Cloud-agent git isolation</li>
+            <li>Institutional AI deliverables</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>What stays mine</h3>
+          <ul>
+            <li>Markdown + Git history</li>
+            <li>Clear security boundaries</li>
+            <li>Human review before push</li>
+            <li>Models as instruments — not owners</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="chrome">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><span>Agentic AI · Franklin</span></div>
+    <nav class="progress" id="dots" aria-label="Slide picker"></nav>
+    <nav class="nav" aria-label="Slide controls">
+      <button type="button" id="prev" aria-label="Previous slide">Previous</button>
+      <button type="button" id="next" aria-label="Next slide">Next</button>
+    </nav>
+  </footer>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const dotsRoot = document.getElementById("dots");
+      const prevBtn = document.getElementById("prev");
+      const nextBtn = document.getElementById("next");
+      const curEl = document.getElementById("cur");
+      const totalEl = document.getElementById("total");
+      const statusTitle = document.getElementById("status-title");
+      const deck = document.getElementById("deck");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let index = 0;
+      let locked = false;
+
+      totalEl.textContent = String(slides.length);
+
+      slides.forEach((slide, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        const title = slide.dataset.title || ("Slide " + (i + 1));
+        b.setAttribute("aria-label", "Go to slide " + (i + 1) + ": " + title);
+        b.addEventListener("click", () => go(i));
+        dotsRoot.appendChild(b);
+      });
+
+      const dots = Array.from(dotsRoot.querySelectorAll("button"));
+
+      function setSlideState(slide, active) {
+        slide.classList.toggle("active", active);
+        slide.setAttribute("aria-hidden", active ? "false" : "true");
+        if (active) {
+          slide.removeAttribute("inert");
+        } else {
+          slide.setAttribute("inert", "");
+        }
+      }
+
+      function go(n, opts) {
+        opts = opts || {};
+        if (locked || n === index || n < 0 || n >= slides.length) return;
+        locked = true;
+        const from = slides[index];
+        const to = slides[n];
+        from.classList.add("is-leaving");
+        setSlideState(from, false);
+        setSlideState(to, true);
+        index = n;
+        updateChrome();
+        const delay = reduceMotion ? 0 : 480;
+        setTimeout(() => {
+          from.classList.remove("is-leaving");
+          locked = false;
+          if (opts.focusSlide) {
+            const heading = to.querySelector("h1, h2");
+            if (heading) {
+              if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+              heading.focus({ preventScroll: true });
+            } else {
+              deck.focus({ preventScroll: true });
+            }
+          }
+        }, delay);
+      }
+
+      function updateChrome() {
+        const title = slides[index].dataset.title || ("Slide " + (index + 1));
+        curEl.textContent = String(index + 1);
+        statusTitle.textContent = title;
+        slides[index].setAttribute(
+          "aria-label",
+          "Slide " + (index + 1) + " of " + slides.length + ": " + title
+        );
+        dots.forEach((d, i) => {
+          if (i === index) {
+            d.setAttribute("aria-current", "true");
+          } else {
+            d.removeAttribute("aria-current");
+          }
+        });
+        prevBtn.disabled = index === 0;
+        nextBtn.disabled = index === slides.length - 1;
+        document.title = title + " — Agentic AI Workflows";
+      }
+
+      function isTypingTarget(el) {
+        if (!el || el === document.body) return false;
+        const tag = el.tagName;
+        return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+      }
+
+      prevBtn.addEventListener("click", () => go(index - 1));
+      nextBtn.addEventListener("click", () => go(index + 1));
+
+      document.addEventListener("keydown", (e) => {
+        if (isTypingTarget(e.target)) return;
+
+        const inControl =
+          e.target.closest &&
+          (e.target.closest(".nav") || e.target.closest(".progress") || e.target.closest(".skip-link"));
+
+        if (e.key === "ArrowRight" || e.key === "PageDown") {
+          e.preventDefault();
+          go(index + 1);
+        } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+          e.preventDefault();
+          go(index - 1);
+        } else if (e.key === " " || e.key === "Spacebar") {
+          // Do not steal Space from focused buttons/links (2.1.1)
+          if (inControl || e.target === prevBtn || e.target === nextBtn || e.target.tagName === "BUTTON" || e.target.tagName === "A") {
+            return;
+          }
+          e.preventDefault();
+          go(index + 1);
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          go(0);
+        } else if (e.key === "End") {
+          e.preventDefault();
+          go(slides.length - 1);
+        }
+      });
+
+      let touchX = null;
+      document.addEventListener("touchstart", (e) => {
+        touchX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      document.addEventListener("touchend", (e) => {
+        if (touchX == null) return;
+        const dx = e.changedTouches[0].screenX - touchX;
+        if (Math.abs(dx) > 50) go(dx < 0 ? index + 1 : index - 1);
+        touchX = null;
+      }, { passive: true });
+
+      updateChrome();
+    })();
+  </script>
+</body>
+</html>
