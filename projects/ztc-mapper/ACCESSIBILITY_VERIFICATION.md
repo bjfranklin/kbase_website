@@ -1,6 +1,24 @@
-# Accessibility Verification — v3.4
+# Accessibility Verification — v3.5.2
 
 > Historical v2.3 line-level audit: see vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-ACCESSIBILITY_VERIFICATION.md`.
+
+## axe-core (2026-08-04) — v3.5.2 Plan 3 polish
+
+Run: `ZTC_PROG_CSV=…/Program Summary 2026-08-03_113716.csv python3 scripts/run-axe-v3.py http://localhost:8767/index.html`
+
+**Result:** **0 WCAG 2.1 AA violations** across **10 UI states**, including Courses membership `ul`/`li` tiles with placement subtitles and Pathway jump scroll targets (`data-course-key`).
+
+## axe-core (2026-08-04) — v3.5.1 UI polish
+
+Run: `ZTC_PROG_CSV=…/Program Summary 2026-08-03_113716.csv python3 scripts/run-axe-v3.py http://localhost:8767/index.html`
+
+**Result:** **0 WCAG 2.1 AA violations** across **10 UI states**, including Pathway lab-ref/choice bands, Dashboard five-KPI overview row, and Courses “In pathways” membership tiles.
+
+## axe-core (2026-08-04) — v3.5 pathway fidelity
+
+Run: `ZTC_PROG_CSV=…/Program Summary 2026-08-03_113716.csv python3 scripts/run-axe-v3.py http://localhost:8767/index.html`
+
+**Result:** **0 WCAG 2.1 AA violations** across **10 UI states** (same harness as v3.4), including Pathway view with lab-reference callouts and Either/Or/And option bundles.
 
 ## axe-core (2026-06-19)
 

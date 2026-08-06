@@ -368,6 +368,170 @@
       return { choice: null, n: null }; // unknown -> inherit / default all
     };
 
+    // Empty CurriQunet blocks that re-list lab courses marked with Header Identifier (*)
+    const isLabReferenceTitle = (title) => {
+      const s = cleanTitle(title).toLowerCase();
+      if (!s) return false;
+      if (/laboratory\s+(science|activity)\b/.test(s)) return true;
+      if (/^[a-z0-9]+\s*-\s*laboratory\b/.test(s)) return true;
+      return false;
+    };
+    const hasLabAsterisk = (headerId) => String(headerId || '').includes('*');
+    const normGroupLabel = (gt) => cleanTitle(gt).toLowerCase();
+    const isGroupNLabel = (gt) => /^group\s*\d+/.test(normGroupLabel(gt));
+    const isChooseOneGroupLabel = (gt) => {
+      const s = normGroupLabel(gt);
+      return s === 'choose one group' || s.startsWith('required core - choose one group');
+    };
+
+    const isChooseOneLabel = (gt) => {
+      const s = normGroupLabel(gt);
+      return s === 'choose' || s === 'choose one' || s.startsWith('choose one') || s === 'choose both' || s.startsWith('choose both');
+    };
+    const isEitherOrLabel = (gt) => {
+      const s = normGroupLabel(gt);
+      return s === 'either' || s === 'or';
+    };
+
+    // Split a labeled course bucket into options using Condition and/or.
+    // Group N / choose-one-group: courses stay in one option (all members of that group).
+    const splitBucketIntoOptions = (label, courseEvents) => {
+      const opts = [];
+      let cur = null;
+      const groupBundle = label && (isGroupNLabel(label) || isChooseOneGroupLabel(label));
+      for (const ev of courseEvents) {
+        const cond = String(ev.condition || '').trim().toLowerCase();
+        if (groupBundle) {
+          if (cond === 'or' && cur && cur.courses.length) {
+            cur = { label, courses: [ev.course] };
+            opts.push(cur);
+          } else {
+            if (!cur) { cur = { label, courses: [] }; opts.push(cur); }
+            cur.courses.push(ev.course);
+          }
+          continue;
+        }
+        if (cond === 'and' && cur) {
+          cur.courses.push(ev.course);
+        } else if (cond === 'or') {
+          cur = { label: label || 'Or', courses: [ev.course] };
+          opts.push(cur);
+        } else {
+          cur = { label: label || null, courses: [ev.course] };
+          opts.push(cur);
+        }
+      }
+      return opts;
+    };
+
+    // Build Either/Or/And option bundles from block event stream (markers + courses).
+    // CurriQunet META exports markers before their courses in file order; reverse options for catalog display.
+    const buildOptionsFromEvents = (events) => {
+      if (!events || !events.length) return null;
+      let label = null;
+      let bucket = [];
+      const options = [];
+      // Consecutive Either:/Or: markers with no courses between — apply to the following cluster.
+      let eitherOrQueue = [];
+
+      const flush = (overrideLabel) => {
+        if (!bucket.length) {
+          eitherOrQueue = [];
+          return;
+        }
+        const useLabel = overrideLabel !== undefined ? overrideLabel : label;
+        if (eitherOrQueue.length > 1) {
+          // Build in catalog order (Either before Or, lecture before lab), then append
+          // reversed so the shared final reverse matches other option streams.
+          const labelsCat = eitherOrQueue.slice().reverse();
+          eitherOrQueue = [];
+          const coursesCat = bucket.map(ev => ev.course).reverse();
+          bucket = [];
+          const built = [];
+          let i = 0;
+          let li = 0;
+          while (i < coursesCat.length && li < labelsCat.length) {
+            const c0 = coursesCat[i];
+            const c1 = coursesCat[i + 1];
+            const n0 = String(c0.number || '').toUpperCase();
+            const n1 = c1 ? String(c1.number || '').toUpperCase() : '';
+            const labPair = c1 && (n1 === n0 + 'L' || n0 === n1 + 'L');
+            const lecture = labPair && n0.endsWith('L') ? c1 : c0;
+            const lab = labPair && n0.endsWith('L') ? c0 : c1;
+            if (labPair && li + 1 < labelsCat.length) {
+              built.push({ label: labelsCat[li], courses: [lecture] });
+              built.push({ label: labelsCat[li + 1], courses: [lecture, lab] });
+              i += 2;
+              li += 2;
+            } else {
+              built.push({ label: labelsCat[li], courses: [c0] });
+              i += 1;
+              li += 1;
+            }
+          }
+          while (i < coursesCat.length) {
+            built.push({ label: null, courses: [coursesCat[i]] });
+            i += 1;
+          }
+          for (let bi = built.length - 1; bi >= 0; bi--) {
+            const o = built[bi];
+            options.push({
+              label: o.label,
+              // file order within AND-bundle so final courses.reverse() yields lecture then lab
+              courses: o.courses.length > 1 ? o.courses.slice().reverse() : o.courses.slice()
+            });
+          }
+          return;
+        }
+        eitherOrQueue = [];
+        for (const o of splitBucketIntoOptions(useLabel, bucket)) options.push(o);
+        bucket = [];
+      };
+
+      for (const ev of events) {
+        if (ev.type === 'marker') {
+          const gt = ev.groupTitle;
+          // "Choose one:" after a course list — label the preceding bucket.
+          if (isChooseOneLabel(gt) && bucket.length && !isChooseOneGroupLabel(gt)) {
+            flush(cleanTitle(gt));
+            label = null;
+            continue;
+          }
+          if (bucket.length) flush();
+          if (isChooseOneGroupLabel(gt)) {
+            if (!label || !isGroupNLabel(label)) label = cleanTitle(gt);
+            continue;
+          }
+          if (isEitherOrLabel(gt)) {
+            eitherOrQueue.push(cleanTitle(gt));
+            label = cleanTitle(gt);
+            continue;
+          }
+          eitherOrQueue = [];
+          label = cleanTitle(gt);
+          continue;
+        }
+        bucket.push(ev);
+      }
+      flush();
+
+      const cleaned = options.filter(o => o.courses && o.courses.length > 0);
+      if (!cleaned.length) return null;
+      const hasStructure = cleaned.some(o => o.label || o.courses.length > 1);
+      if (!hasStructure) return null;
+      // Reverse to approximate catalog / CurriQunet UI order.
+      return cleaned.reverse().map(o => ({
+        label: o.label,
+        courses: o.courses.slice().reverse()
+      }));
+    };
+
+    const optionIsZtc = (courses) => {
+      const withData = courses.filter(c => c.offered && c.ztcPct !== null);
+      if (!withData.length) return false;
+      return withData.every(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN);
+    };
+
     // ---- Area ordering / nesting helpers ----
     const looksLikeArea = (title) => /^area\b/i.test(cleanTitle(title));
     // A bare sub-item like "A - Arts", "1A - ...", "B2 - ..." (not an "AREA n" header)
@@ -468,7 +632,7 @@
       return { index, terms: sortTerms(Array.from(termSet)) };
     };
 
-    // Programs: active only -> nested areas -> subgroups -> courses
+    // Programs: active only -> nested areas -> subgroups -> courses (+ option bundles)
     const buildPrograms = (rows) => {
       const headers = rows[0];
       const data = rows.slice(1);
@@ -479,13 +643,17 @@
         num: findIdx(headers, ['program_course block_course block item course number', 'course block item course number']),
         cTitle: findIdx(headers, ['program_course block_course block item course title', 'course block item course title']),
         block: findIdx(headers, ['course block title']),
-        minU: findIdx(headers, ['min units'])
+        minU: findIdx(headers, ['min units']),
+        headerId: findIdx(headers, ['header identifier (*)', 'header identifier']),
+        groupTitle: findIdx(headers, ['group title']),
+        condition: findIdx(headers, ['condition'])
       };
       if (I.title === -1 || I.subj === -1 || I.num === -1 || I.block === -1) {
         throw new Error('Program Summary file is missing required columns (Program Entity Title, Subject Code, Course Number, Course Block Title).');
       }
-      // group rows by program (active only), preserving block + course order
+      // group rows by program (active only), preserving block + course + marker order
       const progMap = new Map();
+      const seenMarker = new Set(); // pname|block|groupTitle — first occurrence only
       for (const r of data) {
         const status = (I.status !== -1 ? r[I.status] : 'Active') || '';
         if (status.trim().toLowerCase() !== 'active') continue;
@@ -493,32 +661,75 @@
         if (!pname) continue;
         const blockRaw = (r[I.block] || '').trim();
         const key = normKey(r[I.subj], r[I.num]);
+        const groupTitle = I.groupTitle !== -1 ? String(r[I.groupTitle] || '').trim() : '';
+        const condition = I.condition !== -1 ? String(r[I.condition] || '').trim() : '';
+        const headerId = I.headerId !== -1 ? String(r[I.headerId] || '').trim() : '';
         if (!progMap.has(pname)) progMap.set(pname, { name: pname, blockOrder: [], blocks: new Map() });
         const prog = progMap.get(pname);
         const bClean = cleanTitle(blockRaw) || '(Untitled block)';
         if (!prog.blocks.has(bClean)) {
-          prog.blocks.set(bClean, { title: bClean, raw: blockRaw, courses: [], courseKeys: new Set() });
+          prog.blocks.set(bClean, {
+            title: bClean,
+            raw: blockRaw,
+            courses: [],
+            courseKeys: new Set(),
+            events: [],
+            isLabReference: isLabReferenceTitle(bClean)
+          });
           prog.blockOrder.push(bClean);
         }
         const blk = prog.blocks.get(bClean);
+
+        // Group Title marker row (no course): Either / Or / Choose one / Group N
+        if (groupTitle && !key) {
+          const mk = pname + '\0' + bClean + '\0' + groupTitle;
+          if (!seenMarker.has(mk)) {
+            seenMarker.add(mk);
+            blk.events.push({ type: 'marker', groupTitle, condition });
+          }
+          continue;
+        }
+
         if (key && !blk.courseKeys.has(key)) {
           blk.courseKeys.add(key);
-          blk.courses.push({
+          const course = {
             key,
             subject: String(r[I.subj] || '').trim(),
             number: String(r[I.num] || '').trim(),
             courseTitle: I.cTitle !== -1 ? (r[I.cTitle] || '').trim() : '',
-            units: I.minU !== -1 ? parseUnits(r[I.minU]) : null
-          });
+            units: I.minU !== -1 ? parseUnits(r[I.minU]) : null,
+            headerId,
+            groupTitle: groupTitle || '',
+            condition
+          };
+          blk.courses.push(course);
+          blk.events.push({ type: 'course', course, condition, groupTitle });
+        } else if (key && condition && blk.courseKeys.has(key)) {
+          // Outcome-duplicate row may carry Condition — keep first non-empty on the course
+          const existing = blk.courses.find(c => c.key === key);
+          if (existing && !existing.condition && condition) existing.condition = condition;
+        }
+      }
+
+      // Attach option bundles derived from Group Title + Condition events
+      for (const prog of progMap.values()) {
+        for (const blk of prog.blocks.values()) {
+          blk.options = buildOptionsFromEvents(blk.events);
         }
       }
 
       // Build areas from ordered blocks. When adjacency=true, bare-letter sub-items
       // (e.g. "A - Arts") are buffered and attached to the next area header.
+      // Lab-reference empty blocks (C - Laboratory Science) buffer too — not dropped.
       const buildAreas = (blocksInOrder, adjacency) => {
         const isHeaderOnly = b => b.courses.length === 0;
         const headersByGroup = new Map(); // group token -> header block title (no courses)
-        for (const b of blocksInOrder) if (isHeaderOnly(b)) { const g = areaGroupToken(b.title); if (g && !headersByGroup.has(g)) headersByGroup.set(g, b.title); }
+        for (const b of blocksInOrder) {
+          if (isHeaderOnly(b) && looksLikeArea(b.title)) {
+            const g = areaGroupToken(b.title);
+            if (g && !headersByGroup.has(g)) headersByGroup.set(g, b.title);
+          }
+        }
         const areas = [];
         const areaByTitle = new Map();
         const ensureArea = (title) => {
@@ -528,27 +739,109 @@
           }
           return areaByTitle.get(title);
         };
+        const makeSubgroup = (area, b, req) => ({
+          id: area.id + '-' + area.subgroups.length,
+          title: b.title,
+          requirement: req,
+          courses: b.courses.slice(),
+          options: b.options || null,
+          isLabReference: !!b.isLabReference
+        });
         const standalone = (b, req) => {
-          const node = { id: 'a' + areas.length, title: b.title, requirement: req, subgroups: [{ id: 'a' + areas.length + '-0', title: null, requirement: req, courses: b.courses }], isHeaderArea: false };
+          const node = {
+            id: 'a' + areas.length,
+            title: b.title,
+            requirement: req,
+            subgroups: [{
+              id: 'a' + areas.length + '-0',
+              title: null,
+              requirement: req,
+              courses: b.courses.slice(),
+              options: b.options || null,
+              isLabReference: !!b.isLabReference
+            }],
+            isHeaderArea: false
+          };
           areas.push(node); areaByTitle.set(b.title, node);
         };
         const attach = (area, b, leafReq) => {
           const req = leafReq.choice === null ? area.requirement : leafReq;
-          area.subgroups.push({ id: area.id + '-' + area.subgroups.length, title: b.title, requirement: req, courses: b.courses });
+          area.subgroups.push(makeSubgroup(area, b, req));
         };
         let buffer = [];
-        const flushStandalone = () => { for (const o of buffer) standalone(o.b, o.req); buffer = []; };
+        // Prefer attaching buffered sub-items to a matching AREA header (handles reverse
+        // CurriQunet order where 1A/1B/1C appear after AREA 1 was already seen).
+        const flushStandalone = () => {
+          for (const o of buffer) {
+            const g = areaGroupToken(o.b.title);
+            const parentTitle = g ? headersByGroup.get(g) : null;
+            if (parentTitle && parentTitle !== o.b.title) attach(ensureArea(parentTitle), o.b, o.req);
+            else standalone(o.b, o.req);
+          }
+          buffer = [];
+        };
         for (const b of blocksInOrder) {
-          if (isHeaderOnly(b)) { const area = ensureArea(b.title); for (const o of buffer) attach(area, o.b, o.req); buffer = []; continue; }
+          const labRef = !!b.isLabReference || isLabReferenceTitle(b.title);
+          if (isHeaderOnly(b)) {
+            // AREA headers flush buffer; lab-ref / bare-letter empties buffer as sub-items
+            if (looksLikeArea(b.title)) {
+              const area = ensureArea(b.title);
+              for (const o of buffer) attach(area, o.b, o.req);
+              buffer = [];
+              continue;
+            }
+            if (adjacency && (looksLikeSubItem(b.title) || labRef)) {
+              b.isLabReference = labRef;
+              buffer.push({ b, req: parseRequirement(b.title) });
+              continue;
+            }
+            // Non-adjacency: keep lab-ref as standalone empty (filled later if nested fails)
+            if (labRef) {
+              b.isLabReference = true;
+              flushStandalone();
+              standalone(b, parseRequirement(b.title));
+              continue;
+            }
+            const area = ensureArea(b.title);
+            for (const o of buffer) attach(area, o.b, o.req);
+            buffer = [];
+            continue;
+          }
           const g = areaGroupToken(b.title);
           const leafReq = parseRequirement(b.title);
           const parentTitle = g ? headersByGroup.get(g) : null;
           if (parentTitle && parentTitle !== b.title) { flushStandalone(); attach(ensureArea(parentTitle), b, leafReq); }
-          else if (adjacency && looksLikeSubItem(b.title)) { buffer.push({ b, req: leafReq }); }
+          else if (adjacency && (looksLikeSubItem(b.title) || labRef)) {
+            b.isLabReference = labRef;
+            buffer.push({ b, req: leafReq });
+          }
           else { flushStandalone(); standalone(b, leafReq); }
         }
         flushStandalone();
-        return areas.filter(a => a.subgroups.length > 0);
+
+        // Fill lab-reference subgroups from sibling * courses in the same area
+        for (const area of areas) {
+          const labRefs = area.subgroups.filter(sg => sg.isLabReference);
+          if (!labRefs.length) continue;
+          const starred = [];
+          const seen = new Set();
+          for (const sg of area.subgroups) {
+            if (sg.isLabReference) continue;
+            for (const c of sg.courses) {
+              if (hasLabAsterisk(c.headerId) && c.key && !seen.has(c.key)) {
+                seen.add(c.key);
+                starred.push({ ...c });
+              }
+            }
+          }
+          for (const lr of labRefs) {
+            lr.courses = starred.map(c => ({ ...c }));
+            lr.options = null; // flat re-list
+          }
+        }
+
+        // Keep areas that have courses, or lab-ref subgroups that received * courses
+        return areas.filter(a => a.subgroups.some(sg => sg.courses.length > 0 || sg.isLabReference));
       };
 
       // Only reorder/nest when the result is a clean, uniquely-numbered AREA set
@@ -558,6 +851,31 @@
         const keys = areas.map(a => areaNumKey(a.title));
         if (keys.some(k => k === null)) return false;
         return new Set(keys).size === keys.length;
+      };
+
+      const fillLabRefsFromProgram = (areas) => {
+        const allStarred = [];
+        const seen = new Set();
+        for (const area of areas) {
+          for (const sg of area.subgroups) {
+            if (sg.isLabReference) continue;
+            for (const c of sg.courses) {
+              if (hasLabAsterisk(c.headerId) && c.key && !seen.has(c.key)) {
+                seen.add(c.key);
+                allStarred.push({ ...c });
+              }
+            }
+          }
+        }
+        for (const area of areas) {
+          for (const sg of area.subgroups) {
+            if (!sg.isLabReference) continue;
+            if (sg.courses.length === 0 && allStarred.length) {
+              sg.courses = allStarred.map(c => ({ ...c }));
+            }
+          }
+        }
+        return areas.filter(a => a.subgroups.some(sg => sg.courses.length > 0));
       };
 
       const programs = [];
@@ -571,6 +889,7 @@
         } else {
           areas = buildAreas(blocksInOrder, false);
         }
+        areas = fillLabRefsFromProgram(areas);
         programs.push({ name: prog.name, type: programType(prog.name), areas });
       }
       programs.sort((a, b) => a.name.localeCompare(b.name));
@@ -622,55 +941,103 @@
       const areas = program.areas.map(area => {
         const subgroups = area.subgroups.map(sg => {
           const courses = sg.courses.map(c => enrichCourse(c, analytics, term));
-          return { ...sg, courses };
+          let options = null;
+          if (sg.options && sg.options.length) {
+            options = sg.options.map(opt => {
+              const oCourses = opt.courses.map(c => enrichCourse(c, analytics, term));
+              return {
+                label: opt.label,
+                courses: oCourses,
+                ztcOk: optionIsZtc(oCourses)
+              };
+            });
+          }
+          return { ...sg, courses, options };
         });
-        const allCourses = subgroups.flatMap(sg => sg.courses);
+
+        // Lab-reference subgroups are display-only (re-list of * courses) — exclude from rollup
+        const scoredSubgroups = subgroups.filter(sg => !sg.isLabReference);
+        const allCourses = scoredSubgroups.flatMap(sg => sg.courses);
         const withData = allCourses.filter(c => c.offered && c.ztcPct !== null);
-        const anyZtc = withData.some(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN);
-        const ztcCount = withData.filter(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN).length;
         const req = area.requirement || { choice: null, n: null };
         const isChoice = req.choice === true;
 
-        // requirement-based rollup contribution
+        // Option-aware ZTC: an option is ZTC if every member with data meets 75%;
+        // choice areas need any option; all-required use per-course (or AND-bundle) counts.
+        const structuredOpts = scoredSubgroups.flatMap(sg => sg.options || []);
+        let anyZtc;
+        let ztcCount;
         let aReqTotal = 0, aReqZtc = 0;
-        if (isChoice) {
-          if (withData.length > 0) { aReqTotal = 1; aReqZtc = anyZtc ? 1 : 0; }
+
+        if (structuredOpts.length) {
+          const optsWithData = structuredOpts.filter(o => o.courses.some(c => c.offered && c.ztcPct !== null));
+          anyZtc = optsWithData.some(o => o.ztcOk);
+          ztcCount = optsWithData.filter(o => o.ztcOk).length;
+          if (isChoice) {
+            if (optsWithData.length > 0) { aReqTotal = 1; aReqZtc = anyZtc ? 1 : 0; }
+          } else {
+            aReqTotal = optsWithData.length;
+            aReqZtc = ztcCount;
+          }
         } else {
-          aReqTotal = withData.length;
-          aReqZtc = ztcCount;
+          anyZtc = withData.some(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN);
+          ztcCount = withData.filter(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN).length;
+          if (isChoice) {
+            if (withData.length > 0) { aReqTotal = 1; aReqZtc = anyZtc ? 1 : 0; }
+          } else {
+            aReqTotal = withData.length;
+            aReqZtc = ztcCount;
+          }
         }
         reqTotal += aReqTotal; reqZtc += aReqZtc;
 
-        // survey aggregation (all offered courses with survey data)
-        for (const c of allCourses) {
-          coursesTotal += 1;
-          if (c.offered && c.ztcPct !== null) coursesWithData += 1;
-          if (c.offered && c.surveyPct !== null) { surveySum += c.surveyPct; surveyN += 1; }
-          if (c.coZtc) coCount += 1;
+        // survey aggregation — include lab-ref re-lists for awareness but avoid double-count by key
+        const seenKeys = new Set();
+        for (const sg of subgroups) {
+          for (const c of sg.courses) {
+            if (c.key && seenKeys.has(c.key)) continue;
+            if (c.key) seenKeys.add(c.key);
+            coursesTotal += 1;
+            if (c.offered && c.ztcPct !== null) coursesWithData += 1;
+            if (c.offered && c.surveyPct !== null) { surveySum += c.surveyPct; surveyN += 1; }
+            if (c.coZtc) coCount += 1;
+          }
         }
 
-        // required units
+        // required units from scored subgroups only
         const optionUnits = allCourses.map(c => c.units).filter(u => u !== null);
         let unitsLabel = '', unitsMin = 0;
         if (isChoice) {
           const n = req.n || 1;
-          const sorted = optionUnits.slice().sort((a, b) => a - b);
-          const lo = sorted.slice(0, n).reduce((s, u) => s + u, 0);
-          const hi = sorted.slice(-n).reduce((s, u) => s + u, 0);
-          unitsMin = lo;
-          unitsLabel = lo === hi ? fmtUnits(lo) : `${fmtUnits(lo)}–${fmtUnits(hi)}`;
+          if (structuredOpts.length) {
+            const optSums = structuredOpts.map(o => o.courses.map(c => c.units).filter(u => u !== null).reduce((s, u) => s + u, 0));
+            const sorted = optSums.filter(u => u > 0).sort((a, b) => a - b);
+            const lo = sorted.slice(0, n).reduce((s, u) => s + u, 0);
+            const hi = sorted.slice(-n).reduce((s, u) => s + u, 0);
+            unitsMin = lo;
+            unitsLabel = !sorted.length ? '' : (lo === hi ? fmtUnits(lo) : `${fmtUnits(lo)}–${fmtUnits(hi)}`);
+          } else {
+            const sorted = optionUnits.slice().sort((a, b) => a - b);
+            const lo = sorted.slice(0, n).reduce((s, u) => s + u, 0);
+            const hi = sorted.slice(-n).reduce((s, u) => s + u, 0);
+            unitsMin = lo;
+            unitsLabel = lo === hi ? fmtUnits(lo) : `${fmtUnits(lo)}–${fmtUnits(hi)}`;
+          }
         } else {
           const sum = optionUnits.reduce((s, u) => s + u, 0);
           unitsMin = sum; unitsLabel = fmtUnits(sum);
         }
         unitsRequired += unitsMin;
 
+        const dataCount = structuredOpts.length
+          ? structuredOpts.filter(o => o.courses.some(c => c.offered && c.ztcPct !== null)).length
+          : withData.length;
         const areaPct = aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null;
         return {
           ...area, subgroups,
           isChoice, requiredCount: req.n,
-          unitsLabel, anyZtc, ztcCount, dataCount: withData.length,
-          areaPct, satisfiable: isChoice ? anyZtc : (withData.length > 0 && ztcCount === withData.length)
+          unitsLabel, anyZtc, ztcCount, dataCount,
+          areaPct, satisfiable: isChoice ? anyZtc : (aReqTotal > 0 && aReqZtc === aReqTotal)
         };
       });
 
@@ -866,28 +1233,44 @@
       );
     };
 
-    // Course row — defined at module scope so its DOM persists across App
-    // re-renders (keeps focus-restoration refs valid and avoids remount churn).
-    const CourseRow = ({ c, t, dark, selectedTerm, onOpen }) => {
+    // Soft label for exported Group Title bands (not a CurriQunet tree replica)
+    const formatGroupLabel = (label) => {
+      if (!label) return '';
+      const s = cleanTitle(label);
+      if (!s) return '';
+      if (/^(either|or)$/i.test(s) || /^group\s*\d+$/i.test(s) || /^choose\b/i.test(s)) {
+        return /:$/.test(s) ? s : s + ':';
+      }
+      return s;
+    };
+
+    // Course row — ZTC decision card (primary Pathway layout)
+    const CourseRow = ({ c, t, dark, selectedTerm, onOpen, showLabStar = true }) => {
       const title = c.courseTitle || c.analyticsTitle || '';
-      const label = `${c.subject}-${c.number}, ${title}. ` +
+      const labStar = showLabStar && hasLabAsterisk(c.headerId);
+      const label = `${c.subject}-${c.number}${labStar ? ' (lab asterisk)' : ''}, ${title}. ` +
         (c.offered ? `ZTC adoption ${c.ztcPct === null ? 'no data' : c.ztcPct + '%'}, survey completion ${c.surveyPct === null ? 'no data' : c.surveyPct + '%'}, status ${c.status}.` : `Not offered in ${selectedTerm}.`) +
         (c.coZtc ? ' Chancellor\u2019s Office ZTC.' : '') +
         (c.found ? ' Activate for details.' : '');
       const inner = (
         <>
           <div className="min-w-0">
-            <div className="font-mono text-sm font-semibold">{c.subject}-{c.number}</div>
+            <div className="font-mono text-sm font-semibold">
+              {c.subject}-{c.number}
+              {labStar && (
+                <span className={`ml-1 font-sans text-xs font-semibold ${dark ? 'text-zinc-400' : 'text-gray-500'}`} title="Laboratory course (*)" aria-hidden="true">*</span>
+              )}
+            </div>
           </div>
           <div className="min-w-0">
-            <div className="text-sm truncate">{title}</div>
+            <div className="text-sm line-clamp-2 sm:truncate">{title}</div>
             <div className={`text-[11px] ${t.faint}`}>
               {c.units !== null ? `${fmtUnits(c.units)} units` : ''}
               {!c.offered && <span className="ml-1">· not offered {selectedTerm}</span>}
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 justify-end">
-            <div className="text-right hidden sm:block w-16">
+          <div className="flex items-center gap-1.5 sm:gap-3 justify-end flex-shrink-0">
+            <div className="text-right hidden sm:block w-14">
               <div className={`text-[10px] ${t.faint} leading-none`}>survey</div>
               <div className="text-xs font-semibold">{c.surveyPct === null ? '—' : c.surveyPct + '%'}</div>
             </div>
@@ -900,14 +1283,94 @@
           </div>
         </>
       );
-      const cls = `w-full text-left grid grid-cols-[auto_1fr_auto] items-center gap-3 px-3 py-2 rounded-lg border ${t.cardBorder} ${t.card} transition-colors`;
+      const cls = `w-full text-left grid grid-cols-[auto_1fr_auto] items-center gap-1.5 sm:gap-3 px-2.5 sm:px-3 py-2 rounded-lg border min-w-0 ${t.cardBorder} ${t.card} transition-colors`;
       if (!c.found) {
-        return <div className={cls} aria-label={label}>{inner}</div>;
+        return <div className={cls} aria-label={label} data-course-key={c.key}>{inner}</div>;
       }
       return (
-        <button type="button" onClick={(e) => onOpen(c, e.currentTarget)} aria-label={label} className={`${cls} ${t.cardHover} cursor-pointer`}>
+        <button type="button" onClick={(e) => onOpen(c, e.currentTarget)} aria-label={label} data-course-key={c.key} className={`${cls} ${t.cardHover} cursor-pointer`}>
           {inner}
         </button>
+      );
+    };
+
+    // Compact choice-band chip when Group Title is present in the export
+    const ChoiceBand = ({ label, ztcOk, dark, t }) => {
+      const text = formatGroupLabel(label);
+      if (!text) return null;
+      return (
+        <div className="flex items-center flex-wrap gap-2 px-0.5 mb-2 mt-1">
+          <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
+            dark ? 'bg-zinc-800/80 border-zinc-600 text-zinc-200' : 'bg-gray-100 border-gray-300 text-gray-800'
+          }`}>
+            {text}
+          </span>
+          {ztcOk && (
+            <span className={`text-[11px] font-medium ${dark ? 'text-green-400' : 'text-green-700'}`}>ZTC path</span>
+          )}
+        </div>
+      );
+    };
+
+    // Pathway subgroup: flat ZTC decision list; soft choice bands only when export provides them
+    const SubgroupCourses = ({ sg, t, dark, selectedTerm, onOpen }) => {
+      const open = (course, el) => onOpen(course, el);
+
+      if (sg.isLabReference) {
+        return (
+          <div
+            className={`rounded-lg border border-dashed px-3 py-2.5 ${dark ? 'border-zinc-500 bg-zinc-800/60' : 'border-gray-400 bg-gray-100'}`}
+            role="note"
+          >
+            <p className={`text-xs leading-snug ${dark ? 'text-zinc-200' : 'text-gray-800'}`}>
+              <span className="font-semibold">Lab reference — informational (not scored).</span>
+              {' '}Satisfied by any course in this area with a laboratory (*). Listed below for ZTC reference only.
+            </p>
+            {sg.courses.length > 0 && (
+              <div className="mt-2 space-y-2" role="list" aria-label="Laboratory courses in this area (informational)">
+                {sg.courses.map((c, i) => (
+                  <CourseRow key={sg.id + '-lab-' + i} c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      if (sg.options && sg.options.length) {
+        const anyLabeled = sg.options.some(o => o.label);
+        return (
+          <div className="space-y-3 min-w-0" role="list" aria-label="Course options">
+            {sg.options.map((opt, oi) => {
+              const multi = opt.courses.length > 1;
+              return (
+                <div key={sg.id + '-opt-' + oi} role="listitem" className={`min-w-0 ${anyLabeled && opt.label ? 'space-y-1' : ''}`}>
+                  {opt.label && <ChoiceBand label={opt.label} ztcOk={opt.ztcOk} dark={dark} t={t} />}
+                  <div className={multi ? `space-y-1 rounded-lg border px-2.5 py-2 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}` : 'space-y-2 min-w-0'}>
+                    {opt.courses.map((c, ci) => (
+                      <React.Fragment key={sg.id + '-opt-' + oi + '-' + ci}>
+                        {ci > 0 && (
+                          <div className={`text-[10px] font-semibold uppercase tracking-wider px-1 my-1 ${t.faint}`} aria-hidden="true">
+                            and
+                          </div>
+                        )}
+                        <CourseRow c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-2 min-w-0">
+          {sg.courses.map((c, i) => (
+            <CourseRow key={sg.id + '-' + i} c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+          ))}
+        </div>
       );
     };
 
@@ -963,7 +1426,7 @@
     // Stat cards, ZTC section count, OER type breakdown, per-term trend,
     // and catalog link. `compact` renders the tighter modal layout.
     // ============================================================
-    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false, showCatalogLink = true }) => {
+    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false, showCatalogLink = true, programsForCourse = [], onOpenProgram }) => {
       const rec = analytics.index[c.key];
       const trend = rec ? sortTerms(Object.keys(rec.terms)).map(term => ({ term, pct: rec.terms[term].ztcPct })) : [];
       const m = c.metrics;
@@ -984,13 +1447,71 @@
           }]} />
       );
 
+      const formatMembershipPlacement = (placements) => {
+        const list = (placements || []).filter(Boolean);
+        if (!list.length) return '';
+        if (list.length <= 2) return list.join(' · ');
+        return `${list[0]} · +${list.length - 1} more`;
+      };
+
+      const programMembership = (
+        <div className={mb}>
+          <h3 className={`text-xs font-semibold ${t.textMuted} uppercase mb-2 tracking-wide`}>
+            In pathways{programsForCourse.length ? ` (${programsForCourse.length})` : ''}
+          </h3>
+          {programsForCourse.length === 0 ? (
+            <div className="space-y-1">
+              <p className={`text-xs ${t.faint}`}>Not listed in any active pathway in the Program Summary.</p>
+              <p className={`text-[11px] ${t.faint}`}>Deactivated programs in the export are not listed.</p>
+            </div>
+          ) : (
+            <ul className={`grid gap-2 list-none p-0 m-0 ${compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`} aria-label="Pathways including this course">
+              {programsForCourse.map((p) => {
+                const placement = formatMembershipPlacement(p.placements);
+                const pctLabel = p.pct === null || p.pct === undefined ? 'no adoption data' : p.pct + '% ZTC adoption';
+                const nameEndsDegree = /\bdegree\b/i.test(p.name || '');
+                const ariaBits = [p.name, placement, !nameEndsDegree ? (p.type || '') : '', pctLabel, 'Activate to open pathway'].filter(Boolean);
+                return (
+                  <li key={p.name} className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => onOpenProgram && onOpenProgram(p.name)}
+                      aria-label={ariaBits.join('. ') + '.'}
+                      className={`w-full rounded-lg border ${t.cardBorder} ${dark ? 'hover:border-zinc-500 hover:bg-zinc-800/80' : 'hover:border-gray-400 hover:bg-gray-50'} ${t.card} text-left px-3 py-2.5 transition-colors cursor-pointer min-w-0`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-sm font-semibold line-clamp-2 min-w-0">{p.name}</div>
+                        <span className={`font-semibold tabular-nums text-sm flex-shrink-0 ${pctColor(p.pct, dark)}`}>
+                          {p.pct === null || p.pct === undefined ? '—' : p.pct + '%'}
+                        </span>
+                      </div>
+                      {placement && (
+                        <div className={`text-[11px] leading-snug mt-1 line-clamp-2 ${t.textMuted}`}>{placement}</div>
+                      )}
+                      <div className={`text-[11px] mt-1 ${t.faint}`}>
+                        {p.type || 'Pathway'}
+                        <span className="mx-1" aria-hidden="true">·</span>
+                        Open pathway
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      );
+
       return (
         <>
           {!c.offered ? (
-            <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-6 text-center ${mb}`}>
-              <Icons.AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-400" aria-hidden="true" />
-              <p className={`text-sm ${t.textMuted}`}>{c.found ? `No analytics for ${selectedTerm}. This course was not offered (or not reported) in the selected term.` : 'This course was not found in the Course Analytics datasource.'}</p>
-            </div>
+            <>
+              <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-6 text-center ${mb}`}>
+                <Icons.AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-400" aria-hidden="true" />
+                <p className={`text-sm ${t.textMuted}`}>{c.found ? `No analytics for ${selectedTerm}. This course was not offered (or not reported) in the selected term.` : 'This course was not found in the Course Analytics datasource.'}</p>
+              </div>
+              {programMembership}
+            </>
           ) : (
             <>
               <div className={`grid ${compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2 gap-4'} ${mb}`}>
@@ -1013,6 +1534,8 @@
                 </div>
               </div>
 
+              {programMembership}
+
               {m.totalSec !== null && (
                 <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3 ${mb} flex items-center gap-3`}>
                   <Icons.Shield className={`w-5 h-5 ${sectionPct >= ZTC_THRESHOLDS.ZTC_MIN ? 'text-green-400' : 'text-slate-400'}`} aria-hidden="true" />
@@ -1026,7 +1549,7 @@
 
               {types.length > 0 && (
                 <div className={mb}>
-                  <h3 className={`text-xs font-semibold ${t.textMuted} uppercase mb-2`}>OER / ZTC type breakdown</h3>
+                  <h3 className={`text-xs font-semibold ${t.textMuted} uppercase mb-2 tracking-wide`}>OER / ZTC type breakdown</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {types.map(([label, val]) => (
                       <div key={label} className={`rounded-lg border ${t.cardBorder} ${t.card} p-2 text-center`}>
@@ -1104,11 +1627,13 @@
       const [storageNotice, setStorageNotice] = useState('');
       const [dragOverSlot, setDragOverSlot] = useState(null);
       const [landingAnnounce, setLandingAnnounce] = useState('');
+      const [pendingScrollCourseKey, setPendingScrollCourseKey] = useState(null);
 
       const exportMenuRef = useRef(null);
       const exportBtnRef = useRef(null);
       const courseModalRef = useRef(null);
       const lastFocusedRef = useRef(null);
+      const jumpAnnounceRef = useRef(null);
 
       const t = darkMode ? THEME.dark : THEME.light;
 
@@ -1179,6 +1704,11 @@
       // Announce context changes to assistive tech
       useEffect(() => {
         if (!programs || !selectedTerm) return;
+        if (jumpAnnounceRef.current) {
+          setAnnounce(jumpAnnounceRef.current);
+          jumpAnnounceRef.current = null;
+          return;
+        }
         setAnnounce(view === 'dashboard'
           ? `Dashboard, institution-wide ZTC adoption, term ${selectedTerm}`
           : view === 'courses'
@@ -1301,6 +1831,20 @@
         () => (activeProgram && analytics && selectedTerm) ? computeProgramView(activeProgram, analytics, selectedTerm) : null,
         [activeProgram, analytics, selectedTerm]
       );
+
+      // After Courses → Pathway jump, scroll to the first matching course row
+      useEffect(() => {
+        if (view !== 'program' || !pendingScrollCourseKey || !programView) return;
+        const key = pendingScrollCourseKey;
+        const id = window.requestAnimationFrame(() => {
+          const el = document.querySelector(`[data-course-key="${CSS.escape(key)}"]`);
+          if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+          setPendingScrollCourseKey(null);
+        });
+        return () => window.cancelAnimationFrame(id);
+      }, [view, selectedProgram, pendingScrollCourseKey, programView]);
 
       // adoption for every program at the selected term (for sidebar + dashboard)
       const programAdoption = useMemo(() => {
@@ -1473,6 +2017,64 @@
         }
       };
 
+      const openProgramFromCourse = (programName, courseKey) => {
+        setPathwayAdoptionFilter('all');
+        setTypeFilter('all');
+        setSearch('');
+        setSelectedProgram(programName);
+        setSelectedCourse(null);
+        if (courseKey) setPendingScrollCourseKey(courseKey);
+        jumpAnnounceRef.current = `Opened pathway: ${programName}`;
+        switchView('program');
+      };
+
+      // Reverse index: course key -> programs that include it (deduped by program name)
+      // Placement labels come from export area/subgroup titles (not invented nesting).
+      const courseProgramsByKey = useMemo(() => {
+        const map = new Map();
+        if (!programs) return map;
+        const placementFor = (area, sg) => {
+          const areaLabel = cleanTitle(area?.title);
+          const sgLabel = cleanTitle(sg?.title);
+          if (sgLabel && sgLabel !== areaLabel) return sgLabel;
+          return areaLabel || '';
+        };
+        const add = (key, prog, placement) => {
+          if (!key) return;
+          if (!map.has(key)) map.set(key, new Map());
+          const byName = map.get(key);
+          if (!byName.has(prog.name)) {
+            byName.set(prog.name, { name: prog.name, type: prog.type, placements: [] });
+          }
+          const entry = byName.get(prog.name);
+          const label = cleanTitle(placement);
+          if (label && !entry.placements.includes(label)) entry.placements.push(label);
+        };
+        for (const prog of programs) {
+          for (const area of prog.areas || []) {
+            for (const sg of area.subgroups || []) {
+              const placement = placementFor(area, sg);
+              for (const c of sg.courses || []) add(c.key, prog, placement);
+              if (sg.options) {
+                for (const opt of sg.options) {
+                  for (const c of opt.courses || []) add(c.key, prog, placement);
+                }
+              }
+            }
+          }
+        }
+        return map;
+      }, [programs]);
+
+      const programsForCourseKey = (key) => {
+        if (!key) return [];
+        const byName = courseProgramsByKey.get(key);
+        if (!byName) return [];
+        return Array.from(byName.values())
+          .map(p => ({ ...p, pct: programAdoption[p.name]?.pct ?? null }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      };
+
       const trendSummary = (labels, series) => labels.map((l, i) => {
         const parts = series.map(s => `${s.name} ${s.data[i] === null ? 'no data' : s.data[i] + '%'}`).join(', ');
         return `${l}: ${parts}`;
@@ -1596,10 +2198,9 @@
 
             {/* —— Institution overview —— */}
             <DashboardSection title="Institution overview" subtitle={instSub}>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
                 {[
                   { label: 'Active pathways', val: institution.total, sub: `for ${selectedTerm}`, color: t.text, title: 'All active degree, certificate, and transfer pathways.', action: { view: 'program', pathwayAdoptionFilter: 'all', sortBy: 'name' } },
-                  { label: 'Avg ZTC adoption', val: institution.avg === null ? '—' : institution.avg + '%', sub: `across ${institution.scored} scored`, color: pctColor(institution.avg, darkMode), title: 'Mean requirement-based ZTC adoption across all scored pathways.', action: { view: 'program', pathwayAdoptionFilter: 'scored', sortBy: 'adoption' } },
                   { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' } },
                   { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' } },
                   { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' } },
@@ -1608,10 +2209,10 @@
                   <button key={i} type="button" onClick={() => navigateFromOverviewKpi(kpi.action)}
                     aria-label={`${kpi.label}: ${kpi.val}. ${kpi.sub}. Open ${kpi.action.view === 'program' ? 'Pathway' : 'Courses'} view.`}
                     title={kpi.title}
-                    className={`rounded-xl border ${t.cardBorder} ${t.card} p-5 text-left w-full ${t.cardHover} transition-colors cursor-pointer`}>
-                    <div className={`text-xs uppercase tracking-wide ${t.textMuted} mb-1`}>{kpi.label}</div>
-                    <div className={`text-3xl font-bold ${kpi.color}`}>{kpi.val}</div>
-                    <div className={`text-[11px] ${t.faint} mt-1`}>{kpi.sub}</div>
+                    className={`rounded-xl border ${t.cardBorder} ${t.card} p-3 sm:p-4 text-left w-full ${t.cardHover} transition-colors cursor-pointer`}>
+                    <div className={`text-[10px] sm:text-xs uppercase tracking-wide ${t.textMuted} mb-0.5 leading-tight`}>{kpi.label}</div>
+                    <div className={`text-2xl font-bold ${kpi.color}`}>{kpi.val}</div>
+                    <div className={`text-[10px] sm:text-[11px] ${t.faint} mt-0.5 leading-snug`}>{kpi.sub}</div>
                   </button>
                 ))}
               </div>
@@ -1788,6 +2389,12 @@
               </dl>
             </div>
 
+            {activeProgram.type === 'GE / Transfer Pattern' && (
+              <p className={`text-xs leading-snug mb-5 px-0.5 ${t.textMuted}`} role="note">
+                Choice groups (Either / Or / Choose one) appear only when present in the Program Summary export. The catalog may show additional groupings not included in this file.
+              </p>
+            )}
+
             {/* areas */}
             <div className="space-y-5">
               {programView.areas.map((area) => (
@@ -1816,14 +2423,18 @@
                     {area.subgroups.map((sg) => (
                       <div key={sg.id}>
                         {sg.title && sg.title !== area.title && (
-                          <div className={`text-xs font-semibold ${t.textMuted} px-1 mb-1.5`}>{sg.title}</div>
+                          <div className={`text-xs font-semibold px-0.5 mb-1.5 ${t.textMuted}`}>
+                            {sg.title}
+                            {sg.isLabReference && <span className={`ml-2 font-medium ${t.faint}`}>· informational</span>}
+                          </div>
                         )}
-                        <div className="space-y-1.5">
-                          {sg.courses.map((c, i) => (
-                            <CourseRow key={sg.id + '-' + i} c={c} t={t} dark={darkMode} selectedTerm={selectedTerm}
-                              onOpen={(course, el) => { lastFocusedRef.current = el; setSelectedCourse(course); }} />
-                          ))}
-                        </div>
+                        <SubgroupCourses
+                          sg={sg}
+                          t={t}
+                          dark={darkMode}
+                          selectedTerm={selectedTerm}
+                          onOpen={(course, el) => { lastFocusedRef.current = el; setSelectedCourse(course); }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -1864,7 +2475,9 @@
             </div>
 
             <CourseDetail c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode}
-              showCatalogLink={recentTerms.has(selectedTerm)} />
+              showCatalogLink={recentTerms.has(selectedTerm)}
+              programsForCourse={programsForCourseKey(c.key)}
+              onOpenProgram={(name) => openProgramFromCourse(name, c.key)} />
           </div>
         );
       };
@@ -1890,7 +2503,9 @@
                   <button type="button" onClick={() => setSelectedCourse(null)} aria-label="Close course details" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.X className="w-5 h-5" aria-hidden="true" /></button>
                 </div>
 
-                <CourseDetail compact c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode} />
+                <CourseDetail compact c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode}
+                  programsForCourse={programsForCourseKey(c.key)}
+                  onOpenProgram={(name) => openProgramFromCourse(name, c.key)} />
               </div>
             </div>
           </div>
@@ -1913,11 +2528,24 @@
       };
       const exportProgramCSV = () => {
         if (!programView) return;
-        const rows = [['Program', 'Area', 'Sub-area', 'Course', 'Course Title', 'Units', 'Term', 'ZTC %', 'Survey %', 'Chaffey ZTC (75%+)', 'CO ZTC (1+ section)', 'Status']];
+        const rows = [['Program', 'Area', 'Sub-area', 'Option Group', 'Course', 'Course Title', 'Units', 'Header Identifier', 'Lab Reference', 'Term', 'ZTC %', 'Survey %', 'Chaffey ZTC (75%+)', 'CO ZTC (1+ section)', 'Status']];
+        const pushCourse = (area, sg, optLabel, c) => {
+          rows.push([
+            activeProgram.name, area.title, sg.title || '', optLabel || '',
+            `${c.subject}-${c.number}`, c.courseTitle || c.analyticsTitle || '', c.units ?? '',
+            c.headerId || '', sg.isLabReference ? 'Yes' : 'No',
+            selectedTerm, c.ztcPct ?? '', c.surveyPct ?? '',
+            c.status === 'ztc' ? 'Yes' : 'No', c.coZtc ? 'Yes' : 'No', c.status
+          ]);
+        };
         for (const area of programView.areas) {
           for (const sg of area.subgroups) {
-            for (const c of sg.courses) {
-              rows.push([activeProgram.name, area.title, sg.title || '', `${c.subject}-${c.number}`, c.courseTitle || c.analyticsTitle || '', c.units ?? '', selectedTerm, c.ztcPct ?? '', c.surveyPct ?? '', c.status === 'ztc' ? 'Yes' : 'No', c.coZtc ? 'Yes' : 'No', c.status]);
+            if (sg.options && sg.options.length) {
+              for (const opt of sg.options) {
+                for (const c of opt.courses) pushCourse(area, sg, opt.label || '', c);
+              }
+            } else {
+              for (const c of sg.courses) pushCourse(area, sg, '', c);
             }
           }
         }
@@ -1943,15 +2571,34 @@
         doc.setFontSize(10); doc.setTextColor(120);
         doc.text(`${activeProgram.type} · Term ${selectedTerm} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${fmtUnits(programView.unitsRequired)} units`, 14, 22);
         const body = [];
+        const pushPdf = (area, sg, optLabel, c) => {
+          const courseLabel = `${c.subject}-${c.number}${hasLabAsterisk(c.headerId) ? '*' : ''}`;
+          const sub = [sg.title, optLabel, sg.isLabReference ? 'Lab ref' : ''].filter(Boolean).join(' · ').slice(0, 28);
+          body.push([
+            area.title.slice(0, 22),
+            sub,
+            courseLabel,
+            (c.courseTitle || c.analyticsTitle || '').slice(0, 24),
+            c.units ?? '',
+            c.ztcPct === null ? '—' : c.ztcPct + '%',
+            c.surveyPct === null ? '—' : c.surveyPct + '%',
+            c.coZtc ? 'Yes' : '—',
+            c.status
+          ]);
+        };
         for (const area of programView.areas) {
           for (const sg of area.subgroups) {
-            for (const c of sg.courses) {
-              body.push([area.title.slice(0, 26), `${c.subject}-${c.number}`, (c.courseTitle || c.analyticsTitle || '').slice(0, 30), c.units ?? '', c.ztcPct === null ? '—' : c.ztcPct + '%', c.surveyPct === null ? '—' : c.surveyPct + '%', c.coZtc ? 'Yes' : '—', c.status]);
+            if (sg.options && sg.options.length) {
+              for (const opt of sg.options) {
+                for (const c of opt.courses) pushPdf(area, sg, opt.label || '', c);
+              }
+            } else {
+              for (const c of sg.courses) pushPdf(area, sg, '', c);
             }
           }
         }
         doc.autoTable({
-          startY: 28, head: [['Area', 'Course', 'Title', 'Units', 'ZTC', 'Survey', 'CO ZTC', 'Status']], body,
+          startY: 28, head: [['Area', 'Sub / Option', 'Course', 'Title', 'Units', 'ZTC', 'Survey', 'CO ZTC', 'Status']], body,
           styles: { fontSize: 7 }, headStyles: { fillColor: [37, 99, 235] }
         });
         doc.save(`ztc-${activeProgram.name.replace(/[^a-z0-9]+/gi, '-').slice(0, 50)}-${selectedTerm.replace('/', '')}.pdf`);

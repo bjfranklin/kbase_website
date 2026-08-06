@@ -1,4 +1,4 @@
-# ZTC Pathway Mapper v3.4
+# ZTC Pathway Mapper v3.5
 
 Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree, certificate, and transfer pathways. Client-side single-file React app — no build step.
 
@@ -24,7 +24,7 @@ Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree
 
 ### Datasources
 
-1. **Program Summary** — pathway structure (blocks, courses, units, choice vs all-required).
+1. **Program Summary** — pathway structure (blocks, courses, units, choice vs all-required). Optional: `Header Identifier (*)`, `Group Title`, `Condition` for lab-reference re-lists and Either/Or/And option bundles.
 2. **IE ZTC Course Analytics** — per-course, per-term ZTC %, survey completion, section counts.
 
 Column headers are auto-detected via flexible name matching (`findIdx`). Full contract: vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-v3-CSV-Column-Contract.md`.
@@ -95,7 +95,7 @@ python3 -m http.server 8767   # temporary — kill when done
 python3 scripts/run-axe-v3.py http://localhost:8767/index.html
 ```
 
-**Latest:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-06-29). See `ACCESSIBILITY_VERIFICATION.md`.
+**Latest:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-08-04, v3.5.2). See `ACCESSIBILITY_VERIFICATION.md`.
 
 ## Deferred (on stakeholder request)
 
@@ -129,6 +129,9 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v3.5.2** | Courses membership placement subtitles (export area/block); jump announce + scroll-to-course; list semantics polish |
+| **v3.5.1** | Pathway spacing/mobile/lab-ref polish; Dashboard overview drops Avg ZTC tile (5 KPIs one row); Courses “In pathways” membership tiles → Pathway jump |
+| **v3.5** | Pathway fidelity: lab-reference (*) re-lists (display-only); Group Title / Condition choice bands when present in export; ZTC-first decision rows (not a CurriQunet replica); GE export-limitation note |
 | **v3.4** | Drag-and-drop CSV landing; catalog link gated to two most recent terms (Courses tab); catalog availability note; axe harness 10 states |
 | **v3.3** | Tailwind 3.4.17 offline CSS; zero external runtime deps |
 | **v3.2** | Vendored JS (React 18.2.0 exact pin); `check-deps.py` + `deps.json`; CSV column contract in vault |
