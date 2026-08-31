@@ -526,10 +526,45 @@
       }));
     };
 
-    const optionIsZtc = (courses) => {
-      const withData = courses.filter(c => c.offered && c.ztcPct !== null);
-      if (!withData.length) return false;
-      return withData.every(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN);
+    // A multi-course option is completable only when every member is offered
+    // in the selected term and meets the ZTC threshold.
+    const optionIsZtc = (courses) =>
+      courses.length > 0 &&
+      courses.every(c =>
+        c.offered &&
+        c.ztcPct !== null &&
+        c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN
+      );
+
+    const courseIsZtc = (course) =>
+      course.offered &&
+      course.ztcPct !== null &&
+      course.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN;
+
+    const scoreAreaRequirements = (allCourses, structuredOpts, isChoice) => {
+      const hasStructuredOptions = structuredOpts.length > 0;
+      const requirementCount = hasStructuredOptions ? structuredOpts.length : allCourses.length;
+      const ztcCount = hasStructuredOptions
+        ? structuredOpts.filter(o => o.ztcOk).length
+        : allCourses.filter(courseIsZtc).length;
+      const anyZtc = ztcCount > 0;
+
+      if (isChoice) {
+        return {
+          anyZtc,
+          ztcCount,
+          reqTotal: requirementCount > 0 ? 1 : 0,
+          reqZtc: requirementCount > 0 && anyZtc ? 1 : 0,
+          displayTotal: requirementCount
+        };
+      }
+      return {
+        anyZtc,
+        ztcCount,
+        reqTotal: requirementCount,
+        reqZtc: ztcCount,
+        displayTotal: requirementCount
+      };
     };
 
     // ---- Area ordering / nesting helpers ----
@@ -958,37 +993,15 @@
         // Lab-reference subgroups are display-only (re-list of * courses) — exclude from rollup
         const scoredSubgroups = subgroups.filter(sg => !sg.isLabReference);
         const allCourses = scoredSubgroups.flatMap(sg => sg.courses);
-        const withData = allCourses.filter(c => c.offered && c.ztcPct !== null);
         const req = area.requirement || { choice: null, n: null };
         const isChoice = req.choice === true;
 
-        // Option-aware ZTC: an option is ZTC if every member with data meets 75%;
-        // choice areas need any option; all-required use per-course (or AND-bundle) counts.
+        // Denominators come from the catalog requirement structure, not only
+        // courses offered in the selected term. Unavailable or unknown courses
+        // remain unmet requirements and therefore cannot inflate adoption.
         const structuredOpts = scoredSubgroups.flatMap(sg => sg.options || []);
-        let anyZtc;
-        let ztcCount;
-        let aReqTotal = 0, aReqZtc = 0;
-
-        if (structuredOpts.length) {
-          const optsWithData = structuredOpts.filter(o => o.courses.some(c => c.offered && c.ztcPct !== null));
-          anyZtc = optsWithData.some(o => o.ztcOk);
-          ztcCount = optsWithData.filter(o => o.ztcOk).length;
-          if (isChoice) {
-            if (optsWithData.length > 0) { aReqTotal = 1; aReqZtc = anyZtc ? 1 : 0; }
-          } else {
-            aReqTotal = optsWithData.length;
-            aReqZtc = ztcCount;
-          }
-        } else {
-          anyZtc = withData.some(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN);
-          ztcCount = withData.filter(c => c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN).length;
-          if (isChoice) {
-            if (withData.length > 0) { aReqTotal = 1; aReqZtc = anyZtc ? 1 : 0; }
-          } else {
-            aReqTotal = withData.length;
-            aReqZtc = ztcCount;
-          }
-        }
+        const score = scoreAreaRequirements(allCourses, structuredOpts, isChoice);
+        const { anyZtc, ztcCount, reqTotal: aReqTotal, reqZtc: aReqZtc } = score;
         reqTotal += aReqTotal; reqZtc += aReqZtc;
 
         // survey aggregation — include lab-ref re-lists for awareness but avoid double-count by key
@@ -1029,9 +1042,7 @@
         }
         unitsRequired += unitsMin;
 
-        const dataCount = structuredOpts.length
-          ? structuredOpts.filter(o => o.courses.some(c => c.offered && c.ztcPct !== null)).length
-          : withData.length;
+        const dataCount = score.displayTotal;
         const areaPct = aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null;
         return {
           ...area, subgroups,

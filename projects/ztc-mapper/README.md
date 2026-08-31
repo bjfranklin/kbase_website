@@ -55,7 +55,7 @@ Regenerate Tailwind CSS (maintainer only):
 ./scripts/generate-tailwind-css.sh
 ```
 
-CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py` on `ztc-mapper/**` changes.
+CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py` and the requirement-scoring regression test on `ztc-mapper/**` changes.
 
 **Note:** Runtime SRI `integrity=` attributes are intentionally omitted — they break `file://` opens (same as `crossorigin`). File tampering is caught by `check-deps` sha384 vs `deps.json`.
 
@@ -65,7 +65,7 @@ CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py`
 - **Partial:** 51–74%
 - **CO ZTC (purple):** ≥1 ZTC section (Chancellor's Office definition)
 
-Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 valid option meets the 75% bar.
+Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 valid option meets the 75% bar. Catalog requirements unavailable or unknown in the selected term remain in the denominator as unmet, preventing incomplete pathways from being labeled fully ZTC-able.
 
 ### Course catalog link (v3.4)
 
@@ -129,6 +129,7 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v3.5.3** | Correct term-specific requirement denominators: unavailable/unknown required courses remain unmet; AND bundles require every member to be offered and ZTC |
 | **v3.5.2** | Courses membership placement subtitles (export area/block); jump announce + scroll-to-course; list semantics polish |
 | **v3.5.1** | Pathway spacing/mobile/lab-ref polish; Dashboard overview drops Avg ZTC tile (5 KPIs one row); Courses “In pathways” membership tiles → Pathway jump |
 | **v3.5** | Pathway fidelity: lab-reference (*) re-lists (display-only); Group Title / Condition choice bands when present in export; ZTC-first decision rows (not a CurriQunet replica); GE export-limitation note |
