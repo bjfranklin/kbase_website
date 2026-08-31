@@ -146,6 +146,7 @@
       LineChart: Icon(<><path d="M3 3v18h18"></path><path d="m7 12 4-4 4 4 6-6"></path></>)
     };
 
+    // PRODUCTION MODEL TEST START
     // ============================================================
     // CONSTANTS
     // ============================================================
@@ -351,6 +352,7 @@
       return 'Other';
     };
 
+    // FID-1 TEST START: option event helpers
     // ---- Block-title parsing: requirement + area grouping ----
     const cleanTitle = (t) => String(t || '').replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim();
 
@@ -391,6 +393,13 @@
     const isEitherOrLabel = (gt) => {
       const s = normGroupLabel(gt);
       return s === 'either' || s === 'or';
+    };
+
+    // FID-1: collapse only identical marker rows that are adjacent in a block's event stream.
+    const appendMarkerEvent = (events, groupTitle, condition) => {
+      const tail = events[events.length - 1];
+      if (tail && tail.type === 'marker' && tail.groupTitle === groupTitle) return;
+      events.push({ type: 'marker', groupTitle, condition });
     };
 
     // Split a labeled course bucket into options using Condition and/or.
@@ -491,10 +500,10 @@
       for (const ev of events) {
         if (ev.type === 'marker') {
           const gt = ev.groupTitle;
-          // "Choose one:" after a course list — label the preceding bucket.
+          // FID-1: flush preceding courses unchanged; the marker labels following courses.
           if (isChooseOneLabel(gt) && bucket.length && !isChooseOneGroupLabel(gt)) {
-            flush(cleanTitle(gt));
-            label = null;
+            flush();
+            label = cleanTitle(gt);
             continue;
           }
           if (bucket.length) flush();
@@ -525,6 +534,7 @@
         courses: o.courses.slice().reverse()
       }));
     };
+    // FID-1 TEST END: option event helpers
 
     // A multi-course option is completable only when every member is offered
     // in the selected term and meets the ZTC threshold.
@@ -688,7 +698,6 @@
       }
       // group rows by program (active only), preserving block + course + marker order
       const progMap = new Map();
-      const seenMarker = new Set(); // pname|block|groupTitle — first occurrence only
       for (const r of data) {
         const status = (I.status !== -1 ? r[I.status] : 'Active') || '';
         if (status.trim().toLowerCase() !== 'active') continue;
@@ -717,11 +726,7 @@
 
         // Group Title marker row (no course): Either / Or / Choose one / Group N
         if (groupTitle && !key) {
-          const mk = pname + '\0' + bClean + '\0' + groupTitle;
-          if (!seenMarker.has(mk)) {
-            seenMarker.add(mk);
-            blk.events.push({ type: 'marker', groupTitle, condition });
-          }
+          appendMarkerEvent(blk.events, groupTitle, condition);
           continue;
         }
 
@@ -1077,6 +1082,7 @@
       };
     };
 
+    // PRODUCTION MODEL TEST END
     // ============================================================
     // SMALL COMPONENTS
     // ============================================================

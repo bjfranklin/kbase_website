@@ -55,7 +55,17 @@ Regenerate Tailwind CSS (maintainer only):
 ./scripts/generate-tailwind-css.sh
 ```
 
-CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py` and the requirement-scoring regression test on `ztc-mapper/**` changes.
+CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py`, the requirement-scoring regression, and FID-1 option-event parity tests on `ztc-mapper/**` changes.
+
+For a local real-data comparison against the checked-in baseline, write the report only under the ignored Rust `target/` tree:
+
+```bash
+node scripts/compare-fid1.js \
+  --program-summary "/path/to/Program Summary.csv" \
+  --analytics "/path/to/Course Analytics.csv" \
+  --term 2026/FA \
+  --output ../ztc-mapper-rs/target/ztc-audit/fid1-comparison.json
+```
 
 **Note:** Runtime SRI `integrity=` attributes are intentionally omitted — they break `file://` opens (same as `crossorigin`). File tampering is caught by `check-deps` sha384 vs `deps.json`.
 
@@ -129,6 +139,7 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v3.5.4** | FID-1 parity: collapse only consecutive duplicate Group Title markers; apply `Choose one:` to following courses without relabeling preceding required courses |
 | **v3.5.3** | Correct term-specific requirement denominators: unavailable/unknown required courses remain unmet; AND bundles require every member to be offered and ZTC |
 | **v3.5.2** | Courses membership placement subtitles (export area/block); jump announce + scroll-to-course; list semantics polish |
 | **v3.5.1** | Pathway spacing/mobile/lab-ref polish; Dashboard overview drops Avg ZTC tile (5 KPIs one row); Courses “In pathways” membership tiles → Pathway jump |
