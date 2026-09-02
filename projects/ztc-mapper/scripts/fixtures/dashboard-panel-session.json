@@ -1,0 +1,143 @@
+{
+  "selectedTerm": "2026/FA",
+  "terms": ["2025/FA", "2026/FA"],
+  "savedAt": "2026-09-01T00:00:00.000Z",
+  "analytics": {
+    "index": {
+      "BIOL-1": {
+        "title": "General Biology",
+        "terms": {
+          "2025/FA": {
+            "ztcPct": 80,
+            "surveyPct": 70,
+            "surveysSub": 7,
+            "surveysPend": 3,
+            "totalSec": 4,
+            "ztcSec": 3,
+            "ztca": null,
+            "ztcc": null,
+            "ztce": null,
+            "ztcf": null,
+            "ztcg": null,
+            "lct": null
+          },
+          "2026/FA": {
+            "ztcPct": 100,
+            "surveyPct": 90,
+            "surveysSub": 9,
+            "surveysPend": 1,
+            "totalSec": 4,
+            "ztcSec": 4,
+            "ztca": null,
+            "ztcc": null,
+            "ztce": null,
+            "ztcf": null,
+            "ztcg": null,
+            "lct": null
+          }
+        }
+      },
+      "CHEM-1": {
+        "title": "Introductory Chemistry",
+        "terms": {
+          "2025/FA": {
+            "ztcPct": 10,
+            "surveyPct": 40,
+            "surveysSub": 2,
+            "surveysPend": 8,
+            "totalSec": 5,
+            "ztcSec": 1,
+            "ztca": null,
+            "ztcc": null,
+            "ztce": null,
+            "ztcf": null,
+            "ztcg": null,
+            "lct": null
+          },
+          "2026/FA": {
+            "ztcPct": 20,
+            "surveyPct": 45,
+            "surveysSub": 3,
+            "surveysPend": 7,
+            "totalSec": 5,
+            "ztcSec": 1,
+            "ztca": null,
+            "ztcc": null,
+            "ztce": null,
+            "ztcf": null,
+            "ztcg": null,
+            "lct": null
+          }
+        }
+      }
+    }
+  },
+  "programs": [
+    {
+      "name": "Alpha Biology A.S.",
+      "type": "Degree",
+      "areas": [
+        {
+          "id": "a0",
+          "title": "Required Core",
+          "requirement": { "choice": false, "n": null },
+          "isHeaderArea": false,
+          "subgroups": [
+            {
+              "id": "a0-0",
+              "title": null,
+              "requirement": { "choice": false, "n": null },
+              "options": null,
+              "isLabReference": false,
+              "courses": [
+                {
+                  "key": "BIOL-1",
+                  "subject": "BIOL",
+                  "number": "1",
+                  "courseTitle": "General Biology",
+                  "units": 4,
+                  "headerId": "",
+                  "groupTitle": "",
+                  "condition": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Zeta Chemistry Certificate",
+      "type": "Certificate",
+      "areas": [
+        {
+          "id": "a0",
+          "title": "Required Core",
+          "requirement": { "choice": false, "n": null },
+          "isHeaderArea": false,
+          "subgroups": [
+            {
+              "id": "a0-0",
+              "title": null,
+              "requirement": { "choice": false, "n": null },
+              "options": null,
+              "isLabReference": false,
+              "courses": [
+                {
+                  "key": "CHEM-1",
+                  "subject": "CHEM",
+                  "number": "1",
+                  "courseTitle": "Introductory Chemistry",
+                  "units": 4,
+                  "headerId": "",
+                  "groupTitle": "",
+                  "condition": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

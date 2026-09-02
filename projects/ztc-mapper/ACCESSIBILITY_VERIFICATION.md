@@ -1,6 +1,22 @@
-# Accessibility Verification — v3.5.2
+# Accessibility Verification — v3.5.5
 
 > Historical v2.3 line-level audit: see vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-ACCESSIBILITY_VERIFICATION.md`.
+
+## Dashboard panel (v3.5.5)
+
+Dashboard is a non-modal sidebar panel. Toggle uses `aria-expanded` / `aria-controls`. Escape closes and restores focus. Inactive sliding content is `inert` and `visibility: hidden`. No focus trap. `prefers-reduced-motion` remains honored by the existing global CSS.
+
+Verify geometry/keyboard/selection without production CSVs:
+
+```bash
+python3 scripts/test-dashboard-panel-ui.py
+```
+
+## axe-core (2026-09-01) — v3.5.5 Dashboard panel
+
+Run: `python3 scripts/run-axe-v3.py http://127.0.0.1:8767/ztc-mapper/index.html`
+
+**Result:** **0 WCAG 2.1 AA violations** across **10 UI states**, including Dashboard panel open (dark + light) with Pathway/Courses remaining the reading views.
 
 ## axe-core (2026-08-04) — v3.5.2 Plan 3 polish
 

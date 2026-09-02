@@ -21,6 +21,20 @@ ANAL_CSV = Path(os.environ.get(
 AXE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
 
 
+def launch_chromium(playwright):
+    env_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE")
+    if env_path and Path(env_path).is_file():
+        return playwright.chromium.launch(headless=True, executable_path=env_path)
+    try:
+        return playwright.chromium.launch(headless=True)
+    except Exception:
+        cache = Path.home() / "Library" / "Caches" / "ms-playwright"
+        shells = sorted(cache.glob("chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell"))
+        if not shells:
+            raise
+        return playwright.chromium.launch(headless=True, executable_path=str(shells[-1]))
+
+
 def run_axe(page, label: str) -> dict:
     result = page.evaluate(
         """async () => {
@@ -52,7 +66,7 @@ def main() -> None:
 
     report: list[dict] = []
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = launch_chromium(p)
         page = browser.new_page()
         page.goto(BASE, wait_until="networkidle")
         page.add_script_tag(url=AXE_CDN)
@@ -69,9 +83,14 @@ def main() -> None:
         report.append(run_axe(page, "Landing (both CSVs staged, light)"))
 
         page.get_by_role("button", name="Build dashboard").click()
-        page.get_by_role("navigation", name="Views").get_by_role("button", name="Dashboard", exact=True).wait_for(timeout=120_000)
+        page.get_by_role("navigation", name="Views").get_by_role("button", name="Pathway", exact=True).wait_for(timeout=120_000)
+        dash_toggle = page.get_by_role("button", name="Dashboard", exact=True)
+        dash_toggle.click()
+        page.locator("#dashboard-panel-title").wait_for(timeout=10_000)
         page.wait_for_timeout(800)
-        report.append(run_axe(page, "Dashboard (dark, data loaded)"))
+        report.append(run_axe(page, "Dashboard panel (dark, data loaded)"))
+        dash_toggle.click()
+        page.wait_for_timeout(400)
 
         page.get_by_role("navigation", name="Views").get_by_role("button", name="Pathway", exact=True).click()
         page.wait_for_timeout(500)
@@ -109,9 +128,10 @@ def main() -> None:
             theme_btn = page.get_by_role("button", name="Switch to dark mode")
         theme_btn.click()
         page.wait_for_timeout(300)
-        page.get_by_role("navigation", name="Views").get_by_role("button", name="Dashboard", exact=True).click()
+        page.get_by_role("button", name="Dashboard", exact=True).click()
+        page.locator("#dashboard-panel-title").wait_for(timeout=10_000)
         page.wait_for_timeout(400)
-        report.append(run_axe(page, "Dashboard (light, data loaded)"))
+        report.append(run_axe(page, "Dashboard panel (light, data loaded)"))
 
         browser.close()
 

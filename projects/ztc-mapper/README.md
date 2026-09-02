@@ -1,4 +1,4 @@
-# ZTC Pathway Mapper v3.5
+# ZTC Pathway Mapper v3.5.5
 
 Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree, certificate, and transfer pathways. Client-side single-file React app — no build step.
 
@@ -18,7 +18,7 @@ Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree
 |-------|---------|
 | **Stack** | React **18.2.0**, Babel **7.23.5**, Chart.js **4.4.0**, jsPDF + AutoTable, Tailwind **3.4.17** — **vendored** under `vendor/`; zero external runtime deps |
 | **Data** | Two datasources joined on `SUBJECT-NUMBER`; Active programs only |
-| **Views** | Dashboard (institution-wide), Pathway (nested areas), Courses (browse all courses) |
+| **Views** | Pathway (nested areas) and Courses (browse all courses) as primary reading views; Dashboard is a non-modal panel in the left navigation column |
 | **Persistence** | `localStorage` key `ztc-pathway-mapper-v3` (migrates from `-v2` on load) |
 | **Exports** | Current pathway CSV/PDF; all-pathways summary CSV |
 
@@ -55,7 +55,7 @@ Regenerate Tailwind CSS (maintainer only):
 ./scripts/generate-tailwind-css.sh
 ```
 
-CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py`, the requirement-scoring regression, and FID-1 option-event parity tests on `ztc-mapper/**` changes.
+CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py`, the requirement-scoring regression, FID-1 option-event parity tests, and Dashboard-panel geometry/keyboard regressions on `ztc-mapper/**` changes.
 
 For a local real-data comparison against the checked-in baseline, write the report only under the ignored Rust `target/` tree:
 
@@ -83,14 +83,17 @@ Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 va
 - Older terms show a muted availability note instead of the link.
 - **Pathway tab** course modal: catalog link always shown (unchanged).
 
+### Dashboard panel (v3.5.5)
+
+Dashboard is no longer a full-page destination. **Pathway** and **Courses** remain the only primary reading views. The Dashboard toggle (`aria-expanded`, `aria-controls`) replaces the left navigation contents inside the existing `w-72 lg:w-80` column. The selected pathway or course stays mounted in the main pane. Escape closes the panel and restores focus; the panel is non-modal (no focus trap, no backdrop). Dashboard actions may update the current selection and then close the panel. Exports stay tied to Pathway/Courses, not panel visibility.
+
 ### Dashboard institution KPIs (v3.1)
 
-Six clickable tiles under **Institution overview** — each opens **Pathway** or **Courses** with filters applied:
+Five clickable tiles under **Institution overview** — each opens **Pathway** or **Courses** with filters applied:
 
 | Tile | Opens | Filter |
 |------|-------|--------|
 | Active pathways | Pathway | All pathways |
-| Avg ZTC adoption | Pathway | Scored pathways only |
 | Fully ZTC-able | Pathway | 100% adoption |
 | ≥75% ZTC-able | Pathway | ≥75% adoption |
 | Chaffey ZTC courses | Courses | ZTC status (≥75% sections) |
@@ -105,7 +108,14 @@ python3 -m http.server 8767   # temporary — kill when done
 python3 scripts/run-axe-v3.py http://localhost:8767/index.html
 ```
 
-**Latest:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-08-04, v3.5.2). See `ACCESSIBILITY_VERIFICATION.md`.
+Dashboard-panel regressions (no production CSVs required):
+
+```bash
+node scripts/test-dashboard-panel.js
+python3 scripts/test-dashboard-panel-ui.py
+```
+
+**Latest:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-09-01, v3.5.5 Dashboard panel). See `ACCESSIBILITY_VERIFICATION.md`.
 
 ## Deferred (on stakeholder request)
 
@@ -139,6 +149,7 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v3.5.5** | Bounded-sidebar Dashboard panel: Pathway/Courses stay the reading views; Dashboard replaces only the `w-72 lg:w-80` navigation column |
 | **v3.5.4** | FID-1 parity: collapse only consecutive duplicate Group Title markers; apply `Choose one:` to following courses without relabeling preceding required courses |
 | **v3.5.3** | Correct term-specific requirement denominators: unavailable/unknown required courses remain unmet; AND bundles require every member to be offered and ZTC |
 | **v3.5.2** | Courses membership placement subtitles (export area/block); jump announce + scroll-to-course; list semantics polish |
