@@ -117,6 +117,19 @@
     .sidebar-pane-nav.is-off { transform: translateX(-100%); }
     .sidebar-pane-dash.is-off { transform: translateX(100%); }
     .sidebar-pane.is-inactive { visibility: hidden; pointer-events: none; }
+    .dashboard-tab-rail {
+      width: 2.75rem; flex: 0 0 2.75rem; display: flex; align-items: flex-start;
+      justify-content: center; padding-top: 1rem;
+    }
+    .dashboard-pullout-tab {
+      width: 100%; min-height: 8.5rem; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.5rem;
+      border-radius: 0 0.75rem 0.75rem 0; border-left: 0;
+    }
+    .dashboard-tab-label {
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
@@ -2687,9 +2700,6 @@
               <button type="button" onClick={() => switchPrimaryView('program')} aria-current={primaryView === 'program' ? 'page' : undefined} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${primaryView === 'program' ? 'bg-blue-600 text-white' : t.cardHover}`}>Pathway</button>
               <button type="button" onClick={() => switchPrimaryView('courses')} aria-current={primaryView === 'courses' ? 'page' : undefined} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${primaryView === 'courses' ? 'bg-blue-600 text-white' : t.cardHover}`}>Courses</button>
             </nav>
-            <button type="button" ref={dashboardToggleRef} onClick={toggleDashboard}
-              aria-expanded={dashboardOpen} aria-controls="dashboard-panel"
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${dashboardOpen ? 'bg-blue-600 text-white' : t.cardHover}`}>Dashboard</button>
             <div className="flex-1"></div>
             <div className="flex items-center gap-2">
               <span className={`text-xs font-semibold ${t.textMuted} hidden sm:inline`}>Term</span>
@@ -2717,6 +2727,19 @@
           </header>
 
           <div className="flex-1 flex min-h-0">
+            <div className={`dashboard-tab-rail border-r ${t.headerBorder} ${t.sidebar}`}>
+              <button type="button" id="dashboard-toggle" ref={dashboardToggleRef}
+                data-dashboard-pullout="true"
+                onClick={toggleDashboard}
+                aria-label="Dashboard"
+                aria-expanded={dashboardOpen}
+                aria-controls="dashboard-panel"
+                title={dashboardOpen ? 'Close Dashboard' : 'Open Dashboard'}
+                className={`dashboard-pullout-tab text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${dashboardOpen ? 'bg-blue-600 text-white' : t.cardHover}`}>
+                <Icons.BarChart3 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                <span className="dashboard-tab-label">Dashboard</span>
+              </button>
+            </div>
             <aside data-sidebar-column="true" data-dashboard-open={dashboardOpen ? 'true' : 'false'}
               className={`sidebar-column w-72 lg:w-80 flex-shrink-0 border-r ${t.headerBorder} ${t.sidebar} min-h-0`}>
               <div id="sidebar-nav-panel"

@@ -16,6 +16,8 @@ assert.equal(html.includes("switchView('dashboard')"), false, 'Dashboard must no
 
 assert.match(html, /aria-expanded=\{dashboardOpen\}/, 'Dashboard toggle must expose aria-expanded');
 assert.match(html, /aria-controls="dashboard-panel"/, 'Dashboard toggle must point at aria-controls=dashboard-panel');
+assert.match(html, /data-dashboard-pullout="true"/, 'Dashboard trigger must be the left-edge pullout tab');
+assert.match(html, /className=\{`dashboard-pullout-tab/, 'Dashboard trigger must use pullout-tab styling');
 assert.match(html, /id="dashboard-panel"/, 'dashboard-panel id is required');
 assert.match(html, /id="sidebar-nav-panel"/, 'sidebar-nav-panel id is required');
 assert.match(html, /data-sidebar-column="true"/, 'sidebar column marker is required for geometry tests');
@@ -41,6 +43,9 @@ assert.ok(viewsNav, 'Views nav is required');
 assert.match(viewsNav[0], />Pathway<\/button>/, 'Pathway must remain a primary view');
 assert.match(viewsNav[0], />Courses<\/button>/, 'Courses must remain a primary view');
 assert.equal(viewsNav[0].includes('>Dashboard</button>'), false, 'Dashboard must not be inside the Views nav');
+const topBar = html.match(/\{\/\* top bar \*\/\}[\s\S]*?<\/header>/);
+assert.ok(topBar, 'top bar is required');
+assert.equal(topBar[0].includes('dashboardToggleRef'), false, 'Dashboard trigger must not remain in the top bar');
 
 assert.equal(html.includes("view !== 'dashboard'"), false, 'exports must not be gated on a Dashboard reading view');
 assert.match(html, /Current pathway \(CSV\)/, 'pathway CSV export must remain available');

@@ -1,10 +1,10 @@
-# Accessibility Verification — v3.5.5
+# Accessibility Verification — v3.5.6
 
 > Historical v2.3 line-level audit: see vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-ACCESSIBILITY_VERIFICATION.md`.
 
-## Dashboard panel (v3.5.5)
+## Dashboard pullout (v3.5.6)
 
-Dashboard is a non-modal sidebar panel. Toggle uses `aria-expanded` / `aria-controls`. Escape closes and restores focus. Inactive sliding content is `inert` and `visibility: hidden`. No focus trap. `prefers-reduced-motion` remains honored by the existing global CSS.
+Dashboard is a non-modal sidebar panel opened by a vertical tab on the far-left rail; the trigger is no longer in the top bar. The tab uses `aria-expanded` / `aria-controls`. Escape closes and restores focus. Inactive sliding content is `inert` and `visibility: hidden`. No focus trap. `prefers-reduced-motion` remains honored by the existing global CSS.
 
 Verify geometry/keyboard/selection without production CSVs:
 

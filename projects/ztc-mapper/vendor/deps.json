@@ -1,7 +1,7 @@
 {
   "app": "ztc-pathway-mapper",
-  "app_version": "3.5.5",
-  "updated": "2026-09-01",
+  "app_version": "3.5.6",
+  "updated": "2026-09-14",
   "vendored": [
     {
       "name": "tailwindcss",

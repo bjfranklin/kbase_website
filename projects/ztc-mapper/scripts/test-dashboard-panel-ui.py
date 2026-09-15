@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Geometry, keyboard, selection, and responsive regressions for the v3.5.5 Dashboard panel."""
+"""Geometry, keyboard, selection, and responsive regressions for the v3.5.6 Dashboard pullout."""
 from __future__ import annotations
 
 import http.server
@@ -49,12 +49,19 @@ def _box(locator) -> dict:
 
 
 def _assert_geometry(page, label: str) -> None:
+    tab = page.locator("[data-dashboard-pullout]")
     sidebar = page.locator("[data-sidebar-column]")
     dashboard = page.locator("#dashboard-panel")
     main = page.locator("[data-reading-pane]")
+    t = _box(tab)
     s = _box(sidebar)
     d = _box(dashboard)
     m = _box(main)
+    assert t["x"] <= 1, f"{label}: Dashboard tab is not anchored to the left edge"
+    assert t["height"] > t["width"], f"{label}: Dashboard trigger is not a vertical pullout tab"
+    assert t["x"] + t["width"] <= s["x"] + 1, (
+        f"{label}: Dashboard tab rail overlaps the sidebar"
+    )
     assert abs(d["width"] - s["width"]) <= 1, (
         f"{label}: dashboard width {d['width']} != sidebar width {s['width']}"
     )
@@ -144,6 +151,7 @@ def main() -> int:
 
             views = page.get_by_role("navigation", name="Views")
             assert views.get_by_role("button", name="Dashboard", exact=True).count() == 0
+            assert page.get_by_role("banner").get_by_role("button", name="Dashboard", exact=True).count() == 0
 
             toggle = page.get_by_role("button", name="Dashboard", exact=True)
             assert toggle.get_attribute("aria-expanded") == "false"

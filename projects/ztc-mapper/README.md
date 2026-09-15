@@ -1,4 +1,4 @@
-# ZTC Pathway Mapper v3.5.5
+# ZTC Pathway Mapper v3.5.6
 
 Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree, certificate, and transfer pathways. Client-side single-file React app — no build step.
 
@@ -83,9 +83,9 @@ Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 va
 - Older terms show a muted availability note instead of the link.
 - **Pathway tab** course modal: catalog link always shown (unchanged).
 
-### Dashboard panel (v3.5.5)
+### Dashboard pullout (v3.5.6)
 
-Dashboard is no longer a full-page destination. **Pathway** and **Courses** remain the only primary reading views. The Dashboard toggle (`aria-expanded`, `aria-controls`) replaces the left navigation contents inside the existing `w-72 lg:w-80` column. The selected pathway or course stays mounted in the main pane. Escape closes the panel and restores focus; the panel is non-modal (no focus trap, no backdrop). Dashboard actions may update the current selection and then close the panel. Exports stay tied to Pathway/Courses, not panel visibility.
+Dashboard is no longer a full-page destination or a top-bar action. **Pathway** and **Courses** remain the only primary reading views. A vertical pullout tab on the far-left rail (`aria-expanded`, `aria-controls`) replaces the left navigation contents inside the existing `w-72 lg:w-80` column. The selected pathway or course stays mounted in the main pane. Escape closes the panel and restores focus to the tab; the panel is non-modal (no focus trap, no backdrop). Dashboard actions may update the current selection and then close the panel. Exports stay tied to Pathway/Courses, not panel visibility.
 
 ### Dashboard institution KPIs (v3.1)
 
@@ -149,6 +149,7 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v3.5.6** | Dashboard trigger moved from the top bar to an accessible vertical pullout tab on the left edge; bounded panel behavior remains unchanged |
 | **v3.5.5** | Bounded-sidebar Dashboard panel: Pathway/Courses stay the reading views; Dashboard replaces only the `w-72 lg:w-80` navigation column |
 | **v3.5.4** | FID-1 parity: collapse only consecutive duplicate Group Title markers; apply `Choose one:` to following courses without relabeling preceding required courses |
 | **v3.5.3** | Correct term-specific requirement denominators: unavailable/unknown required courses remain unmet; AND bundles require every member to be offered and ZTC |
