@@ -1,4 +1,4 @@
-# ZTC Pathway Mapper v3.5.6
+# ZTC Pathway Mapper v3.5.7
 
 Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree, certificate, and transfer pathways. Client-side single-file React app — no build step.
 
@@ -83,13 +83,15 @@ Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 va
 - Older terms show a muted availability note instead of the link.
 - **Pathway tab** course modal: catalog link always shown (unchanged).
 
-### Dashboard pullout (v3.5.6)
+### Dashboard pullout and responsive hierarchy (v3.5.7)
 
-Dashboard is no longer a full-page destination or a top-bar action. **Pathway** and **Courses** remain the only primary reading views. A vertical pullout tab on the far-left rail (`aria-expanded`, `aria-controls`) replaces the left navigation contents inside the existing `w-72 lg:w-80` column. The selected pathway or course stays mounted in the main pane. Escape closes the panel and restores focus to the tab; the panel is non-modal (no focus trap, no backdrop). Dashboard actions may update the current selection and then close the panel. Exports stay tied to Pathway/Courses, not panel visibility.
+Dashboard is not a full-page destination or top-bar action. **Pathway** and **Courses** remain the only primary reading views. A graphite pullout with a blue edge indicator and directional chevron opens the Dashboard in the left navigation column. At 640px and above, the selected reading pane remains visible beside the bounded panel. Below 640px, Dashboard becomes the primary canvas while the selected pathway/course stays mounted, preserved, and temporarily `inert`/`aria-hidden`. Escape closes the panel and restores focus to the tab; the panel remains non-modal (no focus trap or backdrop).
 
-### Dashboard institution KPIs (v3.1)
+The compact Dashboard features average ZTC adoption as its headline, highlights pathways needing attention, retains filtered KPI drill-downs in a two-column grid, and replaces the sidebar chart with an accessible sparkline and term-over-term delta. “View trend details” opens the full chart in the reading pane without losing the prior selection. Distribution and a five-item ranking use progressive disclosure; “View all pathways” returns to the existing adoption-sorted Pathway view.
 
-Five clickable tiles under **Institution overview** — each opens **Pathway** or **Courses** with filters applied:
+### Dashboard institution KPI actions
+
+The headline and four compact KPI actions open **Pathway** or **Courses** with filters applied:
 
 | Tile | Opens | Filter |
 |------|-------|--------|
@@ -115,7 +117,7 @@ node scripts/test-dashboard-panel.js
 python3 scripts/test-dashboard-panel-ui.py
 ```
 
-**Latest:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-09-01, v3.5.5 Dashboard panel). See `ACCESSIBILITY_VERIFICATION.md`.
+**Latest full axe run:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-09-01, v3.5.5 Dashboard panel). v3.5.7 source, semantic-tree, keyboard, focus, and responsive geometry checks are recorded in `ACCESSIBILITY_VERIFICATION.md`.
 
 ## Deferred (on stakeholder request)
 
@@ -149,6 +151,7 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v3.5.7** | Sub-640px primary-canvas Dashboard; headline hierarchy; quieter pullout; sparkline/delta; stacked distribution; short ranking and reading-pane trend drill-down |
 | **v3.5.6** | Dashboard trigger moved from the top bar to an accessible vertical pullout tab on the left edge; bounded panel behavior remains unchanged |
 | **v3.5.5** | Bounded-sidebar Dashboard panel: Pathway/Courses stay the reading views; Dashboard replaces only the `w-72 lg:w-80` navigation column |
 | **v3.5.4** | FID-1 parity: collapse only consecutive duplicate Group Title markers; apply `Choose one:` to following courses without relabeling preceding required courses |

@@ -24,9 +24,13 @@ assert.match(html, /data-sidebar-column="true"/, 'sidebar column marker is requi
 assert.match(html, /data-reading-pane="true"/, 'reading pane marker is required for geometry tests');
 assert.match(html, /sidebar-column w-72 lg:w-80/, 'Dashboard must keep the existing w-72 lg:w-80 sidebar width');
 assert.match(html, /\.sidebar-column \{ position: relative; overflow: hidden; \}/, 'sidebar overflow must clip the sliding panes');
+assert.match(html, /max-width: 639px/, 'Dashboard must switch to a primary canvas below 640px');
+assert.match(html, /dashboard-primary-canvas/, 'narrow Dashboard primary-canvas state is required');
+assert.match(html, /setIsNarrowViewport/, 'narrow viewport state must track breakpoint changes');
 assert.match(html, /className=\{`sidebar-pane sidebar-pane-dash/, 'Dashboard must slide inside the sidebar, not replace the reading pane');
 assert.match(html, /is-inactive/, 'inactive sliding content must be marked non-interactive');
 assert.match(html, /inert: ''/, 'inactive pane must use inert so it is not keyboard-focusable');
+assert.match(html, /aria-hidden=\{dashboardOpen && isNarrowViewport/, 'narrow reading pane must be hidden from assistive technology');
 assert.match(html, /if \(e\.key !== 'Escape'\) return;/, 'Escape must close the Dashboard panel');
 assert.match(html, /setDashboardOpen\(false\);/, 'Dashboard close must clear dashboardOpen');
 assert.match(html, /prefers-reduced-motion: reduce/, 'reduced-motion support must remain');
@@ -51,10 +55,15 @@ assert.equal(html.includes("view !== 'dashboard'"), false, 'exports must not be 
 assert.match(html, /Current pathway \(CSV\)/, 'pathway CSV export must remain available');
 assert.match(html, /Current pathway \(PDF\)/, 'pathway PDF export must remain available');
 
-assert.match(
-  html,
-  /\{primaryView === 'courses' \? renderCourseView\(\) : renderProgram\(\)\}/,
-  'main pane must keep Pathway/Courses mounted while Dashboard is open'
-);
+assert.match(html, /renderInstitutionTrendDetail/, 'full institution trend must have a reading-pane detail view');
+assert.match(html, /primaryView === 'courses' \? renderCourseView\(\) : renderProgram\(\)/, 'main pane must preserve Pathway/Courses rendering');
+assert.match(html, /const Sparkline =/, 'sidebar trend must use the compact sparkline');
+assert.match(html, /Average ZTC adoption/, 'Dashboard must feature a headline adoption outcome');
+assert.match(html, /dashboard-comparison-details/, 'distribution and ranking must use progressive disclosure');
+assert.match(html, /Distribution by ZTC-ability/, 'stacked distribution must retain a text label');
+assert.match(html, /View all pathways/, 'short ranking must offer a Pathway-view drill-down');
+assert.match(html, /dashboard-pullout-tab\.is-open/, 'open pullout must use an edge indicator');
+assert.equal(html.includes("dashboardOpen ? 'bg-blue-600 text-white'"), false, 'pullout must not use a solid-blue active fill');
+assert.match(html, /Icons\.ChevronLeft/, 'open pullout must show a directional chevron');
 
 console.log('Dashboard panel source regressions passed.');

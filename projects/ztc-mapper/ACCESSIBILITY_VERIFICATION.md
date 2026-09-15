@@ -1,16 +1,28 @@
-# Accessibility Verification — v3.5.6
+# Accessibility Verification — v3.5.7
 
 > Historical v2.3 line-level audit: see vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-ACCESSIBILITY_VERIFICATION.md`.
 
-## Dashboard pullout (v3.5.6)
+## Dashboard responsive hierarchy (v3.5.7)
 
-Dashboard is a non-modal sidebar panel opened by a vertical tab on the far-left rail; the trigger is no longer in the top bar. The tab uses `aria-expanded` / `aria-controls`. Escape closes and restores focus. Inactive sliding content is `inert` and `visibility: hidden`. No focus trap. `prefers-reduced-motion` remains honored by the existing global CSS.
+Dashboard is a non-modal sidebar panel opened by an icon-first far-left pullout with a visible hover/focus label, `aria-expanded`, `aria-controls`, directional chevron, and text-independent blue edge indicator. Escape closes and restores focus. Inactive sliding content is `inert` and `visibility: hidden`; there is no focus trap. `prefers-reduced-motion` remains honored.
+
+At 640px and above, Dashboard remains bounded to the `w-72 lg:w-80` navigation column and the reading pane stays visible. Below 640px, Dashboard fills the canvas beside the 44px rail; the Pathway/Courses pane remains mounted with its selection preserved but becomes width zero, `visibility: hidden`, `aria-hidden`, and `inert` until the panel closes.
+
+The v3.5.7 visual hierarchy retains text labels for every status, gives close/action controls a minimum 44px target, provides accessible text for the sparkline and stacked distribution, and moves the full trend chart into a labelled reading-pane detail with a Back action.
 
 Verify geometry/keyboard/selection without production CSVs:
 
 ```bash
 python3 scripts/test-dashboard-panel-ui.py
 ```
+
+Verification on 2026-09-14:
+
+- React source, requirement-scoring, and FID-1 regressions passed.
+- Cursor browser semantic-tree and geometry checks passed at 390px, 640px, and desktop widths in dark and light themes.
+- At 390px, the Dashboard canvas measured 346px beside the 44px rail; the mounted reading pane measured 0px and exposed `aria-hidden` + `inert`. At 640px, the reading pane remained visible, uninert, and 308px wide.
+- Headline KPI, Needs attention, disclosure, stacked distribution, trend-detail/Back flow, selection persistence, and accessible names were present in the browser accessibility tree.
+- The standalone Playwright wrapper could not launch its bundled headless Chromium inside the shell sandbox; the equivalent checks above were completed through Cursor’s browser. The last full axe run remains the v3.5.5 result below.
 
 ## axe-core (2026-09-01) — v3.5.5 Dashboard panel
 

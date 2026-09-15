@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Geometry, keyboard, selection, and responsive regressions for the v3.5.6 Dashboard pullout."""
+"""Geometry, keyboard, selection, and responsive regressions for the v3.5.7 Dashboard."""
 from __future__ import annotations
 
 import http.server
 import json
 import os
+import re
 import socketserver
 import sys
 import threading
@@ -17,6 +18,8 @@ VIEWPORTS = (
     ("desktop", 1280, 800),
     ("laptop", 1024, 768),
     ("tablet", 768, 900),
+    ("boundary", 640, 844),
+    ("sub-boundary", 639, 844),
     ("narrow", 390, 844),
 )
 
@@ -82,6 +85,34 @@ def _assert_geometry(page, label: str) -> None:
         [probe_x, probe_y],
     )
     assert hit == "main", f"{label}: reading pane is covered at ({probe_x}, {probe_y}) -> {hit}"
+
+
+def _rect(locator) -> dict:
+    return locator.evaluate(
+        """el => {
+            const r = el.getBoundingClientRect();
+            return {x: r.x, y: r.y, width: r.width, height: r.height, visibility: getComputedStyle(el).visibility};
+        }"""
+    )
+
+
+def _assert_primary_canvas(page, label: str, viewport_width: int) -> None:
+    tab = page.locator("[data-dashboard-pullout]")
+    sidebar = page.locator("[data-sidebar-column]")
+    main = page.locator("[data-reading-pane]")
+    t = _box(tab)
+    s = _box(sidebar)
+    m = _rect(main)
+    assert t["x"] <= 1, f"{label}: Dashboard tab is not anchored to the left edge"
+    assert abs(s["x"] - t["width"]) <= 1, f"{label}: sidebar does not begin after the rail"
+    assert abs(s["width"] - (viewport_width - t["width"])) <= 1, (
+        f"{label}: Dashboard canvas width {s['width']} does not fill available width"
+    )
+    assert m["width"] <= 1 and m["visibility"] == "hidden", (
+        f"{label}: reading pane was not visually hidden ({m})"
+    )
+    assert main.get_attribute("aria-hidden") == "true"
+    assert main.get_attribute("inert") is not None
 
 
 def _assert_inactive_nav(page) -> None:
@@ -170,21 +201,26 @@ def main() -> int:
                 selected_before = page.locator("#main-content h2").first.inner_text().strip()
                 toggle = _open_dashboard(page)
                 try:
-                    _assert_geometry(page, f"{name} open")
                     _assert_inactive_nav(page)
-                    main_open = _box(page.locator("[data-reading-pane]"))
-                    selected_open = page.locator("#main-content h2").first.inner_text().strip()
-                    assert abs(main_open["width"] - main_before["width"]) <= 1, (
-                        f"{name}: main pane width changed {main_before['width']} -> {main_open['width']}"
-                    )
+                    selected_open = page.locator("#main-content h2").first.text_content().strip()
+                    if width < 640:
+                        _assert_primary_canvas(page, f"{name} open", width)
+                    else:
+                        _assert_geometry(page, f"{name} open")
+                        main_open = _box(page.locator("[data-reading-pane]"))
+                        assert abs(main_open["width"] - main_before["width"]) <= 1, (
+                            f"{name}: main pane width changed {main_before['width']} -> {main_open['width']}"
+                        )
+                        assert page.locator("[data-reading-pane]").get_attribute("aria-hidden") is None
+                        assert page.locator("[data-reading-pane]").get_attribute("inert") is None
                     assert selected_open == selected_before, (
                         f"{name}: selection changed {selected_before!r} -> {selected_open!r}"
                     )
                     page.keyboard.press("Escape")
                     page.wait_for_timeout(200)
                     assert toggle.get_attribute("aria-expanded") == "false"
-                    focused = page.evaluate("() => document.activeElement && document.activeElement.textContent.trim()")
-                    assert focused == "Dashboard", f"{name}: Escape did not restore toggle focus ({focused!r})"
+                    focused = page.evaluate("() => document.activeElement && document.activeElement.id")
+                    assert focused == "dashboard-toggle", f"{name}: Escape did not restore toggle focus ({focused!r})"
                     main_after = _box(page.locator("[data-reading-pane]"))
                     selected_after = page.locator("#main-content h2").first.inner_text().strip()
                     assert abs(main_after["width"] - main_before["width"]) <= 1, (
@@ -197,6 +233,18 @@ def main() -> int:
                         page.keyboard.press("Escape")
 
             page.set_viewport_size({"width": 1280, "height": 800})
+            _open_dashboard(page)
+            assert page.get_by_role("button", name=re.compile("Average ZTC adoption")).count() == 1
+            page.get_by_role("button", name="Explore pathway details").click()
+            assert page.locator("#dashboard-comparison-details").count() == 1
+            assert page.get_by_role("img", name=re.compile("Distribution by ZTC-ability")).count() == 1
+            page.get_by_role("button", name="View trend details").click()
+            page.wait_for_timeout(200)
+            assert page.get_by_role("button", name="Dashboard", exact=True).get_attribute("aria-expanded") == "false"
+            assert page.locator("#main-content h2").first.inner_text().strip() == "ZTC adoption trend"
+            page.get_by_role("button", name="Back to pathway").click()
+            assert page.locator("#main-content h2").first.inner_text().strip() == initial_program
+
             _open_dashboard(page)
             page.get_by_role("button", name="Zeta Chemistry Certificate. ZTC adoption 0%. Open pathway view.").click()
             page.wait_for_timeout(250)
