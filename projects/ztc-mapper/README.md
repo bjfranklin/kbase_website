@@ -75,7 +75,9 @@ node scripts/compare-fid1.js \
 - **Partial:** 51–74%
 - **CO ZTC (purple):** ≥1 ZTC section (Chancellor's Office definition)
 
-Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 valid option meets the 75% bar. Catalog requirements unavailable or unknown in the selected term remain in the denominator as unmet, preventing incomplete pathways from being labeled fully ZTC-able.
+Program adoption is **requirement-slot based**. A Choose-N block contributes N denominator slots; named subgroups retain their own quotas (for example, one Arts plus one Humanities); and every member of an AND bundle must meet the 75% bar. Required Core blocks continue to count every listed required course. Catalog requirements unavailable or unknown in the selected term remain in the denominator as unmet.
+
+Required-unit minima use the same slot and subgroup constraints instead of selecting globally low-unit courses. Lab-reference re-lists remain outside adoption scoring. When the Program Summary lacks Header Identifier / Group Title / Condition evidence, the app reports the structural unit lower bound with `≥` and labels lab evidence **unverifiable**; it does not infer lab compliance.
 
 ### Course catalog link (v3.4)
 
@@ -87,7 +89,7 @@ Program adoption is **requirement-based**: choice blocks count as ZTC if ≥1 va
 
 Dashboard is not a full-page destination or top-bar action. **Pathway** and **Courses** remain the only primary reading views. A graphite pullout with a blue edge indicator and directional chevron opens the Dashboard in the left navigation column. At 640px and above, the selected reading pane remains visible beside the bounded panel. Below 640px, Dashboard becomes the primary canvas while the selected pathway/course stays mounted, preserved, and temporarily `inert`/`aria-hidden`. Escape closes the panel and restores focus to the tab; the panel remains non-modal (no focus trap or backdrop).
 
-The compact Dashboard features average ZTC adoption as its headline, highlights pathways needing attention, retains filtered KPI drill-downs in a two-column grid, and replaces the sidebar chart with an accessible sparkline and term-over-term delta. “View trend details” opens the full chart in the reading pane without losing the prior selection. Distribution and a five-item ranking use progressive disclosure; “View all pathways” returns to the existing adoption-sorted Pathway view.
+The compact Dashboard features average ZTC adoption as its headline, highlights pathways needing attention, retains filtered KPI drill-downs in a two-column grid, and replaces the sidebar chart with an accessible sparkline and term-over-term delta. “View trend details” opens the full chart in a labelled modal without losing the prior selection. Distribution and a five-item ranking use progressive disclosure; “View all pathways” returns to the existing adoption-sorted Pathway view.
 
 ### Dashboard institution KPI actions
 
@@ -95,7 +97,7 @@ The headline and four compact KPI actions open **Pathway** or **Courses** with f
 
 | Tile | Opens | Filter |
 |------|-------|--------|
-| Active pathways | Pathway | All pathways |
+| Average ZTC adoption headline | Pathway | All pathways |
 | Fully ZTC-able | Pathway | 100% adoption |
 | ≥75% ZTC-able | Pathway | ≥75% adoption |
 | Chaffey ZTC courses | Courses | ZTC status (≥75% sections) |
@@ -117,7 +119,7 @@ node scripts/test-dashboard-panel.js
 python3 scripts/test-dashboard-panel-ui.py
 ```
 
-**Latest full axe run:** axe-core 4.10.2 — **0 violations** across **10 UI states** (2026-09-01, v3.5.5 Dashboard panel). v3.5.7 source, semantic-tree, keyboard, focus, and responsive geometry checks are recorded in `ACCESSIBILITY_VERIFICATION.md`.
+**Latest full axe run:** axe-core 4.10.2 — **0 violations** across **10 UI states** using checked-in de-identified fixtures (2026-09-15, v3.5.7). Source, semantic-tree, keyboard, focus, and responsive geometry checks are recorded in `ACCESSIBILITY_VERIFICATION.md`.
 
 ## Deferred (on stakeholder request)
 
@@ -151,7 +153,7 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
-| **v3.5.7** | Sub-640px primary-canvas Dashboard; headline hierarchy; quieter pullout; sparkline/delta; stacked distribution; short ranking and reading-pane trend drill-down |
+| **v3.5.7** | Sub-640px primary-canvas Dashboard; headline hierarchy; quieter pullout; sparkline/delta; stacked distribution; short ranking and modal trend detail; explicit requirement-slot scoring, subgroup-aware units, program-wide course deduplication, and strict count parsing |
 | **v3.5.6** | Dashboard trigger moved from the top bar to an accessible vertical pullout tab on the left edge; bounded panel behavior remains unchanged |
 | **v3.5.5** | Bounded-sidebar Dashboard panel: Pathway/Courses stay the reading views; Dashboard replaces only the `w-72 lg:w-80` navigation column |
 | **v3.5.4** | FID-1 parity: collapse only consecutive duplicate Group Title markers; apply `Choose one:` to following courses without relabeling preceding required courses |

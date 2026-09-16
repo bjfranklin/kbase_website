@@ -55,13 +55,22 @@ assert.equal(html.includes("view !== 'dashboard'"), false, 'exports must not be 
 assert.match(html, /Current pathway \(CSV\)/, 'pathway CSV export must remain available');
 assert.match(html, /Current pathway \(PDF\)/, 'pathway PDF export must remain available');
 
-assert.match(html, /renderInstitutionTrendDetail/, 'full institution trend must have a reading-pane detail view');
+assert.equal(html.includes('renderInstitutionTrendDetail'), false, 'institution trend must not replace the reading pane');
+assert.match(html, /setDashboardModal\(\{ type: 'institution-trend' \}\)/, 'full institution trend must open in a hovering modal');
+assert.match(html, /onClick=\{\(e\) => \{ if \(e\.target === e\.currentTarget\) setDashboardModal\(null\); \}\}/, 'Dashboard modal must close when its backdrop is clicked');
+assert.match(html, /DashboardInfoButton/, 'Dashboard graphics must expose explainer buttons');
+assert.match(html, /width: '28px', height: '28px'/, 'Dashboard explainer indicators must stay compact');
+assert.match(html, /What this metric means/, 'Dashboard explainers must define metric meaning');
+assert.match(html, /How it is calculated/, 'Dashboard explainers must describe calculations');
 assert.match(html, /primaryView === 'courses' \? renderCourseView\(\) : renderProgram\(\)/, 'main pane must preserve Pathway/Courses rendering');
 assert.match(html, /const Sparkline =/, 'sidebar trend must use the compact sparkline');
 assert.match(html, /Average ZTC adoption/, 'Dashboard must feature a headline adoption outcome');
 assert.match(html, /dashboard-comparison-details/, 'distribution and ranking must use progressive disclosure');
 assert.match(html, /Distribution by ZTC-ability/, 'stacked distribution must retain a text label');
 assert.match(html, /View all pathways/, 'short ranking must offer a Pathway-view drill-down');
+assert.match(html, /showProgramMembership=\{false\}/, 'Pathway course modal must omit In pathways membership');
+assert.match(html, /gridAutoRows: '1fr'/, 'Courses-view pathway cards must use equal dynamic row heights');
+assert.match(html, /title="Key counts"[\s\S]*?gridAutoRows: '1fr'/, 'Dashboard Key Counts cards must use equal dynamic row heights');
 assert.match(html, /dashboard-pullout-tab\.is-open/, 'open pullout must use an edge indicator');
 assert.equal(html.includes("dashboardOpen ? 'bg-blue-600 text-white'"), false, 'pullout must not use a solid-blue active fill');
 assert.match(html, /Icons\.ChevronLeft/, 'open pullout must show a directional chevron');

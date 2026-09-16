@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Verify vendored JS matches vendor/deps.json and index.html references."""
+
 from __future__ import annotations
 
 import hashlib
@@ -68,13 +69,17 @@ def main() -> int:
         actual = sha384_hex(path)
         expected = dep.get("sha384", "")
         if expected and actual != expected:
-            errors.append(f"hash mismatch for {rel}: expected {expected[:16]}… got {actual[:16]}…")
+            errors.append(
+                f"hash mismatch for {rel}: expected {expected[:16]}… got {actual[:16]}…"
+            )
         if rel not in index_html:
             errors.append(f"index.html does not reference {rel}")
 
     for pattern in FLOATING_CDN_PATTERNS:
         if pattern.search(index_html):
-            errors.append(f"index.html still uses floating CDN URL matching {pattern.pattern}")
+            errors.append(
+                f"index.html still uses floating CDN URL matching {pattern.pattern}"
+            )
 
     vendored_paths = set(dep_by_file)
     for tag_inner in SCRIPT_TAG_RE.findall(index_html):

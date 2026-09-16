@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run axe-core WCAG 2.1 AA checks on ZTC Pathway Mapper v3 UI states."""
+
 from __future__ import annotations
 
 import json
@@ -10,14 +11,18 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8767/index.html"
-PROG_CSV = Path(os.environ.get(
-    "ZTC_PROG_CSV",
-    Path.home() / "Downloads" / "Program Summary 2026-05-29_100422.csv",
-))
-ANAL_CSV = Path(os.environ.get(
-    "ZTC_ANAL_CSV",
-    Path.home() / "Downloads" / "IE - ZTC Course Analytics - MASTER (BF).csv",
-))
+PROG_CSV = Path(
+    os.environ.get(
+        "ZTC_PROG_CSV",
+        Path.home() / "Downloads" / "Program Summary 2026-05-29_100422.csv",
+    )
+)
+ANAL_CSV = Path(
+    os.environ.get(
+        "ZTC_ANAL_CSV",
+        Path.home() / "Downloads" / "IE - ZTC Course Analytics - MASTER (BF).csv",
+    )
+)
 AXE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
 
 
@@ -29,10 +34,16 @@ def launch_chromium(playwright):
         return playwright.chromium.launch(headless=True)
     except Exception:
         cache = Path.home() / "Library" / "Caches" / "ms-playwright"
-        shells = sorted(cache.glob("chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell"))
+        shells = sorted(
+            cache.glob(
+                "chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell"
+            )
+        )
         if not shells:
             raise
-        return playwright.chromium.launch(headless=True, executable_path=str(shells[-1]))
+        return playwright.chromium.launch(
+            headless=True, executable_path=str(shells[-1])
+        )
 
 
 def run_axe(page, label: str) -> dict:
@@ -61,7 +72,15 @@ def run_axe(page, label: str) -> dict:
 
 def main() -> None:
     if not PROG_CSV.is_file() or not ANAL_CSV.is_file():
-        print(json.dumps({"error": "CSV fixtures not found", "prog": str(PROG_CSV), "anal": str(ANAL_CSV)}))
+        print(
+            json.dumps(
+                {
+                    "error": "CSV fixtures not found",
+                    "prog": str(PROG_CSV),
+                    "anal": str(ANAL_CSV),
+                }
+            )
+        )
         sys.exit(1)
 
     report: list[dict] = []
@@ -76,14 +95,20 @@ def main() -> None:
         page.wait_for_timeout(300)
         report.append(run_axe(page, "Landing (light)"))
 
-        page.locator('input[aria-label="Upload Program Summary CSV"]').set_input_files(str(PROG_CSV))
-        page.locator('input[aria-label="Upload Course Analytics CSV"]').set_input_files(str(ANAL_CSV))
+        page.locator('input[aria-label="Upload Program Summary CSV"]').set_input_files(
+            str(PROG_CSV)
+        )
+        page.locator('input[aria-label="Upload Course Analytics CSV"]').set_input_files(
+            str(ANAL_CSV)
+        )
         page.get_by_text("Loaded ·", exact=False).nth(1).wait_for(timeout=120_000)
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Landing (both CSVs staged, light)"))
 
         page.get_by_role("button", name="Build dashboard").click()
-        page.get_by_role("navigation", name="Views").get_by_role("button", name="Pathway", exact=True).wait_for(timeout=120_000)
+        page.get_by_role("navigation", name="Views").get_by_role(
+            "button", name="Pathway", exact=True
+        ).wait_for(timeout=120_000)
         dash_toggle = page.get_by_role("button", name="Dashboard", exact=True)
         dash_toggle.click()
         page.locator("#dashboard-panel-title").wait_for(timeout=10_000)
@@ -92,17 +117,23 @@ def main() -> None:
         dash_toggle.click()
         page.wait_for_timeout(400)
 
-        page.get_by_role("navigation", name="Views").get_by_role("button", name="Pathway", exact=True).click()
+        page.get_by_role("navigation", name="Views").get_by_role(
+            "button", name="Pathway", exact=True
+        ).click()
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Pathway view"))
 
-        page.get_by_role("navigation", name="Views").get_by_role("button", name="Courses", exact=True).click()
+        page.get_by_role("navigation", name="Views").get_by_role(
+            "button", name="Courses", exact=True
+        ).click()
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Courses view"))
 
         page.get_by_role("button", name="Select term").click()
         page.wait_for_timeout(200)
-        page.locator('ul[role="listbox"][aria-label="Select term"] button[role="option"]').first.click()
+        page.locator(
+            'ul[role="listbox"][aria-label="Select term"] button[role="option"]'
+        ).first.click()
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Courses view (oldest term, catalog note)"))
 
@@ -112,7 +143,9 @@ def main() -> None:
             page.wait_for_timeout(400)
             report.append(run_axe(page, "Course detail panel"))
 
-        page.get_by_role("navigation", name="Views").get_by_role("button", name="Pathway", exact=True).click()
+        page.get_by_role("navigation", name="Views").get_by_role(
+            "button", name="Pathway", exact=True
+        ).click()
         page.wait_for_timeout(400)
         course_row = page.locator('[id^="area-"] button').first
         if course_row.count():

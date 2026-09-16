@@ -1,5 +1,9 @@
 # ZTC Pathway Mapper - Animation Flickering Fix Summary
 
+> **Historical — v2.3 only.** This fix record describes the preserved
+> `index.v2.3.html` application. For the current v3.5.7 architecture and
+> maintenance commands, see `README.md`.
+
 ## Problem Description
 After the Cursor optimization work, the application experienced animation glitches/flickering when clicking on course cards. This occurred:
 - After CSV import, before filters were applied

@@ -187,7 +187,6 @@
       ChevronRight: Icon(<polyline points="9 18 15 12 9 6"></polyline>),
       ChevronLeft: Icon(<polyline points="15 18 9 12 15 6"></polyline>),
       ChevronDown: Icon(<polyline points="6 9 12 15 18 9"></polyline>),
-      Layers: Icon(<><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></>),
       Refresh: Icon(<><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>),
       FileText: Icon(<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></>),
       Shield: Icon(<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="m9 12 2 2 4-4"></path></>),
@@ -255,16 +254,22 @@
     // ============================================================
     // UTILITIES
     // ============================================================
-    // Lenient numeric parsing for CSV cells: strips "%" and ",", null on blank/NaN.
-    const parseNum = (v, int = false) => {
+    // Lenient percentage/unit parsing for CSV cells: strips "%" and ",", null on blank/NaN.
+    const parseNum = (v) => {
       if (v === null || v === undefined || v === '') return null;
       const s = String(v).replace(/[%,]/g, '');
-      const n = int ? parseInt(s, 10) : parseFloat(s);
+      const n = parseFloat(s);
       return Number.isNaN(n) ? null : n;
     };
     const parsePct = (v) => parseNum(v);
     const parseUnits = (v) => parseNum(v);
-    const parseCount = (v) => parseNum(v, true);
+    const parseCount = (v) => {
+      if (v === null || v === undefined || String(v).trim() === '') return null;
+      const s = String(v).trim().replace(/,/g, '');
+      if (!/^\+?\d+(?:\.\d+)?$/.test(s)) return null;
+      const n = Number(s);
+      return Number.isSafeInteger(n) && n >= 0 ? n : null;
+    };
     const fmtUnits = (n) => (n === null || n === undefined) ? '' : (Math.round(n * 100) / 100).toString();
 
     // Robust CSV parser: handles quoted fields with embedded commas + newlines.
@@ -599,30 +604,114 @@
       course.ztcPct !== null &&
       course.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN;
 
-    const scoreAreaRequirements = (allCourses, structuredOpts, isChoice) => {
-      const hasStructuredOptions = structuredOpts.length > 0;
-      const requirementCount = hasStructuredOptions ? structuredOpts.length : allCourses.length;
-      const ztcCount = hasStructuredOptions
-        ? structuredOpts.filter(o => o.ztcOk).length
-        : allCourses.filter(courseIsZtc).length;
-      const anyZtc = ztcCount > 0;
-
-      if (isChoice) {
-        return {
-          anyZtc,
-          ztcCount,
-          reqTotal: requirementCount > 0 ? 1 : 0,
-          reqZtc: requirementCount > 0 && anyZtc ? 1 : 0,
-          displayTotal: requirementCount
-        };
+    const candidateOptions = (sg) => {
+      if (sg.options && sg.options.length) {
+        return sg.options.map((option, index) => ({
+          id: `${sg.id}-option-${index}`,
+          courses: option.courses,
+          ztcOk: option.ztcOk
+        }));
       }
+      return sg.courses.map((course, index) => ({
+        id: `${sg.id}-course-${index}`,
+        courses: [course],
+        ztcOk: courseIsZtc(course)
+      }));
+    };
+
+    const allRequiredGroups = (sg, candidates) =>
+      candidates.map((candidate, index) => ({
+        id: `${sg.id}-required-${index}`,
+        requiredCount: 1,
+        candidates: [candidate]
+      }));
+
+    const choiceGroup = (sg, candidates, requiredCount) => [{
+      id: `${sg.id}-choice`,
+      requiredCount: Math.max(0, requiredCount || 0),
+      candidates
+    }];
+
+    const isRequiredComponent = (area, sg) =>
+      !!(area.isHeaderArea && sg.title && sg.requirement?.choice === false && !/\bcore\b/i.test(sg.title));
+
+    // Build explicit requirement-slot groups. A group with requiredCount=N represents
+    // N distinct slots sharing one candidate pool; separate groups enforce subgroup quotas.
+    const buildRequirementPlan = (area, scoredSubgroups) => {
+      const areaReq = area.requirement || { choice: null, n: null };
+      const namedSubgroups = scoredSubgroups.filter(sg => sg.title);
+      const useSubgroupQuotas = namedSubgroups.length > 1;
+
+      if (useSubgroupQuotas) {
+        return scoredSubgroups.flatMap(sg => {
+          const candidates = candidateOptions(sg);
+          const req = sg.requirement || { choice: null, n: null };
+          if (req.choice === true) return choiceGroup(sg, candidates, req.n || 1);
+          if (isRequiredComponent(area, sg)) return choiceGroup(sg, candidates, 1);
+          return allRequiredGroups(sg, candidates);
+        });
+      }
+
+      const candidates = scoredSubgroups.flatMap(candidateOptions);
+      const base = scoredSubgroups[0] || { id: `${area.id}-empty`, title: null, requirement: areaReq };
+      if (areaReq.choice === true) return choiceGroup(base, candidates, areaReq.n || 1);
+      if (isRequiredComponent(area, base)) return choiceGroup(base, candidates, 1);
+      return allRequiredGroups(base, candidates);
+    };
+
+    const optionUnitSum = (candidate) => {
+      if (!candidate.courses.length || candidate.courses.some(c => c.units === null || c.units === undefined)) return null;
+      return candidate.courses.reduce((sum, course) => sum + course.units, 0);
+    };
+
+    const scoreRequirementPlan = (groups, { contentFloor = null } = {}) => {
+      let reqTotal = 0, reqZtc = 0, ztcCount = 0, displayTotal = 0;
+      let unitsMin = 0, unitsMax = 0;
+      let unitsVerifiable = true;
+
+      for (const group of groups) {
+        const required = group.requiredCount;
+        const qualifying = group.candidates.filter(candidate => candidate.ztcOk).length;
+        reqTotal += required;
+        reqZtc += Math.min(required, qualifying);
+        ztcCount += qualifying;
+        displayTotal += group.candidates.length;
+
+        let unitSums = group.candidates.map(optionUnitSum).filter(sum => sum !== null);
+        if (contentFloor !== null) unitSums = unitSums.filter(sum => sum >= contentFloor);
+        unitSums.sort((a, b) => a - b);
+        if (required === 0) continue;
+        if (unitSums.length < required) {
+          unitsVerifiable = false;
+          continue;
+        }
+        unitsMin += unitSums.slice(0, required).reduce((sum, units) => sum + units, 0);
+        unitsMax += unitSums.slice(-required).reduce((sum, units) => sum + units, 0);
+        if (group.candidates.some(candidate => optionUnitSum(candidate) === null)) unitsVerifiable = false;
+      }
+
       return {
-        anyZtc,
+        groups,
+        anyZtc: reqZtc > 0,
         ztcCount,
-        reqTotal: requirementCount,
-        reqZtc: ztcCount,
-        displayTotal: requirementCount
+        reqTotal,
+        reqZtc,
+        displayTotal,
+        unitsMin,
+        unitsMax,
+        unitsVerifiable
       };
+    };
+
+    // Kept as a small compatibility seam for focused helper tests.
+    const scoreAreaRequirements = (allCourses, structuredOpts, isChoice, requiredCount = 1) => {
+      const candidates = structuredOpts.length
+        ? structuredOpts.map((option, index) => ({ id: `option-${index}`, courses: option.courses || [], ztcOk: option.ztcOk }))
+        : allCourses.map((course, index) => ({ id: `course-${index}`, courses: [course], ztcOk: courseIsZtc(course) }));
+      const groups = isChoice
+        ? [{ id: 'choice', requiredCount, candidates }]
+        : candidates.map((candidate, index) => ({ id: `required-${index}`, requiredCount: 1, candidates: [candidate] }));
+      return scoreRequirementPlan(groups);
     };
 
     // ---- Area ordering / nesting helpers ----
@@ -1001,7 +1090,6 @@
       const cm = courseMetrics(analytics, base.key, term);
       const pct = cm.offered ? cm.m.ztcPct : null;
       return {
-        units: null,
         ...base,
         analyticsTitle: cm.title,
         offered: cm.offered,
@@ -1021,10 +1109,8 @@
     // Build an enriched view for one program at a given term
     const computeProgramView = (program, analytics, term) => {
       let reqTotal = 0, reqZtc = 0;
-      let coursesWithData = 0, coursesTotal = 0;
-      let surveySum = 0, surveyN = 0;
       let unitsRequired = 0;
-      let coCount = 0;
+      let unitsRequiredUnverifiable = false;
 
       const areas = program.areas.map(area => {
         const subgroups = area.subgroups.map(sg => {
@@ -1045,21 +1131,68 @@
 
         // Lab-reference subgroups are display-only (re-list of * courses) — exclude from rollup
         const scoredSubgroups = subgroups.filter(sg => !sg.isLabReference);
-        const allCourses = scoredSubgroups.flatMap(sg => sg.courses);
         const req = area.requirement || { choice: null, n: null };
         const isChoice = req.choice === true;
 
         // Denominators come from the catalog requirement structure, not only
         // courses offered in the selected term. Unavailable or unknown courses
         // remain unmet requirements and therefore cannot inflate adoption.
-        const structuredOpts = scoredSubgroups.flatMap(sg => sg.options || []);
-        const score = scoreAreaRequirements(allCourses, structuredOpts, isChoice);
+        const requirementPlan = buildRequirementPlan(area, scoredSubgroups);
+        const hasLabConstraint = subgroups.some(sg => sg.isLabReference);
+        const score = scoreRequirementPlan(
+          requirementPlan,
+          { contentFloor: hasLabConstraint ? 3 : null }
+        );
         const { anyZtc, ztcCount, reqTotal: aReqTotal, reqZtc: aReqZtc } = score;
         reqTotal += aReqTotal; reqZtc += aReqZtc;
 
-        // survey aggregation — include lab-ref re-lists for awareness but avoid double-count by key
-        const seenKeys = new Set();
-        for (const sg of subgroups) {
+        let unitsMin = score.unitsMin;
+        let unitsMax = score.unitsMax;
+        let unitsUnverifiable = !score.unitsVerifiable;
+        if (hasLabConstraint) {
+          // The title proves a lab component exists, but without Header Identifier
+          // the qualifying course cannot be identified. Add only the smallest
+          // observable supplemental-unit floor and keep compliance unverifiable.
+          const supplementalUnits = scoredSubgroups
+            .flatMap(sg => sg.courses)
+            .filter(c => c.units !== null && c.units > 0 && (c.units < 3 || /L$/i.test(c.number || '')))
+            .map(c => c.units)
+            .sort((a, b) => a - b);
+          if (supplementalUnits.length) {
+            unitsMin += supplementalUnits[0];
+            unitsMax += supplementalUnits[0];
+          }
+          unitsUnverifiable = true;
+        }
+        unitsRequired += unitsMin;
+        unitsRequiredUnverifiable = unitsRequiredUnverifiable || unitsUnverifiable;
+        const unitsLabel = unitsMin <= 0
+          ? (unitsUnverifiable ? 'unverifiable' : '')
+          : (unitsUnverifiable
+            ? `≥${fmtUnits(unitsMin)}`
+            : (unitsMin === unitsMax ? fmtUnits(unitsMin) : `${fmtUnits(unitsMin)}–${fmtUnits(unitsMax)}`));
+
+        const dataCount = score.displayTotal;
+        const areaPct = aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null;
+        return {
+          ...area, subgroups,
+          isChoice, requiredCount: req.n,
+          unitsLabel, anyZtc, ztcCount, dataCount,
+          requirementSlots: score.groups,
+          unitsUnverifiable,
+          areaPct,
+          satisfiable: aReqTotal > 0 && aReqZtc === aReqTotal && !hasLabConstraint
+        };
+      });
+
+      // Course-summary metrics are program-wide unique-course metrics. A course
+      // appearing in multiple areas or in a lab-reference re-list counts once.
+      let coursesWithData = 0, coursesTotal = 0;
+      let surveySum = 0, surveyN = 0;
+      let coCount = 0;
+      const seenKeys = new Set();
+      for (const area of areas) {
+        for (const sg of area.subgroups) {
           for (const c of sg.courses) {
             if (c.key && seenKeys.has(c.key)) continue;
             if (c.key) seenKeys.add(c.key);
@@ -1069,48 +1202,16 @@
             if (c.coZtc) coCount += 1;
           }
         }
-
-        // required units from scored subgroups only
-        const optionUnits = allCourses.map(c => c.units).filter(u => u !== null);
-        let unitsLabel = '', unitsMin = 0;
-        if (isChoice) {
-          const n = req.n || 1;
-          if (structuredOpts.length) {
-            const optSums = structuredOpts.map(o => o.courses.map(c => c.units).filter(u => u !== null).reduce((s, u) => s + u, 0));
-            const sorted = optSums.filter(u => u > 0).sort((a, b) => a - b);
-            const lo = sorted.slice(0, n).reduce((s, u) => s + u, 0);
-            const hi = sorted.slice(-n).reduce((s, u) => s + u, 0);
-            unitsMin = lo;
-            unitsLabel = !sorted.length ? '' : (lo === hi ? fmtUnits(lo) : `${fmtUnits(lo)}–${fmtUnits(hi)}`);
-          } else {
-            const sorted = optionUnits.slice().sort((a, b) => a - b);
-            const lo = sorted.slice(0, n).reduce((s, u) => s + u, 0);
-            const hi = sorted.slice(-n).reduce((s, u) => s + u, 0);
-            unitsMin = lo;
-            unitsLabel = lo === hi ? fmtUnits(lo) : `${fmtUnits(lo)}–${fmtUnits(hi)}`;
-          }
-        } else {
-          const sum = optionUnits.reduce((s, u) => s + u, 0);
-          unitsMin = sum; unitsLabel = fmtUnits(sum);
-        }
-        unitsRequired += unitsMin;
-
-        const dataCount = score.displayTotal;
-        const areaPct = aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null;
-        return {
-          ...area, subgroups,
-          isChoice, requiredCount: req.n,
-          unitsLabel, anyZtc, ztcCount, dataCount,
-          areaPct, satisfiable: isChoice ? anyZtc : (aReqTotal > 0 && aReqZtc === aReqTotal)
-        };
-      });
+      }
 
       const adoptionPct = reqTotal > 0 ? Math.round((reqZtc / reqTotal) * 100) : null;
       const avgSurvey = surveyN > 0 ? Math.round(surveySum / surveyN) : null;
       return {
         areas, adoptionPct, reqTotal, reqZtc,
         coursesWithData, coursesTotal, avgSurvey, coCount,
-        unitsRequired: Math.round(unitsRequired * 100) / 100
+        unitsRequired: Math.round(unitsRequired * 100) / 100,
+        unitsRequiredUnverifiable,
+        unitsRequiredLabel: `${unitsRequiredUnverifiable ? '≥' : ''}${fmtUnits(unitsRequired)}`
       };
     };
 
@@ -1147,6 +1248,16 @@
         </div>
         {children}
       </section>
+    );
+
+    const DashboardInfoButton = ({ label, onClick, t }) => (
+      <button type="button" onClick={onClick}
+        aria-label={`Explain ${label}`}
+        title={`Explain ${label}`}
+        style={{ width: '28px', height: '28px' }}
+        className={`flex-shrink-0 rounded-full border ${t.cardBorder} ${t.card} ${t.cardHover} inline-flex items-center justify-center text-sm font-bold leading-none`}>
+        <span aria-hidden="true">!</span>
+      </button>
     );
 
     const AppFooter = ({ t }) => (
@@ -1362,7 +1473,7 @@
     };
 
     // Compact choice-band chip when Group Title is present in the export
-    const ChoiceBand = ({ label, ztcOk, dark, t }) => {
+    const ChoiceBand = ({ label, ztcOk, dark }) => {
       const text = formatGroupLabel(label);
       if (!text) return null;
       return (
@@ -1412,7 +1523,7 @@
               const multi = opt.courses.length > 1;
               return (
                 <div key={sg.id + '-opt-' + oi} role="listitem" className={`min-w-0 ${anyLabeled && opt.label ? 'space-y-1' : ''}`}>
-                  {opt.label && <ChoiceBand label={opt.label} ztcOk={opt.ztcOk} dark={dark} t={t} />}
+                  {opt.label && <ChoiceBand label={opt.label} ztcOk={opt.ztcOk} dark={dark} />}
                   <div className={multi ? `space-y-1 rounded-lg border px-2.5 py-2 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}` : 'space-y-2 min-w-0'}>
                     {opt.courses.map((c, ci) => (
                       <React.Fragment key={sg.id + '-opt-' + oi + '-' + ci}>
@@ -1510,7 +1621,7 @@
     // Stat cards, ZTC section count, OER type breakdown, per-term trend,
     // and catalog link. `compact` renders the tighter modal layout.
     // ============================================================
-    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false, showCatalogLink = true, programsForCourse = [], onOpenProgram }) => {
+    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false, showCatalogLink = true, showProgramMembership = true, programsForCourse = [], onOpenProgram }) => {
       const rec = analytics.index[c.key];
       const trend = rec ? sortTerms(Object.keys(rec.terms)).map(term => ({ term, pct: rec.terms[term].ztcPct })) : [];
       const m = c.metrics;
@@ -1549,18 +1660,20 @@
               <p className={`text-[11px] ${t.faint}`}>Deactivated programs in the export are not listed.</p>
             </div>
           ) : (
-            <ul className={`grid gap-2 list-none p-0 m-0 ${compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`} aria-label="Pathways including this course">
+            <ul className={`grid gap-2 list-none p-0 m-0 ${compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
+              style={{ gridAutoRows: '1fr' }} aria-label="Pathways including this course">
               {programsForCourse.map((p) => {
                 const placement = formatMembershipPlacement(p.placements);
                 const pctLabel = p.pct === null || p.pct === undefined ? 'no adoption data' : p.pct + '% ZTC adoption';
                 const nameEndsDegree = /\bdegree\b/i.test(p.name || '');
                 const ariaBits = [p.name, placement, !nameEndsDegree ? (p.type || '') : '', pctLabel, 'Activate to open pathway'].filter(Boolean);
                 return (
-                  <li key={p.name} className="min-w-0">
+                  <li key={p.name} className="min-w-0" style={{ height: '100%' }}>
                     <button
                       type="button"
                       onClick={() => onOpenProgram && onOpenProgram(p.name)}
                       aria-label={ariaBits.join('. ') + '.'}
+                      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
                       className={`w-full rounded-lg border ${t.cardBorder} ${dark ? 'hover:border-zinc-500 hover:bg-zinc-800/80' : 'hover:border-gray-400 hover:bg-gray-50'} ${t.card} text-left px-3 py-2.5 transition-colors cursor-pointer min-w-0`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -1572,7 +1685,7 @@
                       {placement && (
                         <div className={`text-[11px] leading-snug mt-1 line-clamp-2 ${t.textMuted}`}>{placement}</div>
                       )}
-                      <div className={`text-[11px] mt-1 ${t.faint}`}>
+                      <div className={`text-[11px] mt-1 ${t.faint}`} style={{ marginTop: 'auto', paddingTop: '0.25rem' }}>
                         {p.type || 'Pathway'}
                         <span className="mx-1" aria-hidden="true">·</span>
                         Open pathway
@@ -1594,7 +1707,7 @@
                 <Icons.AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-400" aria-hidden="true" />
                 <p className={`text-sm ${t.textMuted}`}>{c.found ? `No analytics for ${selectedTerm}. This course was not offered (or not reported) in the selected term.` : 'This course was not found in the Course Analytics datasource.'}</p>
               </div>
-              {programMembership}
+              {showProgramMembership && programMembership}
             </>
           ) : (
             <>
@@ -1618,7 +1731,7 @@
                 </div>
               </div>
 
-              {programMembership}
+              {showProgramMembership && programMembership}
 
               {m.totalSec !== null && (
                 <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3 ${mb} flex items-center gap-3`}>
@@ -1711,7 +1824,7 @@
       const [exportOpen, setExportOpen] = useState(false);
       const [showTrend, setShowTrend] = useState(true);
       const [showDashboardDetails, setShowDashboardDetails] = useState(false);
-      const [dashboardDetail, setDashboardDetail] = useState(null);
+      const [dashboardModal, setDashboardModal] = useState(null);
       const [announce, setAnnounce] = useState('');
       const [storageNotice, setStorageNotice] = useState('');
       const [dragOverSlot, setDragOverSlot] = useState(null);
@@ -1721,6 +1834,8 @@
       const exportMenuRef = useRef(null);
       const exportBtnRef = useRef(null);
       const dashboardToggleRef = useRef(null);
+      const dashboardModalRef = useRef(null);
+      const dashboardModalTriggerRef = useRef(null);
       const courseModalRef = useRef(null);
       const lastFocusedRef = useRef(null);
       const jumpAnnounceRef = useRef(null);
@@ -1778,7 +1893,7 @@
         if (!dashboardOpen) return;
         const onKey = (e) => {
           if (e.key !== 'Escape') return;
-          if (exportOpen || selectedCourse) return;
+          if (exportOpen || selectedCourse || dashboardModal) return;
           if (document.querySelector('ul[role="listbox"]')) return;
           e.preventDefault();
           setDashboardOpen(false);
@@ -1786,7 +1901,37 @@
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
-      }, [dashboardOpen, exportOpen, selectedCourse]);
+      }, [dashboardOpen, exportOpen, selectedCourse, dashboardModal]);
+
+      // Dashboard modal: focus the dialog, trap Tab, Escape to close, and restore the trigger.
+      useEffect(() => {
+        if (!dashboardModal) return;
+        const node = dashboardModalRef.current;
+        const getFocusable = () => node ? Array.from(node.querySelectorAll('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')) : [];
+        const timer = setTimeout(() => { const f = getFocusable(); (f[0] || node) && (f[0] || node).focus(); }, 0);
+        const onKey = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setDashboardModal(null);
+            return;
+          }
+          if (e.key === 'Tab') {
+            const f = getFocusable();
+            if (!f.length) return;
+            const first = f[0], last = f[f.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => {
+          clearTimeout(timer);
+          document.removeEventListener('keydown', onKey);
+          const trigger = dashboardModalTriggerRef.current;
+          dashboardModalTriggerRef.current = null;
+          if (trigger && trigger.focus && document.contains(trigger)) trigger.focus();
+        };
+      }, [dashboardModal]);
 
       // Course modal: focus the dialog, trap Tab, Escape to close, restore focus on close
       useEffect(() => {
@@ -2097,7 +2242,6 @@
 
       const switchPrimaryView = (next) => {
         if (next !== 'program' && next !== 'courses') return;
-        setDashboardDetail(null);
         if ((primaryView === 'program' && next === 'courses') || (primaryView === 'courses' && next === 'program')) {
           setSearch('');
         }
@@ -2127,15 +2271,13 @@
       };
 
       const openInstitutionTrendDetail = () => {
-        setDashboardDetail('institution-trend');
-        closeDashboardToReading();
+        dashboardModalTriggerRef.current = document.activeElement;
+        setDashboardModal({ type: 'institution-trend' });
       };
 
-      const closeDashboardDetail = () => {
-        setDashboardDetail(null);
-        window.requestAnimationFrame(() => {
-          document.getElementById('main-content')?.focus();
-        });
+      const openDashboardExplainer = (detail) => {
+        dashboardModalTriggerRef.current = document.activeElement;
+        setDashboardModal({ type: 'explainer', ...detail });
       };
 
       const selectProgramFromDashboard = (name) => {
@@ -2319,11 +2461,36 @@
         const instSub = `Term ${selectedTerm}`;
         const headlineAction = { view: 'program', pathwayAdoptionFilter: 'all', sortBy: 'name' };
         const overviewKpis = [
-          { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' } },
-          { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' } },
-          { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' } },
-          { label: "Chancellor's Office ZTC courses", val: institution.coZtcCourses, sub: `≥1 ZTC section · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-violet-200' : 'text-violet-800', title: "Courses offered this term with at least one zero textbook cost section (Chancellor's Office ZTC threshold).", action: { view: 'courses', courseStatusFilter: 'co' } }
+          { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' }, meaning: 'Active pathways where every scored catalog requirement can be completed with a qualifying ZTC option.', calculation: `Counts scored pathways whose requirement-based ZTC adoption is 100% for ${selectedTerm}. Unavailable or unknown required courses remain in the denominator as unmet.` },
+          { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' }, meaning: 'Active pathways where at least three quarters of scored catalog requirements can be completed with qualifying ZTC options.', calculation: `Counts scored pathways with requirement-based ZTC adoption of 75% or higher for ${selectedTerm}; the count includes pathways at 100%.` },
+          { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' }, meaning: 'Courses offered in the selected term that meet Chaffey’s ZTC threshold.', calculation: `Counts offered courses whose Course Analytics ZTC percentage is 75% or higher for ${selectedTerm}. The denominator shown is all courses reported as offered that term.` },
+          { label: "Chancellor's Office ZTC courses", val: institution.coZtcCourses, sub: `≥1 ZTC section · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-violet-200' : 'text-violet-800', title: "Courses offered this term with at least one zero textbook cost section (Chancellor's Office ZTC threshold).", action: { view: 'courses', courseStatusFilter: 'co' }, meaning: 'Courses offered in the selected term with at least one section reported as zero textbook cost.', calculation: `Counts offered courses with one or more ZTC sections in Course Analytics for ${selectedTerm}. The denominator shown is all courses reported as offered that term.` }
         ];
+        const averageExplainer = {
+          title: 'Average ZTC adoption',
+          meaning: 'The institution-wide mean of active pathways’ requirement-based ZTC adoption for the selected term.',
+          calculation: `For ${selectedTerm}, the app calculates each pathway’s percentage of catalog requirements that can be met with qualifying ZTC options, averages the scored pathway percentages, and rounds to the nearest whole percent. Pathways with no scored requirements are excluded.`
+        };
+        const attentionExplainer = {
+          title: 'Needs attention',
+          meaning: 'The lowest-adoption active pathways below the partial-adoption threshold.',
+          calculation: `Filters scored pathways below 51% requirement-based ZTC adoption for ${selectedTerm}, sorts them from lowest to highest, and displays up to five. Unavailable or unknown required courses remain in each pathway denominator as unmet.`
+        };
+        const trendExplainer = {
+          title: 'Adoption trend',
+          meaning: 'How institution-wide pathway ZTC adoption changes across available terms.',
+          calculation: 'For each term, the app calculates every active pathway’s requirement-based ZTC adoption, excludes pathways with no scored requirements, averages the remaining pathway percentages, and rounds to the nearest whole percent. The delta compares the selected term with the nearest earlier term that has data.'
+        };
+        const distributionExplainer = {
+          title: 'Distribution by ZTC-ability',
+          meaning: 'How scored active pathways are distributed across requirement-based ZTC adoption ranges.',
+          calculation: 'Places each scored pathway into one exclusive range: 100%, 75–99%, 51–74%, or 0–50%. Each displayed percentage is the range count divided by all scored pathways for the selected term.'
+        };
+        const rankingExplainer = {
+          title: 'Top pathways',
+          meaning: 'The active pathways with the highest requirement-based ZTC adoption in the selected term.',
+          calculation: 'Sorts scored pathways by ZTC adoption from highest to lowest, breaks ties alphabetically by pathway name, and displays the first five.'
+        };
         let trendIndex = institutionTrend ? institutionTrend.labels.indexOf(selectedTerm) : -1;
         if (institutionTrend && trendIndex < 0) trendIndex = institutionTrend.labels.length - 1;
         const trendCurrent = institutionTrend && trendIndex >= 0 ? institutionTrend.avg[trendIndex] : null;
@@ -2360,21 +2527,25 @@
               </div>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 space-y-5">
-              <DashboardSection compact title="Institution overview" subtitle={instSub}>
-                <button type="button" onClick={() => navigateFromOverviewKpi(headlineAction)}
-                  aria-label={`Average ZTC adoption: ${institution.avg === null ? 'no scored data' : institution.avg + '%'}. ${institution.scored} of ${institution.total} active pathways scored. Open Pathway view.`}
-                  className={`w-full rounded-xl border ${darkMode ? 'border-blue-500/45 bg-blue-500/10' : 'border-blue-300 bg-blue-50'} p-3 text-left ${t.cardHover}`}>
-                  <span className={`block text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Average ZTC adoption</span>
-                  <span className={`block text-3xl font-bold mt-1 ${institution.avg === null ? t.faint : (darkMode ? 'text-green-300' : 'text-green-800')}`}>
-                    {institution.avg === null ? '—' : institution.avg + '%'}
-                  </span>
-                  <span className={`block text-xs mt-1 ${t.textMuted}`}>{institution.scored} of {institution.total} active pathways scored</span>
-                </button>
+              <DashboardSection compact title="Institution overview" subtitle={instSub}
+                badge={<DashboardInfoButton label="Average ZTC adoption" t={t} onClick={() => openDashboardExplainer(averageExplainer)} />}>
+                <div className="relative">
+                  <button type="button" onClick={() => navigateFromOverviewKpi(headlineAction)}
+                    aria-label={`Average ZTC adoption: ${institution.avg === null ? 'no scored data' : institution.avg + '%'}. ${institution.scored} of ${institution.total} active pathways scored. Open Pathway view.`}
+                    className={`w-full rounded-xl border ${darkMode ? 'border-blue-500/45 bg-blue-500/10' : 'border-blue-300 bg-blue-50'} p-3 text-left ${t.cardHover}`}>
+                    <span className={`block text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Average ZTC adoption</span>
+                    <span className={`block text-3xl font-bold mt-1 ${institution.avg === null ? t.faint : (darkMode ? 'text-green-300' : 'text-green-800')}`}>
+                      {institution.avg === null ? '—' : institution.avg + '%'}
+                    </span>
+                    <span className={`block text-xs mt-1 ${t.textMuted}`}>{institution.scored} of {institution.total} active pathways scored</span>
+                  </button>
+                </div>
               </DashboardSection>
 
               {needsAttention.length > 0 && (
                 <div className={`rounded-xl border ${darkMode ? 'border-red-400/45 bg-red-500/10' : 'border-red-300 bg-red-50'} p-3`}>
-                  <DashboardSection compact title="Needs attention" subtitle="Below 51% ZTC adoption">
+                  <DashboardSection compact title="Needs attention" subtitle="Below 51% ZTC adoption"
+                    badge={<DashboardInfoButton label="Needs attention" t={t} onClick={() => openDashboardExplainer(attentionExplainer)} />}>
                     <div className="space-y-1.5">
                       {needsAttention.map(p => (
                         <button key={p.name} type="button"
@@ -2391,16 +2562,23 @@
               )}
 
               <DashboardSection compact title="Key counts" subtitle="Select a metric to open its filtered reading view">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2" style={{ gridAutoRows: '1fr' }}>
                   {overviewKpis.map((kpi, i) => (
-                    <button key={i} type="button" onClick={() => navigateFromOverviewKpi(kpi.action)}
-                      aria-label={`${kpi.label}: ${kpi.val}. ${kpi.sub}. Open ${kpi.action.view === 'program' ? 'Pathway' : 'Courses'} view.`}
-                      title={kpi.title}
-                      className={`min-h-[72px] rounded-lg border ${t.cardBorder} ${t.card} px-2.5 py-2 text-left ${t.cardHover} transition-colors cursor-pointer`}>
-                      <span className={`block text-xs font-semibold ${t.textMuted} leading-tight`}>{kpi.label}</span>
-                      <span className={`block text-xl font-bold mt-0.5 ${kpi.color}`}>{kpi.val}</span>
-                      <span className={`block text-xs ${t.faint} leading-snug mt-0.5`}>{kpi.sub}</span>
-                    </button>
+                    <div key={i} className="relative" style={{ height: '100%' }}>
+                      <button type="button" onClick={() => navigateFromOverviewKpi(kpi.action)}
+                        aria-label={`${kpi.label}: ${kpi.val}. ${kpi.sub}. Open ${kpi.action.view === 'program' ? 'Pathway' : 'Courses'} view.`}
+                        title={kpi.title}
+                        style={{ height: '100%' }}
+                        className={`w-full min-h-[72px] rounded-lg border ${t.cardBorder} ${t.card} pl-2.5 pr-10 py-2 text-left ${t.cardHover} transition-colors cursor-pointer`}>
+                        <span className={`block text-xs font-semibold ${t.textMuted} leading-tight`}>{kpi.label}</span>
+                        <span className={`block text-xl font-bold mt-0.5 ${kpi.color}`}>{kpi.val}</span>
+                        <span className={`block text-xs ${t.faint} leading-snug mt-0.5`}>{kpi.sub}</span>
+                      </button>
+                      <span className="absolute top-1 right-1">
+                        <DashboardInfoButton label={kpi.label} t={t}
+                          onClick={() => openDashboardExplainer({ title: kpi.label, meaning: kpi.meaning, calculation: kpi.calculation })} />
+                      </span>
+                    </div>
                   ))}
                 </div>
                 {institution.noData > 0 && (
@@ -2412,7 +2590,8 @@
               </DashboardSection>
 
               {institutionTrend && institutionTrend.avg.some(v => v !== null) && (
-                <DashboardSection compact title="Adoption trend" subtitle="Institution-wide mean by term">
+                <DashboardSection compact title="Adoption trend" subtitle="Institution-wide mean by term"
+                  badge={<DashboardInfoButton label="Adoption trend" t={t} onClick={() => openDashboardExplainer(trendExplainer)} />}>
                   <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-3`}>
                     <div className="flex items-end justify-between gap-3">
                       <div>
@@ -2443,7 +2622,11 @@
                 {showDashboardDetails && (
                   <div id="dashboard-comparison-details" className="space-y-3">
                     <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3`}>
-                      <h4 className="text-sm font-semibold mb-2">Distribution by ZTC-ability</h4>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="text-sm font-semibold">Distribution by ZTC-ability</h4>
+                        <DashboardInfoButton label="Distribution by ZTC-ability" t={t}
+                          onClick={() => openDashboardExplainer(distributionExplainer)} />
+                      </div>
                       <div role="img" aria-label={`Distribution by ZTC-ability. ${distroSummary}.`}>
                         <div className={`h-4 rounded-full ${t.track} overflow-hidden flex`} aria-hidden="true">
                           {distro.map((d, i) => {
@@ -2468,7 +2651,11 @@
                       </div>
                     </div>
                     <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3`}>
-                      <h4 className="text-sm font-semibold">Top pathways</h4>
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-semibold">Top pathways</h4>
+                        <DashboardInfoButton label="Top pathways" t={t}
+                          onClick={() => openDashboardExplainer(rankingExplainer)} />
+                      </div>
                       <p className={`text-xs ${t.textMuted} mb-2`}>Select a pathway to open it</p>
                       <div className="space-y-1">
                         {ranked.length === 0 ? (
@@ -2503,35 +2690,61 @@
         );
       };
 
-      const renderInstitutionTrendDetail = () => {
-        if (!institutionTrend) return null;
+      const renderDashboardModal = () => {
+        if (!dashboardModal) return null;
+        const isTrend = dashboardModal.type === 'institution-trend';
         return (
-          <div className="p-6 pb-10 overflow-visible">
-            <button type="button" onClick={closeDashboardDetail}
-              className={`min-h-[44px] rounded-lg border ${t.cardBorder} ${t.cardHover} px-3 py-2 text-sm font-semibold inline-flex items-center gap-2 mb-5`}>
-              <Icons.ChevronLeft className="w-4 h-4" aria-hidden="true" />
-              Back to {primaryView === 'courses' ? 'course' : 'pathway'}
-            </button>
-            <section className={`rounded-xl border ${t.cardBorder} ${t.card} p-5`}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Institution-wide</p>
-              <h2 className="text-xl font-bold mt-1">ZTC adoption trend</h2>
-              <p className={`text-sm ${t.textMuted} mt-1 mb-5`}>Average adoption and survey completion by term; selected pathway/course state is preserved.</p>
-              <TrendChart dark={darkMode} height={320}
-                ariaLabel="Line chart: institution-wide average ZTC adoption and average survey completion by term, with scored pathway counts per term"
-                summary={'By term: ' + trendSummary(institutionTrend.labels, [
-                  { name: 'Avg ZTC adoption', data: institutionTrend.avg },
-                  { name: 'Avg survey completion', data: institutionTrend.survey }
-                ]) + '. Scored pathways per term: ' + institutionTrend.labels.map((l, i) => `${l}: ${institutionTrend.scored[i]}`).join('; ') + '.'}
-                series={[
-                  { label: 'Avg ZTC', labels: institutionTrend.labels, data: institutionTrend.avg, color: '#22c55e' },
-                  { label: 'Avg survey', labels: institutionTrend.labels, data: institutionTrend.survey, color: '#3b82f6' }
-                ]} />
-              <div className={`mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs ${t.textMuted}`}>
-                {institutionTrend.labels.map((label, i) => (
-                  <span key={label}>{label}: <span className="font-semibold">{institutionTrend.scored[i]} scored</span></span>
-                ))}
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
+            onClick={(e) => { if (e.target === e.currentTarget) setDashboardModal(null); }}>
+            <div ref={dashboardModalRef} role="dialog" aria-modal="true" aria-labelledby="dashboard-modal-title" tabIndex={-1}
+              className={`${t.panel} ${t.text} rounded-xl border ${t.panelBorder} ${isTrend ? 'max-w-3xl' : 'max-w-lg'} w-full max-h-[90vh] overflow-auto animate-scaleIn focus:outline-none`}>
+              <div className="p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div>
+                    {isTrend && <p className={`text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Institution-wide</p>}
+                    <h2 id="dashboard-modal-title" className="text-xl font-bold mt-1">
+                      {isTrend ? 'ZTC adoption trend' : dashboardModal.title}
+                    </h2>
+                    {isTrend && <p className={`text-sm ${t.textMuted} mt-1`}>Average adoption and survey completion by term.</p>}
+                  </div>
+                  <button type="button" onClick={() => setDashboardModal(null)}
+                    aria-label={`Close ${isTrend ? 'adoption trend' : dashboardModal.title} explainer`}
+                    className={`min-w-[44px] min-h-[44px] p-2 rounded-lg inline-flex items-center justify-center ${t.cardHover}`}>
+                    <Icons.X className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
+                {isTrend && institutionTrend ? (
+                  <>
+                    <TrendChart dark={darkMode} height={360}
+                      ariaLabel="Line chart: institution-wide average ZTC adoption and average survey completion by term, with scored pathway counts per term"
+                      summary={'By term: ' + trendSummary(institutionTrend.labels, [
+                        { name: 'Avg ZTC adoption', data: institutionTrend.avg },
+                        { name: 'Avg survey completion', data: institutionTrend.survey }
+                      ]) + '. Scored pathways per term: ' + institutionTrend.labels.map((l, i) => `${l}: ${institutionTrend.scored[i]}`).join('; ') + '.'}
+                      series={[
+                        { label: 'Avg ZTC', labels: institutionTrend.labels, data: institutionTrend.avg, color: '#22c55e' },
+                        { label: 'Avg survey', labels: institutionTrend.labels, data: institutionTrend.survey, color: '#3b82f6' }
+                      ]} />
+                    <div className={`mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs ${t.textMuted}`}>
+                      {institutionTrend.labels.map((label, i) => (
+                        <span key={label}>{label}: <span className="font-semibold">{institutionTrend.scored[i]} scored</span></span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <section>
+                      <h3 className="text-sm font-semibold">What this metric means</h3>
+                      <p className={`text-sm leading-relaxed mt-1 ${t.textMuted}`}>{dashboardModal.meaning}</p>
+                    </section>
+                    <section>
+                      <h3 className="text-sm font-semibold">How it is calculated</h3>
+                      <p className={`text-sm leading-relaxed mt-1 ${t.textMuted}`}>{dashboardModal.calculation}</p>
+                    </section>
+                  </div>
+                )}
               </div>
-            </section>
+            </div>
           </div>
         );
       };
@@ -2557,7 +2770,10 @@
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <div className={`text-[10px] uppercase ${t.faint}`}>Required units</div>
-                    <div className="text-xl font-bold">{fmtUnits(programView.unitsRequired)}</div>
+                    <div className="text-xl font-bold">{programView.unitsRequiredLabel}</div>
+                    {programView.unitsRequiredUnverifiable && (
+                      <div className={`text-[10px] ${t.faint}`}>Lab evidence unverifiable</div>
+                    )}
                   </div>
                   <div>
                     <div className={`text-[10px] uppercase ${t.faint}`}>Courses w/ data</div>
@@ -2729,8 +2945,7 @@
                 </div>
 
                 <CourseDetail compact c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode}
-                  programsForCourse={programsForCourseKey(c.key)}
-                  onOpenProgram={(name) => openProgramFromCourse(name, c.key)} />
+                  showProgramMembership={false} />
               </div>
             </div>
           </div>
@@ -2794,7 +3009,7 @@
         const doc = new jsPDF();
         doc.setFontSize(14); doc.text(activeProgram.name, 14, 16);
         doc.setFontSize(10); doc.setTextColor(120);
-        doc.text(`${activeProgram.type} · Term ${selectedTerm} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${fmtUnits(programView.unitsRequired)} units`, 14, 22);
+        doc.text(`${activeProgram.type} · Term ${selectedTerm} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${programView.unitsRequiredLabel} units${programView.unitsRequiredUnverifiable ? ' (lab evidence unverifiable)' : ''}`, 14, 22);
         const body = [];
         const pushPdf = (area, sg, optLabel, c) => {
           const courseLabel = `${c.subject}-${c.number}${hasLabAsterisk(c.headerId) ? '*' : ''}`;
@@ -3000,18 +3215,17 @@
             </aside>
 
             <main id="main-content" tabIndex={-1} data-reading-pane="true"
-              aria-label={dashboardDetail === 'institution-trend' ? 'Institution trend details' : (primaryView === 'courses' ? 'Course details' : 'Pathway details')}
+              aria-label={primaryView === 'courses' ? 'Course details' : 'Pathway details'}
               aria-hidden={dashboardOpen && isNarrowViewport ? 'true' : undefined}
               {...(dashboardOpen && isNarrowViewport ? { inert: '' } : {})}
               className="reading-pane flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden focus:outline-none">
-              {dashboardDetail === 'institution-trend'
-                ? renderInstitutionTrendDetail()
-                : (primaryView === 'courses' ? renderCourseView() : renderProgram())}
+              {primaryView === 'courses' ? renderCourseView() : renderProgram()}
             </main>
           </div>
 
           <AppFooter t={t} />
 
+          {dashboardModal && renderDashboardModal()}
           {selectedCourse && renderCourseModal()}
         </div>
       );

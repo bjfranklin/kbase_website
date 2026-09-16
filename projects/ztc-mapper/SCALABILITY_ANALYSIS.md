@@ -1,5 +1,9 @@
 # Scalability Analysis & Recommendations
 
+> **Historical — v2.3 only.** This analysis describes the preserved
+> `index.v2.3.html` application. For the current v3.5.7 architecture and
+> maintenance commands, see `README.md`.
+
 ## Current Scalability Assessment
 
 ### ✅ **Implemented Strengths**

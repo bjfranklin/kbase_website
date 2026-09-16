@@ -1,5 +1,9 @@
 # Scalability Improvements - Implementation Summary
 
+> **Historical — v2.3 only.** This summary describes the preserved
+> `index.v2.3.html` application. For the current v3.5.7 architecture and
+> maintenance commands, see `README.md`.
+
 ## ✅ Implementation Complete
 
 All scalability improvements have been implemented with **full backward compatibility**. The application now supports:

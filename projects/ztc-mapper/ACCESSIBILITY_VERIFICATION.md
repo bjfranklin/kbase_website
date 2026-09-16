@@ -8,7 +8,7 @@ Dashboard is a non-modal sidebar panel opened by an icon-first far-left pullout 
 
 At 640px and above, Dashboard remains bounded to the `w-72 lg:w-80` navigation column and the reading pane stays visible. Below 640px, Dashboard fills the canvas beside the 44px rail; the Pathway/Courses pane remains mounted with its selection preserved but becomes width zero, `visibility: hidden`, `aria-hidden`, and `inert` until the panel closes.
 
-The v3.5.7 visual hierarchy retains text labels for every status, gives close/action controls a minimum 44px target, provides accessible text for the sparkline and stacked distribution, and moves the full trend chart into a labelled reading-pane detail with a Back action.
+The v3.5.7 visual hierarchy retains text labels for every status, gives close/action controls a minimum 44px target, provides accessible text for the sparkline and stacked distribution, and opens the full trend chart in a labelled modal with a Close action.
 
 Verify geometry/keyboard/selection without production CSVs:
 
@@ -22,7 +22,14 @@ Verification on 2026-09-14:
 - Cursor browser semantic-tree and geometry checks passed at 390px, 640px, and desktop widths in dark and light themes.
 - At 390px, the Dashboard canvas measured 346px beside the 44px rail; the mounted reading pane measured 0px and exposed `aria-hidden` + `inert`. At 640px, the reading pane remained visible, uninert, and 308px wide.
 - Headline KPI, Needs attention, disclosure, stacked distribution, trend-detail/Back flow, selection persistence, and accessible names were present in the browser accessibility tree.
-- The standalone Playwright wrapper could not launch its bundled headless Chromium inside the shell sandbox; the equivalent checks above were completed through Cursor’s browser. The last full axe run remains the v3.5.5 result below.
+- The standalone Playwright wrapper could not launch its bundled headless Chromium inside the shell sandbox; the equivalent checks above were completed through Cursor’s browser.
+
+## axe-core (2026-09-15) — v3.5.7 calculation-integrity baseline
+
+Run with the checked-in de-identified calculation-integrity fixtures:
+`ZTC_PROG_CSV=scripts/fixtures/calculation-integrity-program-summary.csv ZTC_ANAL_CSV=scripts/fixtures/calculation-integrity-course-analytics.csv python3 scripts/run-axe-v3.py http://127.0.0.1:8767/index.html`
+
+**Result:** **0 WCAG 2.1 AA violations** across **10 UI states**, including staged uploads, Dashboard panels in both themes, Pathway and Courses views, the catalog note, course detail panel, and course detail modal.
 
 ## axe-core (2026-09-01) — v3.5.5 Dashboard panel
 

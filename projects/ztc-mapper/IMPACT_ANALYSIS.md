@@ -1,5 +1,9 @@
 # Impact Analysis: Scalability & Performance Improvements
 
+> **Historical — v2.3 only.** These implementation notes describe the preserved
+> `index.v2.3.html` application. For the current v3.5.7 architecture and
+> maintenance commands, see `README.md`.
+
 ## Implementation Status: ✅ COMPLETE
 
 All scalability improvements have been implemented using the backward-compatible approach. Additionally, animation performance issues were identified and resolved.

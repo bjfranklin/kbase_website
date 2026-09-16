@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Geometry, keyboard, selection, and responsive regressions for the v3.5.7 Dashboard."""
+
 from __future__ import annotations
 
 import http.server
@@ -61,7 +62,9 @@ def _assert_geometry(page, label: str) -> None:
     d = _box(dashboard)
     m = _box(main)
     assert t["x"] <= 1, f"{label}: Dashboard tab is not anchored to the left edge"
-    assert t["height"] > t["width"], f"{label}: Dashboard trigger is not a vertical pullout tab"
+    assert t["height"] > t["width"], (
+        f"{label}: Dashboard trigger is not a vertical pullout tab"
+    )
     assert t["x"] + t["width"] <= s["x"] + 1, (
         f"{label}: Dashboard tab rail overlaps the sidebar"
     )
@@ -84,7 +87,9 @@ def _assert_geometry(page, label: str) -> None:
         }""",
         [probe_x, probe_y],
     )
-    assert hit == "main", f"{label}: reading pane is covered at ({probe_x}, {probe_y}) -> {hit}"
+    assert hit == "main", (
+        f"{label}: reading pane is covered at ({probe_x}, {probe_y}) -> {hit}"
+    )
 
 
 def _rect(locator) -> dict:
@@ -104,7 +109,9 @@ def _assert_primary_canvas(page, label: str, viewport_width: int) -> None:
     s = _box(sidebar)
     m = _rect(main)
     assert t["x"] <= 1, f"{label}: Dashboard tab is not anchored to the left edge"
-    assert abs(s["x"] - t["width"]) <= 1, f"{label}: sidebar does not begin after the rail"
+    assert abs(s["x"] - t["width"]) <= 1, (
+        f"{label}: sidebar does not begin after the rail"
+    )
     assert abs(s["width"] - (viewport_width - t["width"])) <= 1, (
         f"{label}: Dashboard canvas width {s['width']} does not fill available width"
     )
@@ -130,7 +137,9 @@ def _assert_inactive_nav(page) -> None:
             }).map((el) => el.getAttribute('aria-label') || el.textContent.trim()).slice(0, 5);
         }"""
     )
-    assert tabbable == [], f"inactive navigation remained keyboard-focusable: {tabbable}"
+    assert tabbable == [], (
+        f"inactive navigation remained keyboard-focusable: {tabbable}"
+    )
 
 
 def _open_dashboard(page):
@@ -138,7 +147,10 @@ def _open_dashboard(page):
     toggle.click()
     page.wait_for_timeout(250)
     assert toggle.get_attribute("aria-expanded") == "true"
-    assert page.locator("#dashboard-panel").get_attribute("aria-hidden") in (None, "false")
+    assert page.locator("#dashboard-panel").get_attribute("aria-hidden") in (
+        None,
+        "false",
+    )
     return toggle
 
 
@@ -150,10 +162,16 @@ def _launch_chromium(playwright):
         return playwright.chromium.launch(headless=True)
     except Exception:
         cache = Path.home() / "Library" / "Caches" / "ms-playwright"
-        shells = sorted(cache.glob("chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell"))
+        shells = sorted(
+            cache.glob(
+                "chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell"
+            )
+        )
         if not shells:
             raise
-        return playwright.chromium.launch(headless=True, executable_path=str(shells[-1]))
+        return playwright.chromium.launch(
+            headless=True, executable_path=str(shells[-1])
+        )
 
 
 def main() -> int:
@@ -170,19 +188,26 @@ def main() -> int:
         with sync_playwright() as p:
             browser = _launch_chromium(p)
             page = browser.new_page()
-            page.add_init_script(
-                f"localStorage.setItem({STORAGE_KEY!r}, {session!r});"
-            )
+            page.add_init_script(f"localStorage.setItem({STORAGE_KEY!r}, {session!r});")
             page.goto(url, wait_until="networkidle")
-            page.get_by_role("navigation", name="Views").get_by_role("button", name="Pathway", exact=True).wait_for()
+            page.get_by_role("navigation", name="Views").get_by_role(
+                "button", name="Pathway", exact=True
+            ).wait_for()
             heading = page.locator("#main-content h2").first
             heading.wait_for()
             initial_program = heading.inner_text().strip()
             assert initial_program == "Alpha Biology A.S."
 
             views = page.get_by_role("navigation", name="Views")
-            assert views.get_by_role("button", name="Dashboard", exact=True).count() == 0
-            assert page.get_by_role("banner").get_by_role("button", name="Dashboard", exact=True).count() == 0
+            assert (
+                views.get_by_role("button", name="Dashboard", exact=True).count() == 0
+            )
+            assert (
+                page.get_by_role("banner")
+                .get_by_role("button", name="Dashboard", exact=True)
+                .count()
+                == 0
+            )
 
             toggle = page.get_by_role("button", name="Dashboard", exact=True)
             assert toggle.get_attribute("aria-expanded") == "false"
@@ -191,18 +216,24 @@ def main() -> int:
             page.get_by_role("button", name="Export data").click()
             menu = page.get_by_role("menu", name="Export options")
             menu.wait_for()
-            assert menu.get_by_role("menuitem", name="Current pathway (CSV)").count() == 1
+            assert (
+                menu.get_by_role("menuitem", name="Current pathway (CSV)").count() == 1
+            )
             page.keyboard.press("Escape")
 
             for name, width, height in VIEWPORTS:
                 page.set_viewport_size({"width": width, "height": height})
                 page.wait_for_timeout(150)
                 main_before = _box(page.locator("[data-reading-pane]"))
-                selected_before = page.locator("#main-content h2").first.inner_text().strip()
+                selected_before = (
+                    page.locator("#main-content h2").first.inner_text().strip()
+                )
                 toggle = _open_dashboard(page)
                 try:
                     _assert_inactive_nav(page)
-                    selected_open = page.locator("#main-content h2").first.text_content().strip()
+                    selected_open = (
+                        page.locator("#main-content h2").first.text_content().strip()
+                    )
                     if width < 640:
                         _assert_primary_canvas(page, f"{name} open", width)
                     else:
@@ -211,22 +242,38 @@ def main() -> int:
                         assert abs(main_open["width"] - main_before["width"]) <= 1, (
                             f"{name}: main pane width changed {main_before['width']} -> {main_open['width']}"
                         )
-                        assert page.locator("[data-reading-pane]").get_attribute("aria-hidden") is None
-                        assert page.locator("[data-reading-pane]").get_attribute("inert") is None
+                        assert (
+                            page.locator("[data-reading-pane]").get_attribute(
+                                "aria-hidden"
+                            )
+                            is None
+                        )
+                        assert (
+                            page.locator("[data-reading-pane]").get_attribute("inert")
+                            is None
+                        )
                     assert selected_open == selected_before, (
                         f"{name}: selection changed {selected_before!r} -> {selected_open!r}"
                     )
                     page.keyboard.press("Escape")
                     page.wait_for_timeout(200)
                     assert toggle.get_attribute("aria-expanded") == "false"
-                    focused = page.evaluate("() => document.activeElement && document.activeElement.id")
-                    assert focused == "dashboard-toggle", f"{name}: Escape did not restore toggle focus ({focused!r})"
+                    focused = page.evaluate(
+                        "() => document.activeElement && document.activeElement.id"
+                    )
+                    assert focused == "dashboard-toggle", (
+                        f"{name}: Escape did not restore toggle focus ({focused!r})"
+                    )
                     main_after = _box(page.locator("[data-reading-pane]"))
-                    selected_after = page.locator("#main-content h2").first.inner_text().strip()
+                    selected_after = (
+                        page.locator("#main-content h2").first.inner_text().strip()
+                    )
                     assert abs(main_after["width"] - main_before["width"]) <= 1, (
                         f"{name}: closing Dashboard resized the reading pane"
                     )
-                    assert selected_after == selected_before, f"{name}: closing Dashboard changed the selection"
+                    assert selected_after == selected_before, (
+                        f"{name}: closing Dashboard changed the selection"
+                    )
                 except AssertionError as exc:
                     failures.append(str(exc))
                     if toggle.get_attribute("aria-expanded") == "true":
@@ -234,29 +281,79 @@ def main() -> int:
 
             page.set_viewport_size({"width": 1280, "height": 800})
             _open_dashboard(page)
-            assert page.get_by_role("button", name=re.compile("Average ZTC adoption")).count() == 1
+            assert (
+                page.get_by_role(
+                    "button", name=re.compile("^Average ZTC adoption:")
+                ).count()
+                == 1
+            )
+            page.get_by_role("button", name="Explain Average ZTC adoption").click()
+            explainer = page.get_by_role("dialog", name="Average ZTC adoption")
+            assert (
+                explainer.get_by_role("heading", name="What this metric means").count()
+                == 1
+            )
+            assert (
+                explainer.get_by_role("heading", name="How it is calculated").count()
+                == 1
+            )
+            explainer.get_by_role(
+                "button", name="Close Average ZTC adoption explainer"
+            ).click()
             page.get_by_role("button", name="Explore pathway details").click()
             assert page.locator("#dashboard-comparison-details").count() == 1
-            assert page.get_by_role("img", name=re.compile("Distribution by ZTC-ability")).count() == 1
+            assert (
+                page.get_by_role(
+                    "img", name=re.compile("Distribution by ZTC-ability")
+                ).count()
+                == 1
+            )
             page.get_by_role("button", name="View trend details").click()
             page.wait_for_timeout(200)
-            assert page.get_by_role("button", name="Dashboard", exact=True).get_attribute("aria-expanded") == "false"
-            assert page.locator("#main-content h2").first.inner_text().strip() == "ZTC adoption trend"
-            page.get_by_role("button", name="Back to pathway").click()
-            assert page.locator("#main-content h2").first.inner_text().strip() == initial_program
+            trend_dialog = page.get_by_role("dialog", name="ZTC adoption trend")
+            assert trend_dialog.count() == 1
+            assert (
+                page.get_by_role("button", name="Dashboard", exact=True).get_attribute(
+                    "aria-expanded"
+                )
+                == "true"
+            )
+            assert (
+                page.locator("#main-content h2").first.inner_text().strip()
+                == initial_program
+            )
+            trend_dialog.get_by_role("button", name="Close adoption trend").click()
+            page.get_by_role("button", name="View trend details").click()
+            trend_dialog = page.get_by_role("dialog", name="ZTC adoption trend")
+            trend_dialog.locator("..").click(position={"x": 5, "y": 5})
+            assert page.get_by_role("dialog", name="ZTC adoption trend").count() == 0
 
-            _open_dashboard(page)
-            page.get_by_role("button", name="Zeta Chemistry Certificate. ZTC adoption 0%. Open pathway view.").click()
+            page.get_by_role(
+                "button",
+                name="Zeta Chemistry Certificate. ZTC adoption 0%. Open pathway view.",
+            ).click()
             page.wait_for_timeout(250)
-            assert page.get_by_role("button", name="Dashboard", exact=True).get_attribute("aria-expanded") == "false"
-            assert page.locator("#main-content h2").first.inner_text().strip() == "Zeta Chemistry Certificate"
+            assert (
+                page.get_by_role("button", name="Dashboard", exact=True).get_attribute(
+                    "aria-expanded"
+                )
+                == "false"
+            )
+            assert (
+                page.locator("#main-content h2").first.inner_text().strip()
+                == "Zeta Chemistry Certificate"
+            )
 
             page.get_by_role("button", name="Switch to light mode").click()
             _open_dashboard(page)
             _assert_geometry(page, "light theme")
-            page.get_by_role("navigation", name="Views").get_by_role("button", name="Courses", exact=True).click()
+            page.get_by_role("navigation", name="Views").get_by_role(
+                "button", name="Courses", exact=True
+            ).click()
             page.wait_for_timeout(200)
-            assert page.locator("#main-content h2").first.inner_text().strip() == "BIOL-1"
+            assert (
+                page.locator("#main-content h2").first.inner_text().strip() == "BIOL-1"
+            )
             page.keyboard.press("Escape")
             browser.close()
     finally:

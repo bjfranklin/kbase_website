@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="author" content="Bradley Franklin, Chaffey College" />
-  <meta name="description" content="ZTC Pathway Mapper v3.4 end-user guide — loading data, navigating views, reading adoption metrics, exports, and how hosting keeps the app reliable. Chaffey College, June 29, 2026." />
+  <meta name="description" content="ZTC Pathway Mapper v3.5.7 end-user guide — loading data, navigating views, reading adoption metrics, exports, and how hosting keeps the app reliable. Chaffey College, September 15, 2026." />
   <title>ZTC Pathway Mapper — End-User Guide · Chaffey College</title>
   <style>
     :root {
@@ -309,8 +309,8 @@
       <p class="masthead-kicker">Chaffey College · Instructional Systems &amp; Pathways Innovation</p>
       <h1>ZTC Pathway Mapper — End-User Guide</h1>
       <p class="masthead-meta">
-        <strong>Version:</strong> 3.4 &nbsp;·&nbsp;
-        <strong>Date:</strong> June 29, 2026 &nbsp;·&nbsp;
+        <strong>Version:</strong> 3.5.7 &nbsp;·&nbsp;
+        <strong>Date:</strong> September 15, 2026 &nbsp;·&nbsp;
         <strong>Prepared by:</strong> Bradley Franklin &nbsp;·&nbsp;
         <strong>Audience:</strong> ZTC committee, deans, curriculum &amp; IR staff
       </p>
@@ -369,15 +369,16 @@
       </div>
 
       <section aria-labelledby="views-heading">
-        <h2 id="views-heading" class="section-heading">Three views — use the tabs in the top navigation</h2>
+        <h2 id="views-heading" class="section-heading">Explore with Pathway and Courses tabs plus the Dashboard pullout</h2>
         <div class="priorities" role="list">
           <article class="priority-card" role="listitem">
             <span class="priority-num" aria-hidden="true">1</span>
             <h3>Dashboard</h3>
             <ul>
-              <li><strong>Needs attention</strong> — pathways below 50% adoption (click to open)</li>
-              <li><strong>Institution overview</strong> — six KPI tiles; click to drill into Pathway or Courses (sidebar shows active filter)</li>
-              <li><strong>Compare pathways</strong> — distribution, ranking, term trend</li>
+              <li>Open from the graphite <strong>Dashboard</strong> pullout on the far-left edge</li>
+              <li><strong>Needs attention</strong> — pathways below 51% adoption (click to open)</li>
+              <li><strong>Institution overview</strong> — average-adoption headline plus four KPI actions; click to drill into Pathway or Courses</li>
+              <li><strong>Compare pathways</strong> — stacked distribution, five-pathway ranking, progressive details, and a term-trend modal</li>
               <li><strong>Export:</strong> All pathways summary (CSV) only</li>
             </ul>
           </article>
@@ -398,7 +399,7 @@
               <li>Search, filter by ZTC status (including <strong>CO ZTC</strong>), sort by ZTC % / name / survey</li>
               <li><strong>Detail panel</strong> matches the pathway course modal</li>
               <li><strong>View in course catalog</strong> — shown for the <strong>two most recent terms</strong> only; older terms show an availability note</li>
-              <li><strong>Term</strong> selector applies to all three views</li>
+              <li><strong>Term</strong> selector applies to Pathway, Courses, and the Dashboard panel</li>
             </ul>
           </article>
         </div>
@@ -439,8 +440,9 @@
           <h2 id="adoption-heading">Pathway adoption %</h2>
           <p>Adoption is <strong>requirement-based</strong>, not a simple course average:</p>
           <ol>
-            <li>Each <strong>scored requirement</strong> (area or choice block) must be met with a ZTC course.</li>
-            <li>In <strong>choice</strong> blocks, the block counts as ZTC if <strong>≥1 valid option</strong> meets the 75% bar.</li>
+            <li>Each declared <strong>requirement slot</strong> must be met with a ZTC course or valid ZTC option.</li>
+            <li><strong>Choose-N</strong> contributes N slots; named subgroup quotas remain separate; every member of an <strong>AND bundle</strong> must qualify.</li>
+            <li>Unavailable or unknown catalog requirements remain unmet; informational lab-reference re-lists are not scored.</li>
             <li><strong>100%</strong> = every scored requirement can be satisfied with ZTC courses in the selected term.</li>
           </ol>
           <p class="note">Courses not offered in the selected term show as not offered; other terms may still appear in trend charts.</p>
@@ -460,7 +462,7 @@
             <tbody>
               <tr>
                 <th scope="row">Save session</th>
-                <td>Automatic after <strong>Build dashboard</strong> — reload to restore data and term</td>
+                <td>Automatic after <strong>Build dashboard</strong> — reload to restore data and the term selected at build time; later term, view, and filter changes are not currently saved</td>
               </tr>
               <tr>
                 <th scope="row">Dark / light theme</th>
