@@ -35,7 +35,7 @@ def _serve(directory: Path) -> tuple[socketserver.TCPServer, str]:
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(directory), **kwargs)
 
-        def log_message(self, format: str, *args) -> None:  # noqa: A003
+        def log_message(self, format: str, *args) -> None:
             return
 
     socketserver.TCPServer.allow_reuse_address = True
