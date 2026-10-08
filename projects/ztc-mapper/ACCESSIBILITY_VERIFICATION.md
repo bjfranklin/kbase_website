@@ -31,6 +31,12 @@ Run with the checked-in de-identified calculation-integrity fixtures:
 
 **Result:** **0 WCAG 2.1 AA violations** across **10 UI states**, including staged uploads, Dashboard panels in both themes, Pathway and Courses views, the catalog note, course detail panel, and course detail modal.
 
+## Expanded lab-reference regression (2026-10-08)
+
+The harness now defaults to the checked-in de-identified calculation-integrity fixtures and adds an eleventh state for `Lab Constraint Curriculum`. Production lab-reference results use native `ul`/`li` semantics. CI runs this expanded axe harness after the Dashboard browser regression.
+
+**Local result (2026-10-08, headless Chromium via Playwright):** `python3 scripts/test-dashboard-panel-ui.py` passed, and `python3 scripts/run-axe-v3.py http://127.0.0.1:8767/index.html` reported **0 WCAG 2.1 AA violations across all 11 states** — Landing (dark), Landing (light), Landing (both CSVs staged, light), Dashboard panel (dark, data loaded), Pathway view, Pathway view (lab-reference list), Courses view, Courses view (oldest term, catalog note), Course detail panel, Course detail modal, Dashboard panel (light, data loaded). The earlier Chromium launch failure (2026-09-14 note above) was environmental and did not reproduce.
+
 ## axe-core (2026-09-01) — v3.5.5 Dashboard panel
 
 Run: `python3 scripts/run-axe-v3.py http://127.0.0.1:8767/ztc-mapper/index.html`

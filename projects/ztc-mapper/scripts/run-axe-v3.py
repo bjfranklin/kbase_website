@@ -11,16 +11,17 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8767/index.html"
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 PROG_CSV = Path(
     os.environ.get(
         "ZTC_PROG_CSV",
-        Path.home() / "Downloads" / "Program Summary 2026-05-29_100422.csv",
+        FIXTURES / "calculation-integrity-program-summary.csv",
     )
 )
 ANAL_CSV = Path(
     os.environ.get(
         "ZTC_ANAL_CSV",
-        Path.home() / "Downloads" / "IE - ZTC Course Analytics - MASTER (BF).csv",
+        FIXTURES / "calculation-integrity-course-analytics.csv",
     )
 )
 AXE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
@@ -122,6 +123,15 @@ def main() -> None:
         ).click()
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Pathway view"))
+
+        lab_pathway = page.get_by_role(
+            "button", name="Lab Constraint Curriculum", exact=False
+        )
+        if lab_pathway.count():
+            lab_pathway.first.click()
+            page.wait_for_timeout(400)
+            page.get_by_text("Lab reference — informational", exact=False).wait_for()
+            report.append(run_axe(page, "Pathway view (lab-reference list)"))
 
         page.get_by_role("navigation", name="Views").get_by_role(
             "button", name="Courses", exact=True

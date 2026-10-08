@@ -202,6 +202,9 @@
     const ZTC_THRESHOLDS = { ZTC_MIN: 75, PARTIAL_MIN: 51, CO_MIN_SECTIONS: 1 };
     const STORAGE_KEY = 'ztc-pathway-mapper-v3';
     const LEGACY_STORAGE_KEY = 'ztc-pathway-mapper-v2';
+    const UI_STORAGE_KEY = STORAGE_KEY + '-ui';
+    const DATASET_SCHEMA_VERSION = 1;
+    const UI_SCHEMA_VERSION = 1;
     const COURSE_CATALOG_URL = 'https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=';
     const APP_HOSTED_URL = 'https://www.chairmanx.tech/projects/ztc-mapper/';
     const APP_META = {
@@ -211,6 +214,127 @@
       accessibility: 'WCAG 2.1 Level AA',
       a11yNote: 'Status labels include text, not color alone.',
       hostedUrl: APP_HOSTED_URL
+    };
+
+    const isPlainObject = (value) =>
+      value !== null && typeof value === 'object' && !Array.isArray(value);
+
+    const validatePersistedDataset = (value) => {
+      if (!isPlainObject(value)) throw new Error('Saved data is not an object.');
+      if (value.schemaVersion !== undefined && value.schemaVersion !== DATASET_SCHEMA_VERSION) {
+        throw new Error(`Saved data uses unsupported schema version ${value.schemaVersion}.`);
+      }
+      if (!Array.isArray(value.programs) || value.programs.length === 0) {
+        throw new Error('Saved data has no active pathways.');
+      }
+      if (value.programs.some(p =>
+        !isPlainObject(p) || typeof p.name !== 'string' || !p.name.trim() || !Array.isArray(p.areas)
+      )) {
+        throw new Error('Saved pathway data is incomplete.');
+      }
+      if (!isPlainObject(value.analytics) || !isPlainObject(value.analytics.index)) {
+        throw new Error('Saved course analytics are incomplete.');
+      }
+      if (!Array.isArray(value.terms) || value.terms.length === 0 ||
+          value.terms.some(term => typeof term !== 'string' || !term.trim())) {
+        throw new Error('Saved data has no valid terms.');
+      }
+      const selectedTerm = value.terms.includes(value.selectedTerm)
+        ? value.selectedTerm
+        : value.terms[value.terms.length - 1];
+      // `type` is derived from the name at parse time; re-derive it when a
+      // saved payload lacks it so `undefined` never reaches the type filter.
+      const programs = value.programs.map(p =>
+        typeof p.type === 'string' && p.type.trim() ? p : { ...p, type: programType(p.name) }
+      );
+      return {
+        schemaVersion: DATASET_SCHEMA_VERSION,
+        programs,
+        analytics: value.analytics,
+        terms: value.terms,
+        selectedTerm,
+        savedAt: typeof value.savedAt === 'string' ? value.savedAt : null
+      };
+    };
+
+    const validatePersistedUiState = (value, dataset) => {
+      const programNames = new Set(dataset.programs.map(p => p.name));
+      const courseKeys = new Set(Object.keys(dataset.analytics.index));
+      const validPathwayFilters = new Set(['all', 'full', 'high', 'partial', 'low', 'no-data']);
+      const validCourseFilters = new Set(COURSE_STATUS_OPTIONS.map(option => option.value));
+      const validSorts = new Set([...SORT_BY_OPTIONS, ...COURSE_SORT_OPTIONS].map(option => option.value));
+      const fallback = {
+        selectedTerm: dataset.selectedTerm,
+        selectedProgram: dataset.programs[0]?.name || null,
+        selectedCourseKey: Array.from(courseKeys).sort()[0] || null,
+        primaryView: 'program',
+        search: '',
+        typeFilter: 'all',
+        pathwayAdoptionFilter: 'all',
+        courseStatusFilter: 'all',
+        sortBy: 'adoption',
+        dashboardOpen: false
+      };
+      if (!isPlainObject(value) ||
+          (value.schemaVersion !== undefined && value.schemaVersion !== UI_SCHEMA_VERSION)) {
+        return fallback;
+      }
+      const programTypes = new Set(dataset.programs.map(p => p.type));
+      return {
+        selectedTerm: dataset.terms.includes(value.selectedTerm) ? value.selectedTerm : fallback.selectedTerm,
+        selectedProgram: programNames.has(value.selectedProgram) ? value.selectedProgram : fallback.selectedProgram,
+        selectedCourseKey: courseKeys.has(value.selectedCourseKey) ? value.selectedCourseKey : fallback.selectedCourseKey,
+        primaryView: value.primaryView === 'courses' ? 'courses' : 'program',
+        search: typeof value.search === 'string' ? value.search.slice(0, 200) : '',
+        typeFilter: value.typeFilter === 'all' || programTypes.has(value.typeFilter) ? value.typeFilter : 'all',
+        pathwayAdoptionFilter: validPathwayFilters.has(value.pathwayAdoptionFilter) ? value.pathwayAdoptionFilter : 'all',
+        courseStatusFilter: validCourseFilters.has(value.courseStatusFilter) ? value.courseStatusFilter : 'all',
+        sortBy: validSorts.has(value.sortBy) ? value.sortBy : 'adoption',
+        dashboardOpen: value.dashboardOpen === true
+      };
+    };
+
+    const csvEscape = (value) => {
+      let cell = String(value ?? '');
+      if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
+      return /[",\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
+    };
+
+    const programExportCaveat = (program) =>
+      program?.type === 'GE / Transfer Pattern'
+        ? 'Source export may omit option nesting visible in the catalog; verify catalog structure before decision-making.'
+        : '';
+
+    const buildProgramCsv = (program, view, term) => {
+      if (!program || !view) return '';
+      const rows = [[
+        'Program', 'Area', 'Sub-area', 'Option Group', 'Course', 'Course Title', 'Units',
+        'Header Identifier', 'Lab Reference', 'Term', 'ZTC %', 'Survey %',
+        'Chaffey ZTC (75%+)', 'CO ZTC (1+ section)', 'Status', 'Export Note'
+      ]];
+      const caveat = programExportCaveat(program);
+      const pushCourse = (area, subgroup, optionLabel, course) => {
+        rows.push([
+          program.name, area.title, subgroup.title || '', optionLabel || '',
+          `${course.subject}-${course.number}`, course.courseTitle || course.analyticsTitle || '',
+          course.units ?? '', course.headerId || '', subgroup.isLabReference ? 'Yes' : 'No',
+          term, course.ztcPct ?? '', course.surveyPct ?? '',
+          course.status === 'ztc' ? 'Yes' : 'No', course.coZtc ? 'Yes' : 'No',
+          course.status, caveat
+        ]);
+      };
+      for (const area of view.areas) {
+        for (const subgroup of area.subgroups) {
+          if (subgroup.options?.length) {
+            for (const option of subgroup.options) {
+              for (const course of option.courses) pushCourse(area, subgroup, option.label || '', course);
+            }
+          } else {
+            for (const course of subgroup.courses) pushCourse(area, subgroup, '', course);
+          }
+        }
+      }
+      return rows.map(row => row.map(csvEscape).join(',')).join('\n') + '\n';
     };
 
     const SORT_BY_OPTIONS = [
@@ -1505,11 +1629,13 @@
               {' '}Satisfied by any course in this area with a laboratory (*). Listed below for ZTC reference only.
             </p>
             {sg.courses.length > 0 && (
-              <div className="mt-2 space-y-2" role="list" aria-label="Laboratory courses in this area (informational)">
+              <ul className="mt-2 space-y-2" aria-label="Laboratory courses in this area (informational)">
                 {sg.courses.map((c, i) => (
-                  <CourseRow key={sg.id + '-lab-' + i} c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                  <li key={sg.id + '-lab-' + i}>
+                    <CourseRow c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         );
@@ -1792,6 +1918,45 @@
     // ============================================================
     // MAIN APP
     // ============================================================
+    class AppErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { error: null };
+      }
+      static getDerivedStateFromError(error) {
+        return { error };
+      }
+      componentDidCatch(error, info) {
+        console.error('ZTC Pathway Mapper render failure', error, info);
+      }
+      clearAndReload = () => {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          localStorage.removeItem(UI_STORAGE_KEY);
+        } finally {
+          window.location.reload();
+        }
+      };
+      render() {
+        if (!this.state.error) return this.props.children;
+        return (
+          <main className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6">
+            <div className="max-w-lg rounded-xl border border-red-500/50 bg-red-500/10 p-6">
+              <h1 className="text-xl font-bold">The saved session could not be displayed</h1>
+              <p className="mt-2 text-sm text-zinc-200">
+                Clear the local session and reload the mapper. Your source CSV files are not affected.
+              </p>
+              <button type="button" onClick={this.clearAndReload}
+                className="mt-4 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700">
+                Clear saved session and reload
+              </button>
+            </div>
+          </main>
+        );
+      }
+    }
+
     const App = () => {
       const [darkMode, setDarkMode] = useState(() => {
         try {
@@ -1830,6 +1995,7 @@
       const [dragOverSlot, setDragOverSlot] = useState(null);
       const [landingAnnounce, setLandingAnnounce] = useState('');
       const [pendingScrollCourseKey, setPendingScrollCourseKey] = useState(null);
+      const [restoreError, setRestoreError] = useState('');
 
       const exportMenuRef = useRef(null);
       const exportBtnRef = useRef(null);
@@ -1839,6 +2005,7 @@
       const courseModalRef = useRef(null);
       const lastFocusedRef = useRef(null);
       const jumpAnnounceRef = useRef(null);
+      const restoreCompleteRef = useRef(false);
 
       const t = darkMode ? THEME.dark : THEME.light;
 
@@ -1847,19 +2014,75 @@
         try {
           const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
           if (raw) {
-            const d = JSON.parse(raw);
-            if (d.programs && d.analytics) {
-              setPrograms(d.programs);
-              setAnalytics(d.analytics);
-              setTerms(d.terms || []);
-              setSelectedTerm(d.selectedTerm || (d.terms || [])[ (d.terms||[]).length - 1] || '');
-              setSelectedProgram(d.programs[0]?.name || null);
-              setSelectedCourseKey(Object.keys(d.analytics.index || {}).sort()[0] || null);
-              setSavedAt(d.savedAt || null);
+            const d = validatePersistedDataset(JSON.parse(raw));
+            let uiRaw = null;
+            try {
+              const storedUi = localStorage.getItem(UI_STORAGE_KEY);
+              uiRaw = storedUi ? JSON.parse(storedUi) : null;
+            } catch (uiError) {
+              console.warn('Ignoring invalid saved navigation state.', uiError);
             }
+            const ui = validatePersistedUiState(uiRaw, d);
+            setPrograms(d.programs);
+            setAnalytics(d.analytics);
+            setTerms(d.terms);
+            setSelectedTerm(ui.selectedTerm);
+            setSelectedProgram(ui.selectedProgram);
+            setSelectedCourseKey(ui.selectedCourseKey);
+            setPrimaryView(ui.primaryView);
+            setSearch(ui.search);
+            setTypeFilter(ui.typeFilter);
+            setPathwayAdoptionFilter(ui.pathwayAdoptionFilter);
+            setCourseStatusFilter(ui.courseStatusFilter);
+            setSortBy(ui.sortBy);
+            setDashboardOpen(ui.dashboardOpen);
+            setSavedAt(d.savedAt);
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          console.warn('Saved ZTC Mapper data was rejected.', e);
+          setRestoreError(`${e.message || 'Saved data is invalid'} Load the source CSV files again or clear the saved session.`);
+        } finally {
+          restoreCompleteRef.current = true;
+        }
       }, []);
+
+      useEffect(() => {
+        if (!restoreCompleteRef.current || !programs || !analytics) return;
+        let written = false;
+        const persist = () => {
+          if (written) return;
+          written = true;
+          try {
+            localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({
+              schemaVersion: UI_SCHEMA_VERSION,
+              selectedTerm,
+              selectedProgram,
+              selectedCourseKey,
+              primaryView,
+              search,
+              typeFilter,
+              pathwayAdoptionFilter,
+              courseStatusFilter,
+              sortBy,
+              dashboardOpen
+            }));
+          } catch (e) {
+            console.warn('Could not persist navigation state.', e);
+            setStorageNotice('Could not save navigation state to this browser. The current tab will continue to work.');
+          }
+        };
+        const timeout = window.setTimeout(persist, 250);
+        // Flush a pending debounced write if the tab is hidden or unloaded
+        // before the 250 ms timer fires (tab close, navigation, bfcache).
+        window.addEventListener('pagehide', persist);
+        return () => {
+          window.clearTimeout(timeout);
+          window.removeEventListener('pagehide', persist);
+        };
+      }, [
+        programs, analytics, selectedTerm, selectedProgram, selectedCourseKey, primaryView,
+        search, typeFilter, pathwayAdoptionFilter, courseStatusFilter, sortBy, dashboardOpen
+      ]);
 
       useEffect(() => {
         localStorage.setItem(STORAGE_KEY + '-theme', darkMode ? 'dark' : 'light');
@@ -1976,7 +2199,14 @@
 
       const persist = (progs, anal, termList, term) => {
         try {
-          const payload = { programs: progs, analytics: anal, terms: termList, selectedTerm: term, savedAt: new Date().toISOString() };
+          const payload = {
+            schemaVersion: DATASET_SCHEMA_VERSION,
+            programs: progs,
+            analytics: anal,
+            terms: termList,
+            selectedTerm: term,
+            savedAt: new Date().toISOString()
+          };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
           setSavedAt(payload.savedAt);
           setStorageNotice('');
@@ -2077,8 +2307,20 @@
       const resetData = () => {
         if (!confirm('Clear the loaded datasets and start over?')) return;
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.removeItem(UI_STORAGE_KEY);
         setPrograms(null); setAnalytics(null); setTerms([]); setSelectedTerm('');
         setSelectedProgram(null); setSelectedCourseKey(null); setPendingProgRows(null); setPendingAnalRows(null); setSavedAt(null);
+        setSearch(''); setTypeFilter('all'); setPathwayAdoptionFilter('all'); setCourseStatusFilter('all');
+        setSortBy('adoption'); setPrimaryView('program'); setDashboardOpen(false); setRestoreError('');
+      };
+
+      const clearRejectedSession = () => {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.removeItem(UI_STORAGE_KEY);
+        setRestoreError('');
+        setLandingAnnounce('Saved session cleared. Load both source CSV files to continue.');
       };
 
       // ---- derived ----
@@ -2086,9 +2328,21 @@
         () => programs ? programs.find(p => p.name === selectedProgram) : null,
         [programs, selectedProgram]
       );
+      const programViewCache = useMemo(() => {
+        const cache = new Map();
+        if (!programs || !analytics) return cache;
+        for (const term of terms) {
+          for (const program of programs) {
+            cache.set(`${program.name}\u0000${term}`, computeProgramView(program, analytics, term));
+          }
+        }
+        return cache;
+      }, [programs, analytics, terms]);
+      const cachedProgramView = (program, term) =>
+        program ? programViewCache.get(`${program.name}\u0000${term}`) || null : null;
       const programView = useMemo(
-        () => (activeProgram && analytics && selectedTerm) ? computeProgramView(activeProgram, analytics, selectedTerm) : null,
-        [activeProgram, analytics, selectedTerm]
+        () => cachedProgramView(activeProgram, selectedTerm),
+        [activeProgram, selectedTerm, programViewCache]
       );
 
       // After Courses → Pathway jump, scroll to the first matching course row
@@ -2110,7 +2364,7 @@
         if (!programs || !analytics || !selectedTerm) return {};
         const out = {};
         for (const p of programs) {
-          const v = computeProgramView(p, analytics, selectedTerm);
+          const v = cachedProgramView(p, selectedTerm);
           out[p.name] = {
             pct: v.adoptionPct, reqTotal: v.reqTotal, reqZtc: v.reqZtc,
             units: v.unitsRequired, survey: v.avgSurvey, coCount: v.coCount,
@@ -2118,7 +2372,7 @@
           };
         }
         return out;
-      }, [programs, analytics, selectedTerm]);
+      }, [programs, analytics, selectedTerm, programViewCache]);
 
       const programTypes = useMemo(() => {
         if (!programs) return [];
@@ -2215,12 +2469,12 @@
         if (!activeProgram || !analytics || !terms.length) return null;
         const ztc = [], survey = [];
         for (const tm of terms) {
-          const v = computeProgramView(activeProgram, analytics, tm);
+          const v = cachedProgramView(activeProgram, tm);
           ztc.push(v.adoptionPct);
           survey.push(v.avgSurvey);
         }
         return { labels: terms, ztc, survey };
-      }, [activeProgram, analytics, terms]);
+      }, [activeProgram, analytics, terms, programViewCache]);
 
       // Trend: institution-wide average ZTC adoption + survey completion (all pathways)
       const institutionTrend = useMemo(() => {
@@ -2229,7 +2483,7 @@
         for (const tm of terms) {
           let ztcSum = 0, ztcN = 0, surveySum = 0, surveyN = 0;
           for (const p of programs) {
-            const v = computeProgramView(p, analytics, tm);
+            const v = cachedProgramView(p, tm);
             if (v.adoptionPct !== null) { ztcSum += v.adoptionPct; ztcN++; }
             if (v.avgSurvey !== null) { surveySum += v.avgSurvey; surveyN++; }
           }
@@ -2238,7 +2492,7 @@
           scored.push(ztcN);
         }
         return { labels: terms, avg, survey, scored };
-      }, [programs, analytics, terms]);
+      }, [programs, analytics, terms, programViewCache]);
 
       const switchPrimaryView = (next) => {
         if (next !== 'program' && next !== 'courses') return;
@@ -2393,9 +2647,18 @@
                 Load two datasources to map Zero Textbook Cost adoption across every active degree, certificate, and transfer pathway.
               </p>
 
-              {error && (
+              {(error || restoreError) && (
                 <div role="alert" className={`mb-6 flex items-start gap-2 rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm ${darkMode ? 'text-red-300' : 'text-red-800'}`}>
-                  <Icons.AlertCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" /> <span>{error}</span>
+                  <Icons.AlertCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                  <div>
+                    <span>{error || restoreError}</span>
+                    {restoreError && (
+                      <button type="button" onClick={clearRejectedSession}
+                        className="mt-2 block font-semibold underline underline-offset-2">
+                        Clear saved session
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -2962,34 +3225,13 @@
         a.href = url; a.download = filename; a.click();
         URL.revokeObjectURL(url);
       };
-      const csvEscape = (v) => {
-        const s = String(v ?? '');
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-      };
       const exportProgramCSV = () => {
         if (!programView) return;
-        const rows = [['Program', 'Area', 'Sub-area', 'Option Group', 'Course', 'Course Title', 'Units', 'Header Identifier', 'Lab Reference', 'Term', 'ZTC %', 'Survey %', 'Chaffey ZTC (75%+)', 'CO ZTC (1+ section)', 'Status']];
-        const pushCourse = (area, sg, optLabel, c) => {
-          rows.push([
-            activeProgram.name, area.title, sg.title || '', optLabel || '',
-            `${c.subject}-${c.number}`, c.courseTitle || c.analyticsTitle || '', c.units ?? '',
-            c.headerId || '', sg.isLabReference ? 'Yes' : 'No',
-            selectedTerm, c.ztcPct ?? '', c.surveyPct ?? '',
-            c.status === 'ztc' ? 'Yes' : 'No', c.coZtc ? 'Yes' : 'No', c.status
-          ]);
-        };
-        for (const area of programView.areas) {
-          for (const sg of area.subgroups) {
-            if (sg.options && sg.options.length) {
-              for (const opt of sg.options) {
-                for (const c of opt.courses) pushCourse(area, sg, opt.label || '', c);
-              }
-            } else {
-              for (const c of sg.courses) pushCourse(area, sg, '', c);
-            }
-          }
-        }
-        downloadFile(rows.map(r => r.map(csvEscape).join(',')).join('\n'), `ztc-${activeProgram.name.replace(/[^a-z0-9]+/gi, '-').slice(0, 50)}-${selectedTerm.replace('/', '')}.csv`, 'text/csv');
+        downloadFile(
+          buildProgramCsv(activeProgram, programView, selectedTerm),
+          `ztc-${activeProgram.name.replace(/[^a-z0-9]+/gi, '-').slice(0, 50)}-${selectedTerm.replace('/', '')}.csv`,
+          'text/csv'
+        );
       };
       const exportAllProgramsCSV = () => {
         const rows = [['Program', 'Type', 'Term', 'ZTC Adoption %', 'Requirements ZTC', 'Requirements Total', 'Required Units', 'Avg Survey %', 'CO ZTC Courses (1+ section)']];
@@ -3010,6 +3252,11 @@
         doc.setFontSize(14); doc.text(activeProgram.name, 14, 16);
         doc.setFontSize(10); doc.setTextColor(120);
         doc.text(`${activeProgram.type} · Term ${selectedTerm} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${programView.unitsRequiredLabel} units${programView.unitsRequiredUnverifiable ? ' (lab evidence unverifiable)' : ''}`, 14, 22);
+        const caveat = programExportCaveat(activeProgram);
+        if (caveat) {
+          doc.setFontSize(8);
+          doc.text(doc.splitTextToSize(`Note: ${caveat}`, 180), 14, 27);
+        }
         const body = [];
         const pushPdf = (area, sg, optLabel, c) => {
           const courseLabel = `${c.subject}-${c.number}${hasLabAsterisk(c.headerId) ? '*' : ''}`;
@@ -3038,7 +3285,7 @@
           }
         }
         doc.autoTable({
-          startY: 28, head: [['Area', 'Sub / Option', 'Course', 'Title', 'Units', 'ZTC', 'Survey', 'CO ZTC', 'Status']], body,
+          startY: caveat ? 38 : 28, head: [['Area', 'Sub / Option', 'Course', 'Title', 'Units', 'ZTC', 'Survey', 'CO ZTC', 'Status']], body,
           styles: { fontSize: 7 }, headStyles: { fillColor: [37, 99, 235] }
         });
         doc.save(`ztc-${activeProgram.name.replace(/[^a-z0-9]+/gi, '-').slice(0, 50)}-${selectedTerm.replace('/', '')}.pdf`);
@@ -3232,7 +3479,9 @@
     };
 
     if (!window.__ZTC_VENDOR_MISSING__) {
-      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        <AppErrorBoundary><App /></AppErrorBoundary>
+      );
     }
   </script>
 </body>

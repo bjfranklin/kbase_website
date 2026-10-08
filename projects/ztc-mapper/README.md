@@ -19,8 +19,8 @@ Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree
 | **Stack** | React **18.2.0**, Babel **7.23.5**, Chart.js **4.4.0**, jsPDF + AutoTable, Tailwind **3.4.17** — **vendored** under `vendor/`; zero external runtime deps |
 | **Data** | Two datasources joined on `SUBJECT-NUMBER`; Active programs only |
 | **Views** | Pathway (nested areas) and Courses (browse all courses) as primary reading views; Dashboard is a non-modal panel in the left navigation column |
-| **Persistence** | `localStorage` key `ztc-pathway-mapper-v3` (migrates from `-v2` on load) |
-| **Exports** | Current pathway CSV/PDF; all-pathways summary CSV |
+| **Persistence** | Validated dataset at `ztc-pathway-mapper-v3`; debounced navigation state at `ztc-pathway-mapper-v3-ui`; recoverable invalid-cache handling and reset |
+| **Exports** | Current pathway CSV/PDF with GE fidelity note; all-pathways summary CSV; spreadsheet-formula neutralization |
 
 ### Datasources
 
@@ -55,7 +55,7 @@ Regenerate Tailwind CSS (maintainer only):
 ./scripts/generate-tailwind-css.sh
 ```
 
-CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs `check-deps.py`, the requirement-scoring regression, FID-1 option-event parity tests, and Dashboard-panel geometry/keyboard regressions on `ztc-mapper/**` changes.
+CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs dependency integrity, requirement scoring, FID-1, validated restore/persistence, export, Dashboard source/browser, Python lint, and axe WCAG regressions on `ztc-mapper/**` changes.
 
 For a local real-data comparison against the checked-in baseline, write the report only under the ignored Rust `target/` tree:
 
@@ -119,7 +119,7 @@ node scripts/test-dashboard-panel.js
 python3 scripts/test-dashboard-panel-ui.py
 ```
 
-**Latest full axe run:** axe-core 4.10.2 — **0 violations** across **10 UI states** using checked-in de-identified fixtures (2026-09-15, v3.5.7). Source, semantic-tree, keyboard, focus, and responsive geometry checks are recorded in `ACCESSIBILITY_VERIFICATION.md`.
+The axe harness covers **11 UI states**, including an explicit lab-reference pathway, using checked-in de-identified fixtures. Latest completed baseline: 2026-10-08 v3.5.7 run, 0 violations across all 11 states; re-run the harness after UI changes. Source, semantic-tree, keyboard, focus, and responsive geometry checks are recorded in `ACCESSIBILITY_VERIFICATION.md`.
 
 ## Deferred (on stakeholder request)
 
