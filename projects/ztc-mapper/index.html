@@ -213,7 +213,9 @@
       useLine: 'Internal — ZTC / OER',
       accessibility: 'WCAG 2.1 Level AA',
       a11yNote: 'Status labels include text, not color alone.',
-      hostedUrl: APP_HOSTED_URL
+      hostedUrl: APP_HOSTED_URL,
+      portfolioHome: '../../index.html',
+      portfolioLabel: 'Portfolio home'
     };
 
     const isPlainObject = (value) =>
@@ -1396,6 +1398,9 @@
         <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
           <strong className={`font-semibold ${t.text}`}>Hosted app:</strong>{' '}
           <a href={APP_META.hostedUrl} className="underline hover:opacity-90">{APP_META.hostedUrl}</a>
+        </p>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          <a href={APP_META.portfolioHome} className="underline hover:opacity-90">{APP_META.portfolioLabel}</a>
         </p>
       </footer>
     );

@@ -40,6 +40,11 @@
 			background-color: _palette(border-bg-alt);
 		}
 
+		&:focus-visible {
+			outline: 3px solid _palette(fg-bold);
+			outline-offset: 3px;
+		}
+
 		&.icon {
 			&:before {
 				margin-right: 0.5em;

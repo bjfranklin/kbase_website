@@ -85,3 +85,17 @@
 			}
 		}
 	}
+
+	.project-shot {
+		display: block;
+		margin: 0 0 _size(element-margin) 0;
+		width: 100%;
+
+		img {
+			display: block;
+			width: 100%;
+			height: auto;
+			border-radius: _size(border-radius);
+			border: solid _size(border-width) _palette(border);
+		}
+	}
