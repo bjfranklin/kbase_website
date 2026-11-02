@@ -47,6 +47,19 @@
 				text-indent: 4rem;
 				overflow: hidden;
 				white-space: nowrap;
+				appearance: none;
+				background: transparent;
+				border: 0;
+				box-shadow: none;
+				padding: 0;
+				letter-spacing: 0;
+				text-transform: none;
+				line-height: 4rem;
+
+				&:focus-visible {
+					outline: 3px solid _palette(fg-bold);
+					outline-offset: -0.6rem;
+				}
 
 				&:before {
 					@include vendor('transition', 'background-color #{_duration(transition)} ease-in-out');

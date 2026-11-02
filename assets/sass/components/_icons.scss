@@ -38,3 +38,21 @@
 			}
 		}
 	}
+
+	#contact ul.icons li a {
+		width: auto;
+		height: auto;
+		border-radius: _size(border-radius);
+		padding: 0.35rem 0.9rem 0.35rem 0.75rem;
+		line-height: 1.5;
+		text-align: left;
+
+		.label {
+			display: inline;
+			margin-left: 0.45rem;
+			font-size: 1rem;
+			letter-spacing: 0;
+			text-transform: none;
+			vertical-align: middle;
+		}
+	}
