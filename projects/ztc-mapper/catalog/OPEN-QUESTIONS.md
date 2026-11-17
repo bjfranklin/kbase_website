@@ -29,11 +29,11 @@ The app currently scores List A as the four requirements above.
 
 ## Earlier years (2023-24, 2024-25, 2025-26)
 
-After the reader fixes of 2026-11-15, 15, 11 and 3 sections remain unverified, in 11, 7 and 3 pathways. None of them is a reading error the app can fix on its own; each needs a person.
+After the reader fixes of 2026-11-15 and 2026-11-16, 13, 9 and 3 sections remain unverified, in 9, 5 and 3 pathways. None of them is a reading error the app can fix on its own; each needs a person.
 
 ### Sign-off needed
 
-The requirement count is clear from the section title, but the printed units differ from what the listed courses add up to. Most often the printed figure is nominal or sits inside the range the courses allow, as with the four 2026-27 sections already signed off. Each needs a person to confirm the reading and record it in `reviewed-sections.json`.
+The requirement count is clear from the section title, but the printed units differ from what the listed courses add up to. Most often the printed figure is nominal or sits inside the range the courses allow, as with the one 2026-27 section still signed off (Business certificate). Be careful: three earlier sign-offs of this kind turned out to hide a misread (an Either/Or that is one pick), so look for a missed rule before signing. Each needs a person to confirm the reading and record it in `reviewed-sections.json`.
 
 | Pathway | Section | Years | Catalog prints | Courses allow |
 |---|---|---|---:|---:|
@@ -46,10 +46,8 @@ The requirement count is clear from the section title, but the printed units dif
 | General Business - Certificate of Achievement | Any two courses | 2023–24 | 6 | 3–6 |
 | Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement | AREA 2: Mathematical Concepts and Quantitative Reasoning (Required CSU | 2023–24, 2024–25 | 4–5 | 3–5 |
 | Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement | AREA 4: Social and Behavioral Sciences (Required CSU/UC) | 2023–24, 2024–25 | 9 | 9–11 |
-| Political Science for Transfer - AA-T | List A - Any three courses | 2023–24, 2024–25 | 9–10 | 9–11 |
 | Sign Language Studies - A.A. Degree | Required Core | 2023–24 | 14–15 | 15 |
 | Small Business Entrepreneur - Certificate of Achievement | Any three courses | 2023–24 | 9 | 9–10 |
-| Social Justice Studies for Transfer - AA-T | List A - Any three courses from at least two of the following areas | 2023–24, 2024–25 | 9–10 | 9–12 |
 
 Notes: the CSU General Education and IGETC areas print a nominal figure (9 units for three courses) while some listed courses carry 4 or 5 units or a lab. Sign Language Studies prints 14–15 because a footnote lets a 3-unit elective replace ASL 2. Dance (discontinued) prints 3.75 as the minimum where the two smallest courses give 1.75.
 

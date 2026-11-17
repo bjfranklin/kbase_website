@@ -6,11 +6,11 @@
   "programs": 201,
   "blocks": 360,
   "blockStatus": {
-   "approximated": 16,
-   "no-courses": 3,
+   "approximated": 19,
+   "no-courses": 2,
    "optional": 1,
-   "reconciled": 335,
-   "reviewed": 4,
+   "reconciled": 336,
+   "reviewed": 1,
    "unreconciled": 1
   },
   "programsFullyReconciled": 200,
@@ -537,15 +537,15 @@
   {
    "program": "Art History for Transfer - AA-T",
    "block": "List C - Any one Art History course (ARTH) not already taken.",
-   "status": "no-courses",
+   "status": "reconciled",
    "sectionSha256": "c3998bb93d391b951006fe0d1787d7a77a682d3986417d715f89302d5ddfb844",
    "printedUnits": [
     3.0,
     3.0
    ],
    "parsedUnits": [
-    0.0,
-    0.0
+    3.0,
+    3.0
    ],
    "notes": []
   },
@@ -718,7 +718,7 @@
    "program": "Biology for Transfer - AS-T",
    "block": "Required Core",
    "status": "reconciled",
-   "sectionSha256": "ad657306066a58ea84cefd95d9c92c3cefcbab725dbfce5c853a50b95ddce554",
+   "sectionSha256": "714ce387b1025ca054ec811484fa64aba738bb6ddef0d56fb7bef1d021958a13",
    "printedUnits": [
     12.0,
     12.0
@@ -4521,7 +4521,7 @@
   {
    "program": "Political Science for Transfer - AA-T",
    "block": "List A - Any three courses",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "a54d66e8edd3eca088f640079285b01cf08ae83bba8eb32470cc86e3ce39d8a5",
    "printedUnits": [
     9.0,
@@ -4529,17 +4529,16 @@
    ],
    "parsedUnits": [
     9.0,
-    11.0
+    10.0
    ],
    "notes": [
-    "choice 'Choose one' flattened into a choose-3 pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Choose one' flattened into a choose-3 pool"
    ]
   },
   {
    "program": "Political Science for Transfer - AA-T",
    "block": "List B - Any two courses from the following, or any courses not taken from List A",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "5f2143bfdfa4cea447439e5c2376691e0f5685ff592833db0db33a62c5147dff",
    "printedUnits": [
     6.0,
@@ -4547,11 +4546,10 @@
    ],
    "parsedUnits": [
     6.0,
-    8.0
+    7.0
    ],
    "notes": [
-    "choice 'Choose one' flattened into a choose-2 pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Choose one' flattened into a choose-2 pool"
    ]
   },
   {
@@ -4813,7 +4811,7 @@
    "program": "Public Health for Transfer - AS-T",
    "block": "Required Core",
    "status": "reconciled",
-   "sectionSha256": "4efcbb1a44b8e5a2d1a7e755683419a5b7b1fc0abca1f8fa386dbddd12267773",
+   "sectionSha256": "b05570b866152c64ddc412382cb3e7aca9b212684f202756808beb4a6103ba88",
    "printedUnits": [
     14.0,
     15.0
@@ -5157,7 +5155,7 @@
   {
    "program": "Social Justice Studies for Transfer - AA-T",
    "block": "List A - Any three courses from at least two of the following areas",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "f6e6c56b8984d57f3bce870e404d20ccc8713c55a072b98aed3027b03f2777d2",
    "printedUnits": [
     9.0,
@@ -5165,15 +5163,13 @@
    ],
    "parsedUnits": [
     9.0,
-    12.0
+    10.0
    ],
    "notes": [
     "sub-list 'Area 1 - History or Government' merged into the pool",
     "sub-list 'Area 2 - Arts and Humanities' merged into the pool",
     "choice 'Area 3 - Social Science (only one may be selected)' flattened into a choose-3 pool",
-    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool",
-    "sub-list 'Area 5 - Major Preparation (any course not taken from Required Core)' merged into the pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool"
    ]
   },
   {

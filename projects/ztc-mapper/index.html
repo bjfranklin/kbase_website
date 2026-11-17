@@ -558,6 +558,7 @@
     };
     // Survey completion for a year and whether it is still in progress: a term that is
     // missing from the dataset, or below 90% survey completion, keeps the year open.
+    // Survey completion is rounded down, so 89.5% reads 89% and stays under the 90% bar.
     const yearStatus = (analytics, datasetTerms, yearKey) => {
       const have = new Set(datasetTerms || []);
       let allSections = 0, allSubmitted = 0;
@@ -573,16 +574,16 @@
           if (m.surveyPct !== null && m.surveyPct !== undefined) { pctSum += m.surveyPct; pctCount += 1; }
         }
         const surveyPct = counted && sections > 0
-          ? Math.round((submitted / sections) * 100)
-          : (pctCount ? Math.round(pctSum / pctCount) : null);
+          ? Math.floor((submitted / sections) * 100)
+          : (pctCount ? Math.floor(pctSum / pctCount) : null);
         if (counted) { allSections += sections; allSubmitted += submitted; }
         return { term, present: true, surveyPct };
       });
       const present = terms.filter(x => x.present);
       const surveyPct = allSections > 0
-        ? Math.round((allSubmitted / allSections) * 100)
+        ? Math.floor((allSubmitted / allSections) * 100)
         : (present.length && present.every(x => x.surveyPct !== null)
-          ? Math.round(present.reduce((a, x) => a + x.surveyPct, 0) / present.length) : null);
+          ? Math.floor(present.reduce((a, x) => a + x.surveyPct, 0) / present.length) : null);
       const open = terms.filter(x => !x.present || x.surveyPct === null || x.surveyPct < ACADEMIC_YEAR_SURVEY_MIN);
       return {
         yearKey, terms, surveyPct,
@@ -726,14 +727,43 @@
       }));
     };
     // How many of a slot's options count toward it.
+    //  - "Either ... or ..." inside a longer list: one pick, whichever alternative is ZTC.
     //  - "from at least two areas": options from a single area can fill all but the
     //    places that must come from another area.
     //  - "or any course not taken from List A": options List A leaves over once it has
     //    used the ones it needs also count. `spareUsed` remembers what earlier sections
     //    of the same pathway have already claimed, so a left-over course counts once.
     const slotQualifying = (sg, slot, spareUsed) => {
-      const ztc = slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk);
-      let own = ztc.length;
+      // The alternatives of one "Either ... or ..." entry are a single pick: however
+      // many of them are ZTC, they fill one place.
+      const picked = new Set();
+      const ztc = slot.options.filter(optionIndex => {
+        const option = sg.options[optionIndex];
+        if (!option.ztcOk) return false;
+        if (!option.choice) return true;
+        if (picked.has(option.choice)) return false;
+        picked.add(option.choice);
+        return true;
+      });
+      // A course listed here and also in the lending section is one course: the lender
+      // uses the ones this list does not need first, and anything it must take from
+      // this list's own courses no longer counts here.
+      const signature = (optionIndex) => sg.options[optionIndex].courses.map(course => course.key).sort().join('+');
+      const ownSignatures = new Set(ztc.map(signature));
+      let lost = 0;
+      const spare = (slot.spare || []).map(group => {
+        const lenderZtc = group.options.filter(optionIndex => sg.options[optionIndex].ztcOk);
+        const distinctFromOwn = lenderZtc.filter(optionIndex => !ownSignatures.has(signature(optionIndex))).length;
+        const consumed = Math.min(group.used, lenderZtc.length);
+        lost += Math.max(0, consumed - distinctFromOwn);
+        return {
+          from: group.from,
+          source: group.source,
+          left: Math.max(0, distinctFromOwn - consumed - (spareUsed.get(group.source) || 0))
+        };
+      });
+      const ownBeforeRules = Math.max(0, ztc.length - lost);
+      let own = ownBeforeRules;
       if (slot.distinct) {
         const keyOf = (optionIndex) => slot.distinct.by === 'subject'
           ? (sg.options[optionIndex].courses[0] || {}).subject
@@ -741,13 +771,6 @@
         const missing = Math.max(0, slot.distinct.min - new Set(ztc.map(keyOf)).size);
         own = Math.max(0, Math.min(own, slot.need - missing));
       }
-      const spare = (slot.spare || []).map(group => ({
-        from: group.from,
-        source: group.source,
-        left: Math.max(0,
-          group.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length
-          - group.used - (spareUsed.get(group.source) || 0))
-      }));
       let shortfall = Math.max(0, slot.need - own);
       for (const group of spare) {
         const claimed = Math.min(group.left, shortfall);
@@ -761,6 +784,8 @@
         const slots = (sg.slots || []).map((slot, index) => ({ slot, index, ...slotQualifying(sg, slot, spareUsed) }));
         // Shown beside the slot: what each named section leaves over for it.
         sg.spareLeft = Object.fromEntries(slots.filter(entry => entry.spare.length).map(entry => [entry.index, entry.spare]));
+        // The same count the score uses, so "Met" on screen always agrees with it.
+        sg.slotQualifying = slots.map(entry => entry.qualifying);
         if (sg.slotsNeeded && slots.length > sg.slotsNeeded) {
           // "Any three courses (maximum of one from each category)": each category is a
           // choice of one, and only `slotsNeeded` of the categories are required.
@@ -1344,7 +1369,7 @@
               if (slot.summary) {
                 // Met by any course of a large pool listed elsewhere: show the rule, not the list.
                 const meeting = slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length;
-                const met = meeting >= slot.need;
+                const met = ((sg.slotQualifying || [])[si] ?? meeting) >= slot.need;
                 return (
                   <div key={key} role="listitem"
                     className={`rounded-lg border px-3 py-2.5 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}`}>
@@ -1354,8 +1379,11 @@
                       <span className={`font-semibold ${met ? (dark ? 'text-green-400' : 'text-green-800') : (dark ? 'text-red-400' : 'text-red-800')}`}>
                         {met ? 'Met' : 'Not met'}
                       </span>
-                      <span className={t.textMuted}> · {meeting} of {slot.options.length} qualifying {slot.options.length === 1 ? 'option meets' : 'options meet'} the Chaffey ZTC threshold in {periodLabel(selectedTerm)}</span>
+                      {slot.options.length > 0 && (
+                        <span className={t.textMuted}> · {meeting} of {slot.options.length} qualifying {slot.options.length === 1 ? 'option meets' : 'options meet'} the Chaffey ZTC threshold in {periodLabel(selectedTerm)}</span>
+                      )}
                     </div>
+                    {spareNote(si)}
                   </div>
                 );
               }
@@ -1396,7 +1424,7 @@
                   </div>
                 );
               }
-              const qualifying = slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length;
+              const qualifying = (sg.slotQualifying || [])[si] ?? slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length;
               // A named group ("Combatives") keeps its name in front of the rule.
               const groupName = slot.label && !/^(choose|either|or|select|any)\b/i.test(slot.label) ? `${slot.label} · ` : '';
               const label = slot.unitsTarget

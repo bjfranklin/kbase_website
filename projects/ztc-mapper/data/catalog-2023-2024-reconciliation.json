@@ -6,13 +6,12 @@
   "programs": 199,
   "blocks": 343,
   "blockStatus": {
-   "approximated": 21,
+   "approximated": 24,
    "no-courses": 4,
    "reconciled": 302,
-   "reviewed": 1,
-   "unreconciled": 15
+   "unreconciled": 13
   },
-  "programsFullyReconciled": 188,
+  "programsFullyReconciled": 190,
   "duplicateHeadingsSkipped": [
    "American Sign Language (ASL) - Certificate of Achievement",
    "Art - A.A. Degree",
@@ -4454,7 +4453,7 @@
   {
    "program": "Political Science for Transfer - AA-T",
    "block": "List A - Any three courses",
-   "status": "unreconciled",
+   "status": "approximated",
    "sectionSha256": "febd705cc61e477ca036d8452ad1d709b719d5c13d1a08a16ddad599f3e1dcb4",
    "printedUnits": [
     9.0,
@@ -4462,7 +4461,7 @@
    ],
    "parsedUnits": [
     9.0,
-    11.0
+    10.0
    ],
    "notes": [
     "choice 'Choose one' flattened into a choose-3 pool"
@@ -4471,7 +4470,7 @@
   {
    "program": "Political Science for Transfer - AA-T",
    "block": "List B - Any two courses from the following, or any courses not taken from List A",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "5f2143bfdfa4cea447439e5c2376691e0f5685ff592833db0db33a62c5147dff",
    "printedUnits": [
     6.0,
@@ -4479,11 +4478,10 @@
    ],
    "parsedUnits": [
     6.0,
-    8.0
+    7.0
    ],
    "notes": [
-    "choice 'Choose one' flattened into a choose-2 pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Choose one' flattened into a choose-2 pool"
    ]
   },
   {
@@ -4700,7 +4698,7 @@
    "program": "Public Health Science for Transfer - AS-T",
    "block": "Required Core",
    "status": "reconciled",
-   "sectionSha256": "d6dd3859b38b4a8eee356bed7221cd0930752e23e39990a862afb804b9afb2e7",
+   "sectionSha256": "01a26c881afdcac4e6bb6535a55c9f5475d751486b8429588e6052975b127a7e",
    "printedUnits": [
     29.0,
     31.0
@@ -5029,7 +5027,7 @@
   {
    "program": "Social Justice Studies for Transfer - AA-T",
    "block": "List A - Any three courses from at least two of the following areas",
-   "status": "unreconciled",
+   "status": "approximated",
    "sectionSha256": "805dee8e9e05ef21833aa67ee05ab53d9343492dc9be99f732ca5d57ff7bc32a",
    "printedUnits": [
     9.0,
@@ -5037,14 +5035,13 @@
    ],
    "parsedUnits": [
     9.0,
-    12.0
+    10.0
    ],
    "notes": [
     "sub-list 'Area 1 - History or Government' merged into the pool",
     "sub-list 'Area 2 - Arts and Humanities' merged into the pool",
     "choice 'Area 3 - Social Science' flattened into a choose-3 pool",
-    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool",
-    "sub-list 'Area 5 - Major Preparation (any course not taken from Required Core)' merged into the pool"
+    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool"
    ]
   },
   {

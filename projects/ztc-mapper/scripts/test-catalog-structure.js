@@ -236,17 +236,64 @@ assert.deepEqual(englishLists(['ENGL-70A', 'ENGL-70B', 'ENGL-7A', 'ENGL-7B']), [
 // "Any three courses from at least two of the following areas".
 const socialJustice = programNamed('Social Justice Studies for Transfer').areas.find((a) => a.title.startsWith('List A')).subgroups[0];
 const byArea = {};
+// Courses that are also Required Core options are left out here: Core would use them.
+const socialJusticeCore = new Set(programNamed('Social Justice Studies for Transfer').areas
+  .find((a) => a.title === 'Required Core').subgroups
+  .flatMap((sg) => sg.options.flatMap((option) => option.courses.map((course) => course.key))));
 for (const index of socialJustice.slots[0].options) {
   const option = socialJustice.options[index];
+  if (option.pooled || option.courses.some((course) => socialJusticeCore.has(course.key))) continue;
   (byArea[option.label] = byArea[option.label] || []).push(bundleOf(option));
 }
-const [firstArea, secondArea] = Object.values(byArea);
+const areaNamedLike = (prefix) => byArea[Object.keys(byArea).find((label) => label.startsWith(prefix))];
+const [firstArea, secondArea] = [areaNamedLike('Area 2'), areaNamedLike('Area 1')];
+assert.ok(firstArea.length >= 3 && secondArea.length >= 1, JSON.stringify(Object.fromEntries(Object.entries(byArea).map(([k, v]) => [k, v.length]))));
 const listAMet = (ztcKeys) => {
   const group = areaNamed(scored('Social Justice Studies for Transfer', new Set(ztcKeys)), 'List A').requirementSlots[0];
   return Math.min(group.requiredCount, group.qualifying);
 };
 assert.equal(listAMet(firstArea.slice(0, 3)), 2, 'three ZTC courses from one area fill only two of the three places');
 assert.equal(listAMet([...firstArea.slice(0, 2), secondArea[0]]), 3);
+// One course cannot fill a place in Required Core and again in List A (HIST 19 is
+// printed in both), and "Area 5" lends only what Required Core leaves over.
+const socialJusticeScores = (ztcKeys) => Array.from(scored('Social Justice Studies for Transfer', new Set(ztcKeys)).areas)
+  .map((a) => a.requirementSlots.reduce((sum, group) => sum + Math.min(group.requiredCount, group.qualifying), 0));
+assert.deepEqual(socialJusticeScores(['HIST-19']), [1, 0]);
+// "Only one may be selected": several ZTC statistics courses fill one place.
+assert.deepEqual(socialJusticeScores(['SCSCI-10', 'STAT-C1000']), [0, 1]);
+
+// The alternatives of an Either/Or entry inside "Any three courses" are one pick.
+const politicalScienceA = (ztcKeys) => {
+  const group = areaNamed(scored('Political Science for Transfer', new Set(ztcKeys)), 'List A').requirementSlots[0];
+  return Math.min(group.requiredCount, group.qualifying);
+};
+assert.equal(politicalScienceA(['STAT-C1000', 'SCSCI-10', 'PS-2']), 2);
+assert.equal(areaNamed(scored('Political Science for Transfer', new Set()), 'List A').reconciliation, 'approximated');
+
+// Art History: List C is one more ARTH course from what the lists above leave over,
+// and List A borrows only Art History left-overs from Required Core.
+const artHistory = (ztcKeys) => Array.from(scored('Art History for Transfer', new Set(ztcKeys)).areas)
+  .map((a) => a.requirementSlots.reduce((sum, group) => sum + Math.min(group.requiredCount, group.qualifying), 0));
+assert.equal(scored('Art History for Transfer', new Set()).reqTotal, 6);
+assert.deepEqual(artHistory(['ARTH-C1100', 'ARTH-7', 'ARTH-9']), [2, 1, 0, 0], 'three ARTH courses: Core 2, List A 1, none left for List C');
+assert.deepEqual(artHistory(['ARTH-C1100', 'ARTH-7', 'ARTH-9', 'ARTH-11']), [2, 1, 0, 1]);
+assert.deepEqual(artHistory(['ART-10', 'ART-14']), [1, 0, 1, 0], 'a spare studio course does not count as Art History');
+
+// "Complete a minimum of 3 units from" two 1-4 unit practicum courses: one course.
+assert.equal(scored('Theatre Arts for Transfer', new Set()).reqTotal, 6);
+// A row with units and no text heads courses joined by AND: one requirement.
+const biologyCore = areaNamed(scored('Biology for Transfer', new Set(['BIOL-42'])), 'Required Core');
+assert.equal(biologyCore.requirementSlots.length, 3);
+assert.equal(biologyCore.requirementSlots.reduce((sum, group) => sum + Math.min(group.requiredCount, group.qualifying), 0), 0, 'the lecture without its lab does not count');
+// "Any two courses from two of the following areas" (no "at least").
+const lawListA = programNamed('Law, Public Policy').areas.find((a) => a.title.startsWith('List A')).subgroups[0].slots[0];
+assert.equal(lawListA.distinct.min, 2);
+// "not selected from the Required Core list": Geography List A borrows from Core.
+const geographyA = areaNamed(scored('Geography for Transfer', new Set(['GEOG-1', 'GEOG-11', 'GEOG-2'])), 'List A').requirementSlots[0];
+assert.ok(geographyA.qualifying >= 1);
+// History List B Group 2 borrows List A left-overs from its sub-list title.
+const historyB = programNamed('History for Transfer').areas.find((a) => a.title.startsWith('List B'));
+assert.ok(historyB.subgroups.some((sg) => sg.slots.some((slot) => (slot.spare || []).length > 0)));
 // Disciplines are course subjects (Cal-GETC Area 4: two courses from at least two disciplines).
 const area4 = (ztcKeys) => {
   const group = areaNamed(scored('California General Education Transfer Curriculum', new Set(ztcKeys)), 'AREA 4').requirementSlots[0];

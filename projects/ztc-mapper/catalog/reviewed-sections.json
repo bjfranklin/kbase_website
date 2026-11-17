@@ -9,33 +9,6 @@
       "decidedBy": "Bradley Franklin",
       "decidedOn": "2026-11-15",
       "basis": "The title sets the count (any two courses). The catalog prints 6 units; the listed courses allow 6 to 7 because one option is a 4-unit course. Printed range lies inside the range the courses allow."
-    },
-    {
-      "catalogYear": "2026-2027",
-      "pathway": "Political Science for Transfer - AA-T",
-      "section": "List A - Any three courses",
-      "sectionSha256": "a54d66e8edd3eca088f640079285b01cf08ae83bba8eb32470cc86e3ce39d8a5",
-      "decidedBy": "Bradley Franklin",
-      "decidedOn": "2026-11-15",
-      "basis": "The title sets the count (any three courses). The catalog prints 9 to 10 units; the listed courses allow 9 to 11. Printed range lies inside the range the courses allow."
-    },
-    {
-      "catalogYear": "2026-2027",
-      "pathway": "Political Science for Transfer - AA-T",
-      "section": "List B - Any two courses from the following, or any courses not taken from List A",
-      "sectionSha256": "5f2143bfdfa4cea447439e5c2376691e0f5685ff592833db0db33a62c5147dff",
-      "decidedBy": "Bradley Franklin",
-      "decidedOn": "2026-11-15",
-      "basis": "The title sets the count (any two courses). The catalog prints 6 to 7 units; the listed courses allow 6 to 8. Printed range lies inside the range the courses allow."
-    },
-    {
-      "catalogYear": "2026-2027",
-      "pathway": "Social Justice Studies for Transfer - AA-T",
-      "section": "List A - Any three courses from at least two of the following areas",
-      "sectionSha256": "f6e6c56b8984d57f3bce870e404d20ccc8713c55a072b98aed3027b03f2777d2",
-      "decidedBy": "Bradley Franklin",
-      "decidedOn": "2026-11-15",
-      "basis": "The title sets the count (any three courses). The catalog prints 9 to 10 units; the listed courses allow 9 to 12. Printed range lies inside the range the courses allow. The app enforces the at-least-two-areas rule when scoring."
     }
   ]
 }

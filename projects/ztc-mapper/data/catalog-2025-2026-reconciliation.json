@@ -6,11 +6,11 @@
   "programs": 188,
   "blocks": 332,
   "blockStatus": {
-   "approximated": 13,
+   "approximated": 16,
    "no-courses": 1,
    "optional": 1,
    "reconciled": 310,
-   "reviewed": 4,
+   "reviewed": 1,
    "unreconciled": 3
   },
   "programsFullyReconciled": 185,
@@ -645,7 +645,7 @@
    "program": "Biology for Transfer - AS-T",
    "block": "Required Core",
    "status": "reconciled",
-   "sectionSha256": "ad657306066a58ea84cefd95d9c92c3cefcbab725dbfce5c853a50b95ddce554",
+   "sectionSha256": "714ce387b1025ca054ec811484fa64aba738bb6ddef0d56fb7bef1d021958a13",
    "printedUnits": [
     12.0,
     12.0
@@ -4241,7 +4241,7 @@
   {
    "program": "Political Science for Transfer - AA-T",
    "block": "List A - Any three courses",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "a54d66e8edd3eca088f640079285b01cf08ae83bba8eb32470cc86e3ce39d8a5",
    "printedUnits": [
     9.0,
@@ -4249,17 +4249,16 @@
    ],
    "parsedUnits": [
     9.0,
-    11.0
+    10.0
    ],
    "notes": [
-    "choice 'Choose one' flattened into a choose-3 pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Choose one' flattened into a choose-3 pool"
    ]
   },
   {
    "program": "Political Science for Transfer - AA-T",
    "block": "List B - Any two courses from the following, or any courses not taken from List A",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "5f2143bfdfa4cea447439e5c2376691e0f5685ff592833db0db33a62c5147dff",
    "printedUnits": [
     6.0,
@@ -4267,11 +4266,10 @@
    ],
    "parsedUnits": [
     6.0,
-    8.0
+    7.0
    ],
    "notes": [
-    "choice 'Choose one' flattened into a choose-2 pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Choose one' flattened into a choose-2 pool"
    ]
   },
   {
@@ -4817,7 +4815,7 @@
   {
    "program": "Social Justice Studies for Transfer - AA-T",
    "block": "List A - Any three courses from at least two of the following areas",
-   "status": "reviewed",
+   "status": "approximated",
    "sectionSha256": "f6e6c56b8984d57f3bce870e404d20ccc8713c55a072b98aed3027b03f2777d2",
    "printedUnits": [
     9.0,
@@ -4825,15 +4823,13 @@
    ],
    "parsedUnits": [
     9.0,
-    12.0
+    10.0
    ],
    "notes": [
     "sub-list 'Area 1 - History or Government' merged into the pool",
     "sub-list 'Area 2 - Arts and Humanities' merged into the pool",
     "choice 'Area 3 - Social Science (only one may be selected)' flattened into a choose-3 pool",
-    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool",
-    "sub-list 'Area 5 - Major Preparation (any course not taken from Required Core)' merged into the pool",
-    "verified by review: Bradley Franklin, 2026-11-15"
+    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool"
    ]
   },
   {

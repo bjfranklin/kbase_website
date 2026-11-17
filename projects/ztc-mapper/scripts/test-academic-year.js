@@ -96,7 +96,13 @@ const closed = api.yearStatus(dataset([
   row('AAA-1', '2025/FA', 10, 10, 10), row('AAA-1', '2026/SP', 10, 10, 9), row('AAA-1', '2026/SU', 10, 10, 10)
 ]), ['2025/FA', '2026/SP', '2026/SU'], '2025-2026');
 assert.equal(closed.inProgress, false);
-assert.equal(closed.surveyPct, 97);
+assert.equal(closed.surveyPct, 96, '29 of 30 is 96.7%, shown rounded down');
+// 89.5% is under the 90% bar: it must not round up to 90 and close the year.
+const nearly = api.yearStatus(dataset([
+  row('AAA-1', '2025/FA', 200, 200, 179), row('AAA-1', '2026/SP', 200, 200, 179), row('AAA-1', '2026/SU', 200, 200, 179)
+]), ['2025/FA', '2026/SP', '2026/SU'], '2025-2026');
+assert.equal(nearly.surveyPct, 89);
+assert.equal(nearly.inProgress, true);
 
 // Every catalog year loads and every pathway scores without dropping a block.
 const counts = {};
@@ -149,9 +155,17 @@ assert.equal(english.reconciliation, 'reconciled');
 const physicsGe = sectionOf(older('2024-2025', 'University of California Transfer Pathway: P'), 'Additional IGETC');
 assert.equal(needOf(physicsGe), 3);
 assert.equal(physicsGe.reconciliation, 'approximated');
-// A sign-off covers another year only when that year prints the same text.
-const politicalScience = (year) => sectionOf(older(year, 'Political Science for Transfer'), 'List B').reconciliation;
-assert.equal(politicalScience('2023-2024'), 'reviewed');
-assert.equal(sectionOf(older('2023-2024', 'Political Science for Transfer'), 'List A').reconciliation, 'unreconciled');
+// A sign-off covers another year only when that year prints the same text: the
+// 2026-27 sign-off for Business "Any two courses" also covers 2025-26.
+assert.equal(sectionOf(older('2025-2026', 'Business - Certificate of Achievement'), 'Any two courses').reconciliation, 'reviewed');
+// Either/Or inside "Any three courses" is one pick, which is what the printed units
+// assume: these sections verify without a sign-off in every year.
+for (const year of YEARS) {
+  for (const list of ['List A', 'List B']) {
+    assert.ok(VERIFIED.includes(sectionOf(older(year, 'Political Science for Transfer'), list).reconciliation), `${year} Political Science ${list}`);
+  }
+}
+// Theatre Arts "minimum of 3 units from" two 1-4 unit courses is one course in every year.
+for (const year of YEARS) assert.equal(older(year, 'Theatre Arts for Transfer').reqTotal, 6, year);
 
 console.log('Academic-year tests passed:', JSON.stringify(counts));

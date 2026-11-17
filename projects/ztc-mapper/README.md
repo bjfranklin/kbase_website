@@ -21,6 +21,11 @@
 - "Any three courses from at least two of the following areas" and "from at least two different disciplines": courses from a single area (or subject) fill all but the places that must come from another.
 - A correction the reader makes to the catalog text (for example "ASTRON 27 OR ASTRON 27L", read as lecture with its lab) is shown on screen under that section as "Note from the app".
 - A noncredit certificate that prints hours only for the pathway is verified against the pathway total.
+- The alternatives of an Either/Or (or "only one may be selected") entry inside an "Any N courses" list are one pick, however many of them are ZTC.
+- A row with units and no text heads the indented courses under it; joined by AND they are one requirement (Biology: BIOL 42 with BIOL 42L).
+- A variable-unit course ("1.00 - 4.00") counts at its top value toward "N units from the following".
+- "Any one Art History (ARTH) course not taken from Required Core" borrows only left-over courses of the named subject. A section with no courses of its own ("List C - Any one Art History course (ARTH) not already taken") is one requirement met by what the sections above leave over.
+- A course printed both in a list and in the section it borrows from is one course.
 - Several "Choose one group:" captions inside one section (older Automotive Technology certificates) are one requirement each; the group numbering restarts with each caption.
 - "N units from the following" needs the fewest courses that reach N units. Whole courses rarely add up to exactly N, so the section is verified when the catalog prints the range of totals a student can actually end with (Accounting: nine units from 3, 3, 4, 4 and 1.5-unit courses prints 9.5–11).
 - In a general-education pattern, an area with a plain list and no count is one course (IGETC Area 7).
@@ -43,6 +48,8 @@ node scripts/test-catalog-structure.js
 Scoring rules in v4: a required course is one requirement; "Choose one" (and Group N alternatives) is one requirement met by any one option; "Any N courses" is N requirements from the list; "N units from the following" needs the fewest courses that reach N units; a bundle (courses joined by AND) is met only when every course in it meets the 75% bar. Units shown are the catalog's printed units. Saved sessions store only the ZTC data and are rebuilt against the catalog file on load (dataset schema 3).
 
 Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree, certificate, and transfer pathways. Client-side single-file React app — no build step.
+
+**Picking this project up?** Read [`HANDOFF.md`](HANDOFF.md) first: the decided rules, the invariants, and step-by-step instructions for adding a catalog year or changing a rule.
 
 ## Quick start
 
@@ -93,7 +100,7 @@ python3 scripts/test-dashboard-panel-ui.py # browser test, needs Playwright
 
 `.github/workflows/ztc-mapper-guardrails.yml` runs all of these, the dependency check, the Rust parity fixture check, a byte-for-byte rebuild of every catalog, Python lint and the axe run.
 
-**Independent count.** The unit check catches a section whose units do not add up. It cannot catch a rule that was misread but still adds up. `test-independent-count.js` is a second, deliberately simple reader: it counts requirements straight from the catalog Markdown for every pathway made only of plain lists, "any N courses" lists and simple "Choose one" entries, and requires the app to score the same number. It covers a little over half of the pathways in each year (116 of 201 in 2026–27) and skips the rest instead of guessing.
+**Independent count.** The unit check catches a section whose units do not add up. It cannot catch a rule that was misread but still adds up. `test-independent-count.js` is a second, deliberately simple reader: it counts requirements straight from the catalog Markdown and requires the app to score the same number. It reads plain lists, "any N courses" (including "or any course not taken from List A"), "N units from the following", "Choose one" entries, "Choose one group", and suggested courses under a "Recommended (Optional)" caption. It covers about three quarters of the pathways in each year (150 of 201 in 2026–27) and skips the rest instead of guessing.
 
 ### ZTC thresholds
 

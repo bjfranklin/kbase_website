@@ -39,7 +39,7 @@ RECOMMENDED = re.compile(
 )
 AT_MOST_ONE_EACH = re.compile(r"maximum of one from each", re.IGNORECASE)
 AT_LEAST_GROUPS = re.compile(
-    rf"from at least {NUM} (?:of the following |different )?(areas|disciplines)",
+    rf"from (?:at least )?{NUM} (?:of the following |different )?(areas|disciplines)",
     re.IGNORECASE,
 )
 GE_PATTERN = re.compile(
@@ -48,7 +48,10 @@ GE_PATTERN = re.compile(
 )
 LOTE = re.compile(r"language other than english", re.IGNORECASE)
 CSU_ONLY = re.compile(r"\bCSU only\b", re.IGNORECASE)
-NOT_TAKEN_FROM = re.compile(r"\bnot taken from\s+(.+)$", re.IGNORECASE)
+NOT_TAKEN_FROM = re.compile(r"\bnot (?:taken|selected) from\s+(.+)$", re.IGNORECASE)
+# "Any one Art History (ARTH) course not taken from Required Core": only that subject.
+NAMED_SUBJECT = re.compile(r"\(([A-Z]{2,9})\)")
+NOT_ALREADY_TAKEN = re.compile(r"\bnot already taken\b", re.IGNORECASE)
 IGNORED_HEADINGS = {"notes", "note"}
 SUB_AREA = re.compile(r"^[A-Z] - ")
 GE_AREA = re.compile(
@@ -177,6 +180,18 @@ def read_programs(path: Path) -> list[dict]:
                 }
             )
             continue
+        if not first and parse_units(cells[2]) is not None:
+            # A row with units and no text heads the indented rows under it:
+            # "| | | 4.00 |" then "BIOL 42 AND BIOL 42L" is one 4-unit requirement.
+            current["rows"].append(
+                {
+                    "kind": "group",
+                    "depth": depth,
+                    "title": "",
+                    "units": parse_units(cells[2]),
+                }
+            )
+            continue
         if first and parse_units(cells[2]) is not None:
             ge_area = GE_AREA.match(clean(first))
             if ge_area:
@@ -205,6 +220,12 @@ def nest(
 ) -> list[dict]:
     """Rows -> blocks -> sub-blocks -> nested items."""
     program_notes = program_notes if program_notes is not None else []
+    # An unnamed group row is printed without indentation: it sits one level above
+    # the rows it heads.
+    for index, row in enumerate(rows):
+        if row["kind"] == "group" and row["title"] == "":
+            below = rows[index + 1] if index + 1 < len(rows) else None
+            row["depth"] = max(0, (below or {}).get("depth", 1) - 1)
     blocks: list[dict] = []
     block = None
     sub = None
@@ -284,6 +305,7 @@ class Unverifiable(Exception):
 LAB_CONTEXT = {"on": False}
 CORRECTIONS: list[str] = []
 OPTIONAL_UNITS = {"max": 0.0}
+PENDING_BORROW: list[str] = []
 
 
 def course_of(node: dict) -> dict:
@@ -465,6 +487,10 @@ def build_sub(
                 continue
             group_rule = title_rule(item["title"])
             _, had_or = split_parts(item["items"])
+            if item["title"] == "" and not had_or and item["items"]:
+                # Unnamed group of courses joined by AND: taken together, one requirement.
+                slots.append({"need": 1, "options": [add(bundle([item]), None)]})
+                continue
             if group_rule[0] != "units" and (
                 had_or or group_rule[0] == "choose" or one_from_each
             ):
@@ -479,7 +505,8 @@ def build_sub(
                 )
             elif group_rule[0] == "units":
                 alts = alternatives(item)
-                sums = [sum(c["units"] or 0 for c in alt) for alt in alts]
+                # A variable-unit course ("1.00 - 4.00") can be taken for its top value.
+                sums = [sum(c["unitsMax"] or 0 for c in alt) for alt in alts]
                 slots.append(
                     {
                         "need": min_count_for_units(sums, group_rule[1]),
@@ -509,8 +536,18 @@ def build_sub(
                 choice = f"e{len(options)}" if len(alts) > 1 else None
                 for alt in alts:
                     pool.append(add(alt, item["title"], choice))
-            elif GROUP_N.match(item["title"]) or "both" in item["title"].lower():
+            elif (
+                GROUP_N.match(item["title"])
+                or "both" in item["title"].lower()
+                or item["title"] == ""
+            ):
                 pool.append(add(bundle([item]), item["title"]))  # all of these together
+            elif not item["items"] and NOT_TAKEN_FROM.search(item["title"]):
+                # "Area 5 - Major Preparation (any course not taken from Required Core)":
+                # no courses of its own; it lends the named section's left-overs.
+                PENDING_BORROW.append(
+                    NOT_TAKEN_FROM.search(item["title"]).group(1).rstrip("):. ")
+                )
             else:
                 # A labelled sub-list (e.g. "Area 1 - Audio"): its courses join the pool.
                 notes.append(f"sub-list '{item['title']}' merged into the pool")
@@ -519,7 +556,9 @@ def build_sub(
         if rule[0] == "choose":
             slots.append({"need": rule[1], "pool": True, "options": pool})
         else:
-            sums = [sum(c["units"] or 0 for c in options[i]["courses"]) for i in pool]
+            sums = [
+                sum(c["unitsMax"] or 0 for c in options[i]["courses"]) for i in pool
+            ]
             slots.append(
                 {
                     "need": min_count_for_units(sums, rule[1]),
@@ -598,12 +637,24 @@ def slot_units(
         if with_spare
         else []
     )
+    by_choice: dict[str, list[float]] = {}
     for index in slot["options"] + spare:
         courses = options[index]["courses"]
         if any(c["units"] is None for c in courses):
             return None
-        lows.append(sum(c["units"] for c in courses))
-        highs.append(sum(c["unitsMax"] for c in courses))
+        low = sum(c["units"] for c in courses)
+        high = sum(c["unitsMax"] for c in courses)
+        choice = options[index].get("choice")
+        if choice and slot.get("pool"):
+            # The alternatives of one "Either ... or ..." entry are a single pick.
+            span = by_choice.setdefault(choice, [low, high])
+            span[0], span[1] = min(span[0], low), max(span[1], high)
+            continue
+        lows.append(low)
+        highs.append(high)
+    for low, high in by_choice.values():
+        lows.append(low)
+        highs.append(high)
     if len(lows) < slot["need"]:
         return None
     lows.sort()
@@ -771,6 +822,7 @@ def build_program(
         LAB_CONTEXT["on"] = "laborator" in block_text and "asterisk" in block_text
         CORRECTIONS.clear()
         OPTIONAL_UNITS["max"] = 0.0
+        PENDING_BORROW.clear()
         block_rule = title_rule(block["title"])
         # A bold line with nothing under it is a caption, not a sub-area.
         captions = [
@@ -938,22 +990,16 @@ def build_program(
                         slot["need"] == 1 for slot in sg["slots"]
                     ):
                         sg["slotsNeeded"] = block_rule[1]
+
             # "... or any course not taken from List A": options of the named sections
             # that are left over once those sections are met also count here.
-            borrow = NOT_TAKEN_FROM.search(block["title"])
-            target = next(
-                (
-                    (sg, slot)
-                    for sg in subgroups
-                    for slot in sg["slots"]
-                    if slot.get("pool") and not slot.get("summary")
-                ),
-                None,
-            )
-            if borrow and target:
-                target_sg, target_slot = target
+            def lend(target_sg, target_slot, wanted, subject):
+                """Add what earlier sections leave over to `target_slot`.
+
+                `wanted(area)` picks the lending sections; `subject` (e.g. "ARTH")
+                limits lending to requirements made only of that subject's courses."""
                 for area in areas:
-                    if not names_section(borrow.group(1), area["title"]):
+                    if not wanted(area):
                         continue
                     for sg in area["subgroups"]:
                         for slot_index, slot in enumerate(sg["slots"]):
@@ -964,6 +1010,12 @@ def build_program(
                             ]
                             if slot.get("summary") or len(own) <= slot["need"]:
                                 continue  # nothing can be left over
+                            if subject and any(
+                                course["subject"] != subject
+                                for i in own
+                                for course in sg["options"][i]["courses"]
+                            ):
+                                continue
                             start = len(target_sg["options"])
                             target_sg["options"].extend(
                                 {
@@ -983,6 +1035,93 @@ def build_program(
                                     "used": slot["need"],
                                 }
                             )
+
+            def named_subject(title):
+                named = NAMED_SUBJECT.search(title.split(" not ")[0])
+                return named.group(1) if named else None
+
+            # "... or any course not taken from List A": options of the named sections
+            # that are left over once those sections are met also count here. The
+            # sentence can sit in the section title or in a sub-list title (History
+            # List B, "Group 2 - ... or any course not taken from List A").
+            for holder_title, holder_subgroups in [
+                (block["title"], subgroups),
+                *[(sg["title"] or "", [sg]) for sg in subgroups],
+            ]:
+                borrow = NOT_TAKEN_FROM.search(holder_title)
+                target = next(
+                    (
+                        (sg, slot)
+                        for sg in holder_subgroups
+                        for slot in sg["slots"]
+                        if (slot.get("pool") or holder_subgroups is not subgroups)
+                        and not slot.get("summary")
+                    ),
+                    None,
+                )
+                if borrow and target and "spare" not in target[1]:
+                    reference = borrow.group(1)
+                    lend(
+                        target[0],
+                        target[1],
+                        lambda area, reference=reference: names_section(
+                            reference, area["title"]
+                        ),
+                        named_subject(holder_title),
+                    )
+            for reference in PENDING_BORROW:
+                target = next(
+                    (
+                        (sg, slot)
+                        for sg in subgroups
+                        for slot in sg["slots"]
+                        if slot.get("pool") and not slot.get("summary")
+                    ),
+                    None,
+                )
+                if target:
+                    lend(
+                        target[0],
+                        target[1],
+                        lambda area, reference=reference: names_section(
+                            reference, area["title"]
+                        ),
+                        None,
+                    )
+            # "List C - Any one Art History course (ARTH) not already taken." with no
+            # courses under it: one requirement, met by a course of that subject that
+            # the sections above leave over.
+            any_one = title_rule(block["title"])
+            if (
+                not any(sg["slots"] for sg in subgroups)
+                and not block["subs"]
+                and NOT_ALREADY_TAKEN.search(block["title"])
+                and NAMED_SUBJECT.search(block["title"])
+                and any_one[0] == "choose"
+                and block["units"]
+            ):
+                subject = NAMED_SUBJECT.search(block["title"]).group(1)
+                slot = {
+                    "need": any_one[1],
+                    "pool": True,
+                    "summary": True,
+                    "summaryLabel": f"Any {subject} course the sections above leave over",
+                    "unitsTarget": block["units"],
+                    "options": [],
+                }
+                holder = {
+                    "id": f"a{a_index}-0",
+                    "title": None,
+                    "requirement": {"choice": None, "n": None},
+                    "courses": [],
+                    "options": [],
+                    "slots": [slot],
+                    "notes": [],
+                    "isLabReference": False,
+                }
+                lend(holder, slot, lambda area: True, subject)
+                if slot.get("spare"):
+                    subgroups.append(holder)
             # "Any three courses from at least two of the following areas" / "Choose three
             # courses from at least two different disciplines": the courses may not all
             # come from one area (sub-list) or one discipline (subject).
