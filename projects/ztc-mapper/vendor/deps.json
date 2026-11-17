@@ -1,7 +1,7 @@
 {
   "app": "ztc-pathway-mapper",
-  "app_version": "3.5.7",
-  "updated": "2026-09-15",
+  "app_version": "4.1.0",
+  "updated": "2026-11-15",
   "vendored": [
     {
       "name": "tailwindcss",
@@ -53,5 +53,35 @@
       "sha384": "7ba9d464b06443ce8d27a4d554a01e49a2bc8d66b7361918599168984dfd02f0db4167a27bd3e542a337a66616e5dd60"
     }
   ],
-  "cdn_only": []
+  "cdn_only": [],
+  "data": [
+    {
+      "name": "catalog-2023-2024",
+      "catalog_year": "2023-2024",
+      "file": "data/catalog-2023-2024.js",
+      "source": "generated via scripts/build-catalog-structure.py from catalog/Chaffey_Catalog_2023-2024_Degrees_and_Certificates.md",
+      "sha384": "c8798895eb7e71fb997fc084545cb88f30ccd352fa7acbf6f8fa4d11631429f409077ea87978738a99a045e94f6e3435"
+    },
+    {
+      "name": "catalog-2024-2025",
+      "catalog_year": "2024-2025",
+      "file": "data/catalog-2024-2025.js",
+      "source": "generated via scripts/build-catalog-structure.py from catalog/Chaffey_Catalog_2024-2025_Degrees_and_Certificates.md",
+      "sha384": "2a0e4c2ee647b0854483658ac6c62accd565c4a78967be5b9c7b2e4227db9c6102c8ee14bee61443d1b988f4ecd95b52"
+    },
+    {
+      "name": "catalog-2025-2026",
+      "catalog_year": "2025-2026",
+      "file": "data/catalog-2025-2026.js",
+      "source": "generated via scripts/build-catalog-structure.py from catalog/Chaffey_Catalog_2025-2026_Degrees_and_Certificates.md",
+      "sha384": "ebd41c4a0fce792dfb0adc2cf3141697b965e0f156cdb26983c8380aa13f1de12a95056d1320201de375f1f8866f205d"
+    },
+    {
+      "name": "catalog-2026-2027",
+      "catalog_year": "2026-2027",
+      "file": "data/catalog-2026-2027.js",
+      "source": "generated via scripts/build-catalog-structure.py from catalog/Chaffey_Catalog_2026-2027_Degrees_and_Certificates.md",
+      "sha384": "e05e9d8675211c558c0ce8fb51efbbdda7f1c34008f30285ac23f9839d4f48b74fb9470c5ece572e9b02fdd34f7ac2cd"
+    }
+  ]
 }

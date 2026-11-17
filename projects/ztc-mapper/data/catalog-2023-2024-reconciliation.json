@@ -1,0 +1,5401 @@
+{
+ "meta": {
+  "catalogYear": "2023-2024",
+  "source": "Chaffey_Catalog_2023-2024_Degrees_and_Certificates.md",
+  "sourceSha256": "6d87ca95a7833f4c87db6b72f3b825eeea99e1e0673deef32d8eaaa0c9593555",
+  "programs": 199,
+  "blocks": 343,
+  "blockStatus": {
+   "approximated": 21,
+   "no-courses": 4,
+   "reconciled": 302,
+   "reviewed": 1,
+   "unreconciled": 15
+  },
+  "programsFullyReconciled": 188,
+  "duplicateHeadingsSkipped": [
+   "American Sign Language (ASL) - Certificate of Achievement",
+   "Art - A.A. Degree",
+   "Art - Ceramics Studio - A.A. Degree",
+   "Art History for Transfer - AA-T",
+   "Broadcasting and Cinema - A.S. Degree",
+   "California State University - General Education - Certificate of Achievement",
+   "Chinese Studies - A.A. Degree",
+   "Commercial Music - A.S. Degree",
+   "Commercial Photography - Certificate of Achievement",
+   "Communication Studies for Transfer - AA-T",
+   "Custom Dressmaking - Certificate of Achievement",
+   "Dance - A.A. Degree (This Program is Discontinued)",
+   "English as a Second Language - Noncredit Certificate of Competency",
+   "English for Transfer - AA-T",
+   "Fashion Design - A.S. Degree",
+   "Fashion Design - Certificate of Achievement",
+   "Fashion Merchandising - A.S. Degree",
+   "Fashion Merchandising - Certificate of Achievement",
+   "Film, Television and Electronic Media for Transfer - AS-T",
+   "Graphic Design for Digital Media - A.A. Degree",
+   "Graphic Design for Digital Media - Certificate of Achievement",
+   "Industrial Sewing - Certificate of Career Preparation",
+   "Interior Design - A.S. Degree",
+   "Interior Design - Certificate of Achievement",
+   "Interior Design Visual Communication - Certificate of Achievement",
+   "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "Journalism - Certificate of Achievement",
+   "Journalism for Transfer - AA-T",
+   "Motion Picture Production - Certificate of Achievement",
+   "Music for Transfer - AA-T",
+   "On-Air Radio Production - Certificate of Achievement",
+   "Patternmaking for Apparel - Certificate of Achievement",
+   "Photography - A.A. Degree",
+   "Post Production Editing - Certificate of Achievement",
+   "Recording Arts Technician - Certificate of Achievement",
+   "Screenwriting - Certificate of Achievement",
+   "Sign Language Studies - A.A. Degree",
+   "Spanish for Transfer - AA-T",
+   "Studio Arts for Transfer - AA-T",
+   "Technical Theatre - Certificate of Achievement",
+   "Television and Video Production - Certificate of Achievement",
+   "Theatre Arts for Transfer - AA-T",
+   "Theatre Performance - A.A. Degree",
+   "Accounting - A.S. Degree",
+   "Accounting - Certificate of Achievement",
+   "Accounting for Government and Not-For-Profit Organizations - Certificate of Achievement",
+   "Arts Business Management - Certificate of Achievement (This Program is Discontinued)",
+   "Bookkeeping - Certificate of Achievement",
+   "Business Administration 2.0 for Transfer - AS-T",
+   "Business Information Worker (BIW) Stage One Certificate of Achievement - Certificate of Achievement",
+   "Business Information Worker (BIW) Stage Two Certificate of Achievement - Certificate of Achievement",
+   "Cloud Analyst - Certificate of Achievement",
+   "Cloud Security A.S. Degree",
+   "Computer Foundations - Certificate of Career Preparation",
+   "Computer Game Development - Certificate of Achievement",
+   "Computer Information Systems - A.S. Degree",
+   "Computer Information Systems - Certificate of Achievement",
+   "Computer Support Technician (A+ Certification Preparation) - Certificate of Achievement",
+   "Core Academy: Leasing and Property Management - Noncredit Certificate of Completion",
+   "Culinary Arts - A.S. Degree",
+   "Culinary Arts - Certificate of Achievement",
+   "Cybersecurity Analyst - Certificate of Achievement",
+   "Cybersecurity Defender - Certificate of Achievement",
+   "Cybersecurity Professional - A.S. Degree",
+   "Event Planning - Certificate of Achievement",
+   "Facilities Management - A.S. Degree",
+   "Facilities Management - Certificate of Achievement",
+   "General Business - A.S. Degree",
+   "General Business - Certificate of Achievement",
+   "Hospitality Management for Transfer - AS-T",
+   "Hospitality Management: Food Service - A.S. Degree",
+   "Hospitality Management: Food Service - Certificate of Achievement",
+   "Hospitality Management: Hospitality Facilities Management - Certificate of Achievement",
+   "Hospitality Management: Hotel Management - A.S. Degree",
+   "Hospitality Management: Hotel Management - Certificate of Achievement",
+   "International Business - A.S. Degree",
+   "International Business - Certificate of Achievement",
+   "Management - A.S. Degree",
+   "Management - Certificate of Achievement",
+   "Marketing - A.S. Degree",
+   "Marketing - Certificate of Achievement",
+   "Microsoft Excel - Certificate of Achievement",
+   "Microsoft Office - Certificate of Achievement",
+   "Microsoft Word - Certificate of Achievement",
+   "Network Specialist - Certificate of Achievement",
+   "Paralegal Studies - A.S. Degree",
+   "Paralegal Studies - Certificate of Achievement",
+   "Payroll and Income Tax Preparer - Certificate of Achievement",
+   "Professional Administrative Management - A.S. Degree",
+   "Professional Administrative Management - Certificate of Achievement",
+   "Professional Baking and Patisserie - A.S. Degree",
+   "Professional Baking and Patisserie - Certificate of Achievement",
+   "Professional Office Skills - Certificate of Achievement",
+   "Programming Foundations - Certificate of Achievement",
+   "Project Management - Certificate of Career Preparation",
+   "Real Estate - A.S. Degree",
+   "Real Estate - Certificate of Achievement",
+   "Real Estate Property Management - A.S. Degree",
+   "Real Estate Property Management - Certificate of Achievement",
+   "Real Estate Salesperson - Certificate of Achievement",
+   "Retail Management - A.S. Degree",
+   "Retail Management - Certificate of Achievement",
+   "Small Business Entrepreneur - A.S. Degree",
+   "Small Business Entrepreneur - Certificate of Achievement",
+   "Social Media Support Specialist - Certificate of Achievement",
+   "Supervision - A.S. Degree",
+   "Supervision - Certificate of Career Preparation",
+   "Supply Chain Management - A.S. Degree",
+   "Supply Chain Management - Certificate of Achievement",
+   "Web Page Developer - Certificate of Career Preparation",
+   "Athletic Trainer Aide - Certificate of Achievement",
+   "Caregiving Essentials - Noncredit Certificate of Completion",
+   "Community Caregiver - Certificate of Achievement",
+   "Community Health Worker - Certificate of Achievement",
+   "Dental Assisting - A.S. Degree",
+   "Dental Assisting - Certificate of Achievement",
+   "Dietetic Service Supervisor (DSS)/Certified Dietary Manager (CDM) - Certificate of Achievement",
+   "Gerontology - Certificate of Achievement",
+   "Kinesiology for Transfer - AA-T",
+   "Nursing Assistant - Noncredit Certificate of Completion",
+   "Nursing Assistant/Home Health Aide - Noncredit Certificate of Completion",
+   "Nursing VN to RN - A.S. Degree",
+   "Nursing VN to RN: Non-Degree Option - Certificate of Career Preparation",
+   "Nursing: ADN - A.S. Degree",
+   "Nursing: Vocational - A.S. Degree",
+   "Nursing: Vocational - Certificate of Achievement",
+   "Nutrition and Dietetics for Transfer - AS-T",
+   "Nutrition and Food - Certificate of Achievement",
+   "Phlebotomy Technician - Noncredit Certificate of Completion",
+   "Physical Education - A.A. Degree",
+   "Physical Therapist Assistant - A.S. Degree",
+   "Public Health Science for Transfer - AS-T",
+   "Radiologic Technology - A.S. Degree",
+   "Aircraft Electrical and Avionics Technician - Certificate of Achievement",
+   "Automotive Electrical Systems - Certificate of Achievement",
+   "Aviation Maintenance - Certificate of Achievement",
+   "Aviation Maintenance Technology: Airframe - A.S. Degree",
+   "Aviation Maintenance Technology: Airframe - Certificate of Achievement",
+   "CAD Drafting Technician: Architectural - A.S. Degree",
+   "CAD Drafting Technician: Architectural - Certificate of Achievement",
+   "CAD Drafting Technician: Mechanical - A.S. Degree",
+   "CAD Drafting Technician: Mechanical - Certificate of Achievement",
+   "CAD/CAM Operator - Certificate of Achievement",
+   "Electromechanical Technology - Certificate of Achievement",
+   "Engine Performance (Smog Check) Technician - Certificate of Achievement",
+   "Engine Rebuilding - Certificate of Career Preparation",
+   "Engineering Technology - A.S. Degree",
+   "Engineering Technology - Certificate of Achievement",
+   "General Automotive Service Technician - A.S. Degree",
+   "General Automotive Service Technician - Certificate of Achievement",
+   "Heating, Ventilation, Air Conditioning and Refrigeration Level I - Noncredit Certificate of Completion",
+   "Heating, Ventilation, Air Conditioning and Refrigeration Level II - Noncredit Certificate of Completion",
+   "High Performance Engines Building and Blueprinting - Certificate of Career Preparation",
+   "Industrial Electrical Technology - A.S. Degree",
+   "Industrial Electrical Technology Level I - Certificate of Achievement",
+   "Industrial Electrical Technology Level II - Certificate of Achievement",
+   "Industrial Electrical Technology Level III - Certificate of Achievement",
+   "Master Automotive Technician - A.S. Degree",
+   "Master Automotive Technician - Certificate of Achievement",
+   "Mechatronics - A.S. Degree",
+   "Mechatronics Level I - Certificate of Achievement",
+   "Mechatronics Level II - Certificate of Achievement",
+   "Administration of Justice for Transfer - AS-T",
+   "Anthropology for Transfer - AA-T",
+   "Child Development - A.S. Degree",
+   "Correctional Science - A.S. Degree",
+   "Correctional Science - Certificate of Achievement",
+   "Criminal Justice - Certificate of Achievement",
+   "Early Childhood Education for Transfer - AS-T",
+   "Economics for Transfer - AA-T",
+   "Elementary Teacher Education for Transfer - AA-T",
+   "Emergency Medical Provider - Certificate of Achievement",
+   "Fire Prevention Inspector - Certificate of Achievement",
+   "Fire Technology: Professional Firefighter - A.S. Degree",
+   "Fire Technology: Professional Firefighter - Certificate of Achievement",
+   "Gerontology - A.S. Degree",
+   "History for Transfer - AA-T",
+   "Homeland National Security - Certificate of Achievement",
+   "Law, Public Policy, and Society for Transfer - AA-T",
+   "Pathway to Law School - Certificate of Achievement",
+   "Philosophy for Transfer - AA-T",
+   "Political Economics - A.A. Degree",
+   "Political Science for Transfer - AA-T",
+   "Psychology for Transfer - AA-T",
+   "Social Justice Studies for Transfer - AA-T",
+   "Sociology for Transfer - AA-T",
+   "Biological Sciences - A.S. Degree",
+   "Biology for Transfer - AS-T",
+   "Chemistry for Transfer - AS-T",
+   "Chemistry University of California Transfer Pathway - AS-T",
+   "Computer Science for Transfer - AS-T",
+   "Engineering - A.S. Degree",
+   "Environmental Science for Transfer - AS-T",
+   "Geography for Transfer - AA-T",
+   "Geology for Transfer - AS-T",
+   "Mathematics for Transfer - AS-T",
+   "Physical Science - A.S. Degree",
+   "Physics for Transfer - AS-T",
+   "Physics University of California Transfer Pathway - AS-T"
+  ],
+  "schemaVersion": 1
+ },
+ "blocks": [
+  {
+   "program": "Accounting - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "7147c17a4fd4ee018b1cc29985b96a7ebc016ff880e575803ad8f47016b632f6",
+   "printedUnits": [
+    24.0,
+    25.0
+   ],
+   "parsedUnits": [
+    24.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Accounting - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "f3f7be036e3c8feb5557ad2c8117c9af3da86410385a33035fc3a41f4d822e0b",
+   "printedUnits": [
+    24.0,
+    25.0
+   ],
+   "parsedUnits": [
+    24.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Accounting - Certificate of Achievement",
+   "block": "Nine units from the following",
+   "status": "reconciled",
+   "sectionSha256": "132b357643e1fdf3c2c563350d0e8f3b86287d3b2e3ee8bb036173b6b89ad46f",
+   "printedUnits": [
+    9.5,
+    11.0
+   ],
+   "parsedUnits": [
+    9.5,
+    11.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Accounting for Government and Not-For-Profit Organizations - Certificate of Achievement",
+   "block": "Requirements for the Certificate",
+   "status": "reconciled",
+   "sectionSha256": "bcfab0132687cb9c70b84651f570b5217f1ed31ece6687d2b0629e5fccc5b10f",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Administration of Justice for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9a192389ea2e91d80693464e55ec9bafa7598755bccce15fc838d06c5690fe8f",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Administration of Justice for Transfer - AS-T",
+   "block": "List A - Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "6a96d4a23b002502a95d876d03fb2e70abffd3b84856ee18c4cea7dc52f8bec1",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Administration of Justice for Transfer - AS-T",
+   "block": "List B - Any two courses from the following, or any courses not taken from List A",
+   "status": "approximated",
+   "sectionSha256": "be93d462b58d336e66824dc5ab247d51a154348a515df2e27ac0c5b5a5e951f7",
+   "printedUnits": [
+    6.0,
+    7.0
+   ],
+   "parsedUnits": [
+    6.0,
+    7.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool"
+   ]
+  },
+  {
+   "program": "Aircraft Electrical and Avionics Technician - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "e85d7148e5c281b0fb50cd714bf33d536afa48d9ee67804fae2a1fdae8f30be9",
+   "printedUnits": [
+    38.5,
+    38.5
+   ],
+   "parsedUnits": [
+    38.5,
+    38.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "American Sign Language (ASL) - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "573f82767750c26c69c1a22a610e723c863b6a7ffae201f85eab66f8abb45d71",
+   "printedUnits": [
+    22.0,
+    22.0
+   ],
+   "parsedUnits": [
+    22.0,
+    22.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Anthropology for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "0ac52cdc31fd7489a650f48fed4ba4301e7ded44bc085774b5ed1c6688c2266c",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Anthropology for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "ca6516221ae551d868712eb93dddc48f626dd593b340c0e8dac9ba1c23fdc1a7",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Anthropology for Transfer - AA-T",
+   "block": "List B - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "a57905e0923651a8b29ddbfc1e641249931e0b1235d4a3204c98272053a2f67b",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Anthropology for Transfer - AA-T",
+   "block": "List C - At least 3 units from the following, or any course not taken from List B",
+   "status": "reconciled",
+   "sectionSha256": "c3b70b45d6e0d8698a3a66e9053e3a3a97616b161e8dc1f55fc515e88d3044b6",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "638e7c5792b7a8b5809014a66b7ca6f4514b2b0444ea44cf8bc9c578df731c7b",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - A.A. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "1f15b3d5444aa4444cdbbf41a565f281d43dc988963d858628eb03ac9cccddfe",
+   "printedUnits": [
+    6.0,
+    8.0
+   ],
+   "parsedUnits": [
+    6.0,
+    8.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - A.A. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "a724a1eecb1bac03abf76bac36b1b99449ead913c05e0b4b90ef12f2d0817f02",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - A.A. Degree",
+   "block": "Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "b14b641fc77c597c3e0ffe3fc43a210182216d42ccd5e4d763dec34399ecb087",
+   "printedUnits": [
+    8.0,
+    12.0
+   ],
+   "parsedUnits": [
+    8.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - A.A. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "17fb0dee70be859fd76415a8ca2c70fcea2f29040055990ad3d251d3b0ffd2b3",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - Ceramics Studio - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "3368ae39b13284ab0a3e2bf5b1f95818eba7551e0bc63e42860d7ce16caf6785",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - Ceramics Studio - A.A. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "4d3a51397e7a35d29804811a3587f0229736a63819f288925fb84dd1984a4d6f",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art - Ceramics Studio - A.A. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "41c5a2583f50509da1b500a6f028cf6a23eb1e2e4a2efe73e6a972c08d8a890f",
+   "printedUnits": [
+    5.0,
+    8.0
+   ],
+   "parsedUnits": [
+    5.0,
+    8.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art History for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "a78823970a97924b63f9d699aed38b3135699f5596dc73b71f8f43bdb885c79d",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art History for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "80bdf08ecbdfbd386cd78823ec3da9a964ca506a7b7e184cf61baaf5ec4412f0",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art History for Transfer - AA-T",
+   "block": "List B - Any one course from the following, or any course not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "e146a88a937827a735f5d012b342ef26d19b376481eef233284b6355d78b01f2",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Art History for Transfer - AA-T",
+   "block": "List C - Any one course from the following, or any course not taken from List A or B",
+   "status": "reconciled",
+   "sectionSha256": "9a8c7f818bc2685b0f3a6b3915a3ae3ad078dabfb80d4a44c66b49e4ec8b0e7c",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Arts Business Management - Certificate of Achievement (This Program is Discontinued)",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "f73088a206064c3bbbb87916117533bf44f36e5567c1d354cdafa2fd0e6e621a",
+   "printedUnits": [
+    15.0,
+    16.0
+   ],
+   "parsedUnits": [
+    15.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Arts Business Management - Certificate of Achievement (This Program is Discontinued)",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "7e31b02d0f3d573052d5e2ba881ca4749e9d3dab8444ca4e312915b460ca0029",
+   "printedUnits": [
+    1.0,
+    2.0
+   ],
+   "parsedUnits": [
+    1.0,
+    2.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Athletic Trainer Aide - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "0bc958496912443b50a78c33f6fb5524ee95a18f843d8cac0524ff8d569358d9",
+   "printedUnits": [
+    9.5,
+    9.5
+   ],
+   "parsedUnits": [
+    9.5,
+    9.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Athletic Trainer Aide - Certificate of Achievement",
+   "block": "Eight units from the following",
+   "status": "reconciled",
+   "sectionSha256": "f769467d46e66bb5b93a4e1bb3d3d3634e46fa39e0a0e0a96b394dda2c79450e",
+   "printedUnits": [
+    8.0,
+    8.0
+   ],
+   "parsedUnits": [
+    8.0,
+    8.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Automotive Electrical Systems - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "1f4c6ec32eaafd3e3f6dbae151b6f9da51c107e91181ffb03acced3ff26943fa",
+   "printedUnits": [
+    14.5,
+    14.5
+   ],
+   "parsedUnits": [
+    14.5,
+    14.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Aviation Maintenance - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "2a2af3a64a3ffdcb1eebdd2ef2eab93bacb53ce5854db57eaf251a443576778a",
+   "printedUnits": [
+    53.0,
+    53.0
+   ],
+   "parsedUnits": [
+    53.0,
+    53.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Aviation Maintenance Technology: Airframe - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "fbbcc41aa7f517447c9e3823256c2c8718ce76d49c1b10082cc422e7ffab8ead",
+   "printedUnits": [
+    33.5,
+    33.5
+   ],
+   "parsedUnits": [
+    33.5,
+    33.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Aviation Maintenance Technology: Airframe - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "fc6269ee5a36bfa0e70b76fdc7bfe90abbd63a5b21691751b7d54b5442e395ee",
+   "printedUnits": [
+    33.5,
+    33.5
+   ],
+   "parsedUnits": [
+    33.5,
+    33.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Biological Sciences - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "ea26c6a6619a57d68cc23f31f8ea4683afda171503c6163df01573832f83ca86",
+   "printedUnits": [
+    27.0,
+    27.0
+   ],
+   "parsedUnits": [
+    27.0,
+    27.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Biological Sciences - A.S. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "6d5d2bff90661671afaf2a588f9a80a758a07d388eaaabeafb2e30d214a2c6ff",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Biology for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "6b7dd0bcbc43a521367a6e4c1f12dd147c8fefdb9c464faa48719cad0bcdd940",
+   "printedUnits": [
+    13.0,
+    13.0
+   ],
+   "parsedUnits": [
+    13.0,
+    13.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Biology for Transfer - AS-T",
+   "block": "List A",
+   "status": "reconciled",
+   "sectionSha256": "f62e18ee05cf21f4ce9e5bdf18636f9ad19c87c46a0e88ce7bf2632e7143d08a",
+   "printedUnits": [
+    22.0,
+    24.0
+   ],
+   "parsedUnits": [
+    22.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Bookkeeping - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "e2d09eee9587abffc325ebb6dd8a6c54ba3a4546e1b02e454305e027a6ae098f",
+   "printedUnits": [
+    13.0,
+    13.0
+   ],
+   "parsedUnits": [
+    13.0,
+    13.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Bookkeeping - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "776ae4b84d903bf8df8786954f8ab9033a2f346400d7b3d7f9ce7388f75baae3",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Broadcasting and Cinema - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "ecaa46cf3a367c2100ea300d893ec3ef3a450d3b52bd738399793807ee89ea4f",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Broadcasting and Cinema - A.S. Degree",
+   "block": "Nine units from the following",
+   "status": "reconciled",
+   "sectionSha256": "a4ea565ec4b244c10ae6e2eb1cb24ef4614b87a1dac34fc9959efed69f44cc47",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Business Administration 2.0 for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "f715a6760c5301ad4ffce4cef9d29139d379afbb1995740517afe336ea75abba",
+   "printedUnits": [
+    28.0,
+    28.0
+   ],
+   "parsedUnits": [
+    28.0,
+    28.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Business Information Worker (BIW) Stage One Certificate of Achievement - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "f12ac03a49cbb56af1d26e3a75a87ee9eb46ace70177ce4a6ddfce28911b5795",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Business Information Worker (BIW) Stage Two Certificate of Achievement - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "f31bee1b636dbb886eb65b7101ae1932b8e243de70fc8eeb4d70ce6e3a71fa93",
+   "printedUnits": [
+    22.5,
+    22.5
+   ],
+   "parsedUnits": [
+    22.5,
+    22.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "CAD Drafting Technician: Architectural - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "5190c2e02bc9b76bd832b795592b4da59c597159da72a87ae251eef4130e6247",
+   "printedUnits": [
+    29.0,
+    29.0
+   ],
+   "parsedUnits": [
+    29.0,
+    29.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "CAD Drafting Technician: Architectural - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "8fadd2956bed166392a9c4db8a634c137df1c70a8c5f5a5a97e7c40c394b7cfc",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "CAD Drafting Technician: Mechanical - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "d1244ca7a1a765bfa2b288350044f3e9636b62d07eaa18f24309f857c0011c3c",
+   "printedUnits": [
+    33.0,
+    33.0
+   ],
+   "parsedUnits": [
+    33.0,
+    33.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "CAD Drafting Technician: Mechanical - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "0a155ce2973ac81398e53617759d5d22bc5eb051b2222a6e0f5da221ba6f8c63",
+   "printedUnits": [
+    29.0,
+    29.0
+   ],
+   "parsedUnits": [
+    29.0,
+    29.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "CAD/CAM Operator - Certificate of Achievement",
+   "block": "Requirements for the Certificate",
+   "status": "reconciled",
+   "sectionSha256": "4e8f8fa7285988a4f7f77340a066bfab045a71b35642cf3b13fc72e88ab307a0",
+   "printedUnits": [
+    17.0,
+    17.0
+   ],
+   "parsedUnits": [
+    17.0,
+    17.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "California State University - General Education - Certificate of Achievement",
+   "block": "AREA A: English Language Communication and Critical Thinking",
+   "status": "reconciled",
+   "sectionSha256": "4722bb0fce2dbe5e61ca1457b624614a743336acead9853f3438f19229943cd1",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "California State University - General Education - Certificate of Achievement",
+   "block": "AREA B: Scientific Inquiry and Quantitative Reasoning",
+   "status": "unreconciled",
+   "sectionSha256": "1d5aad64cc5db0da5ee858a2d72b79ad3563cd6722e79ca942ace81e95acde91",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    10.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "California State University - General Education - Certificate of Achievement",
+   "block": "AREA C: Arts and Humanities",
+   "status": "unreconciled",
+   "sectionSha256": "b7b4024a67f3b9c2da547cc99f893513963d2ba5f9fb93f8adbed514c69198fe",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "California State University - General Education - Certificate of Achievement",
+   "block": "AREA D: Social Sciences (two courses)",
+   "status": "unreconciled",
+   "sectionSha256": "d6b94da8905d367a410f4fd88aec4330423f795321e43e645dc7188ee350ee2a",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    8.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "California State University - General Education - Certificate of Achievement",
+   "block": "AREA E: Lifelong Learning and Self-Development (one course)",
+   "status": "unreconciled",
+   "sectionSha256": "200da67b082c50df60fd55ef5b3e694b716960ca849ed9026b18beaa9a42df67",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    2.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "California State University - General Education - Certificate of Achievement",
+   "block": "AREA F: Ethnic Studies (one course)",
+   "status": "reconciled",
+   "sectionSha256": "a052bf95c2f01dd960d64cbc9db5a90de286df0b67ef496074f8228acaadae0e",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Caregiving Essentials - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "approximated",
+   "sectionSha256": "66ebf8ad86999c76bfe89372bcc67a2ef91764561636e8c45d1938bdd60d135f",
+   "printedUnits": null,
+   "parsedUnits": [
+    128.0,
+    144.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "Chemistry for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "dfe1a59d4bea346b73c83471cb3b23ba39369415249320824c32537134db8c1a",
+   "printedUnits": [
+    36.0,
+    36.0
+   ],
+   "parsedUnits": [
+    36.0,
+    36.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "University of California Transfer Pathway: Chemistry - AS-T",
+   "block": "Major requirements for the Associate in Science for UC Transfer Degree (AS-T)",
+   "status": "reconciled",
+   "sectionSha256": "c0acc65bef7ddf2b585dc5bf1ce9141ffaeec6a58e380f06d1887cc1ef45c1c1",
+   "printedUnits": [
+    50.0,
+    50.0
+   ],
+   "parsedUnits": [
+    50.0,
+    50.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "University of California Transfer Pathway: Chemistry - AS-T",
+   "block": "General Education IGETC Area 1: English Composition Requirements",
+   "status": "reconciled",
+   "sectionSha256": "486415f1fabb875393101c5c612805e42d2435766ec214c46314faed3ec13a38",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "University of California Transfer Pathway: Chemistry - AS-T",
+   "block": "Additional IGETC General Education Requirements",
+   "status": "approximated",
+   "sectionSha256": "6439904df782e1037ff3b9d546890d85b409a7f252526357145693dba3f3a0d0",
+   "printedUnits": [
+    10.0,
+    14.0
+   ],
+   "parsedUnits": [
+    10.0,
+    10.0
+   ],
+   "notes": [
+    "IGETC Area 6: Language Other Than English*: can be met without coursework; not scored"
+   ]
+  },
+  {
+   "program": "Child Development - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "271a09ec67adb261f6ef2d464b2943629431b171416216dedcfe48012acddbd1",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Chinese Studies - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "3dc4ddd3ddfcaeb1da7f3f567e11ae515cf2053049b9d507b6e76094acf1428b",
+   "printedUnits": [
+    16.0,
+    16.0
+   ],
+   "parsedUnits": [
+    16.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Chinese Studies - A.A. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "cee22c49c18dd95a88d3208f10616c3186e7623d352f3863a34e5c69f3af9d15",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cloud Analyst - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b013d1d545ff5a46baa562a762c204a67adc324da480565bf33e4b464614a8d6",
+   "printedUnits": [
+    22.0,
+    23.0
+   ],
+   "parsedUnits": [
+    22.0,
+    23.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cloud Security - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "3040340a9519896940fe5c415e2ab88a4cdb315b7af09f377a48e12b9236e1ef",
+   "printedUnits": [
+    22.0,
+    23.0
+   ],
+   "parsedUnits": [
+    22.0,
+    23.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cloud Security - A.S. Degree",
+   "block": "Security and Analysis Courses",
+   "status": "reconciled",
+   "sectionSha256": "5c69c17458c2ec6c6a21b1f90e2207134e71d6e8e22c0f424bae6fc4024fe4ff",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Commercial Music - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "1bd667154837b3add5cb071ac0905e4571a24e974821861e39dc099b4787620a",
+   "printedUnits": [
+    23.0,
+    23.0
+   ],
+   "parsedUnits": [
+    23.0,
+    23.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Commercial Music - A.S. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "d343e8b1bbb638f4a288e9e8c62ffa212478efe01f448c47aac482735f837461",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Commercial Photography - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b334cd269ca084cddd0e2b0e7003809325484c7f734e9484369f81289596b91d",
+   "printedUnits": [
+    31.0,
+    31.0
+   ],
+   "parsedUnits": [
+    31.0,
+    31.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Commercial Photography - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "f9a21a7d92e948fc891031902539d8fe9482358b71c8531d9f143fe019af6e59",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Commercial Photography - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "unreconciled",
+   "sectionSha256": "09227c5def38ac72ada891a8452233e86c21e20e80f3560f1aed0683f9a98029",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Communication Studies for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "435337be41daf70bc8d5d7bbc017ba97d2044b9b42917b9032f315c04cd06980",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Communication Studies for Transfer - AA-T",
+   "block": "List A - Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "29d82d5106e355c4acdf0c454fb1a8c959e50ad565da94cdc9b67acb2819e48d",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Communication Studies for Transfer - AA-T",
+   "block": "List B - Any two courses from the following, or any course not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "a743906957e6c4200e4e14b3fccf49fb0b23d6227c6a91c0b62648a8f055cbfb",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Communication Studies for Transfer - AA-T",
+   "block": "List C - Any one course from the following, or any course not taken from List A or B",
+   "status": "reconciled",
+   "sectionSha256": "849ee1f585a29a8fe7532c2ae222cf4ba76e1294c6a59b5d547d470ea29798b9",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Community Caregiver - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "e44d4b03433d740ef2a02776e340573f618aa508af52b99f5f791040225186e3",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Community Health Worker - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "49c4f614d72d521afc4b6803674df16a341edbc068d00363a1cd0b24f66ae17b",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Community Health Worker - Certificate of Achievement",
+   "block": "Complete a minimum of 3 units from",
+   "status": "reconciled",
+   "sectionSha256": "3cbd59214bc06cd85a3a917d87b3c30ec88339104e3012a434aefb5705f69dfe",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Foundations - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "8a577995f1f7b1eca53971b85f2db399da33b67865c693cf217d0805308acd22",
+   "printedUnits": [
+    10.5,
+    10.5
+   ],
+   "parsedUnits": [
+    10.5,
+    10.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Game Development - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "2aba9aa8f733a7365b5772381045304a13a98bc718193c93f0a2d236c339465f",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Information Systems - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "17432e83758bcfe057d98cfe9ff9f6389f9d8e3b665e6e9b215efb6f4d5f23dc",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Information Systems - A.S. Degree",
+   "block": "Plus a professional emphasis selection from the options below (minimum of 12 units)",
+   "status": "unreconciled",
+   "sectionSha256": "4c7831047eb35d072f691ae5275577958e77975079de1e997e5babc2632394db",
+   "printedUnits": [
+    12.0,
+    14.0
+   ],
+   "parsedUnits": [
+    24.0,
+    29.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Information Systems - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b4446e025c259ff455cb6901c0ed5c9b50e3f871c1225e203cafa12acc750a47",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Information Systems - Certificate of Achievement",
+   "block": "Plus a professional emphasis selection from the options below (minimum of 12 units)",
+   "status": "unreconciled",
+   "sectionSha256": "4c7831047eb35d072f691ae5275577958e77975079de1e997e5babc2632394db",
+   "printedUnits": [
+    12.0,
+    14.0
+   ],
+   "parsedUnits": [
+    24.0,
+    29.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Science for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "110b39b49527ab543820393296c1d3a16a27d4719c82266d2e0ef905588585c7",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Computer Support Technician (A+ Certification Preparation) - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "4b61542a944d1622aaa574e5b399912d3d2ea635eda3a690c2b80a7366b62b70",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Core Academy: Leasing and Property Management - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "approximated",
+   "sectionSha256": "b9ada1cc72a1ee8b5e1c9356b9a9a72965431af10887bbdd8e32f20cc4b35073",
+   "printedUnits": null,
+   "parsedUnits": [
+    48.0,
+    54.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "Correctional Science - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "fdd98aa623e0ef6cb5f4d838b1fb3b27f8385fa861521d9636baf5d27222cac4",
+   "printedUnits": [
+    18.0,
+    18.0
+   ],
+   "parsedUnits": [
+    18.0,
+    18.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Correctional Science - A.S. Degree",
+   "block": "Any three courses",
+   "status": "approximated",
+   "sectionSha256": "18cf1bedd2cef51044b2307d656813b80a8b808e2d5e831833d106192e694c37",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-3 pool"
+   ]
+  },
+  {
+   "program": "Correctional Science - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b60977d3ac6f9f1be024628b1c2499e17a1b9dd6b0de2543962880490048df4d",
+   "printedUnits": [
+    18.0,
+    18.0
+   ],
+   "parsedUnits": [
+    18.0,
+    18.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Correctional Science - Certificate of Achievement",
+   "block": "Any three courses",
+   "status": "approximated",
+   "sectionSha256": "18cf1bedd2cef51044b2307d656813b80a8b808e2d5e831833d106192e694c37",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-3 pool"
+   ]
+  },
+  {
+   "program": "Criminal Justice - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "6d573400333ba1e648456701ab7ea8c71d58294c3dd7a1283004e3d490aac530",
+   "printedUnits": [
+    18.0,
+    18.0
+   ],
+   "parsedUnits": [
+    18.0,
+    18.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Criminal Justice - Certificate of Achievement",
+   "block": "Plus six units from the following",
+   "status": "reconciled",
+   "sectionSha256": "cfc11a7d9df1a9d6f4d34dc884e776a7303e3f665ecb06c715eed622181d54df",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Culinary Arts - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "5493ab6ea918567486d300ef54c575f58dc19230c5c4351968f1ae39daba47c6",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Culinary Arts - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b77f60bdbed70c6829d7d6a5f3cc10183fba9604235884c846050476f318eba3",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Custom Dressmaking - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "2218c55a67854137e0bc655b005f06623c778e5d8bc277041d471c225e2a4a89",
+   "printedUnits": [
+    25.0,
+    25.0
+   ],
+   "parsedUnits": [
+    25.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Analyst - Certificate of Achievement",
+   "block": "Core requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "84c85b45910940dc93768d7a5f2389aaf93560852c99b64c0ae44542f4f2a5fb",
+   "printedUnits": [
+    13.0,
+    14.0
+   ],
+   "parsedUnits": [
+    13.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Analyst - Certificate of Achievement",
+   "block": "Plus the courses listed in one of the paths below",
+   "status": "reconciled",
+   "sectionSha256": "60b483c1139193b29ee14159af2b25d87c69b390c25317a1f9dda408d6b8ac43",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Defender - Certificate of Achievement",
+   "block": "Core requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "740cb21cae448672b9f35c770699e7b6b0d8961095fd4cf8c9f5a8793709472b",
+   "printedUnits": [
+    22.5,
+    23.5
+   ],
+   "parsedUnits": [
+    22.5,
+    23.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Defender - Certificate of Achievement",
+   "block": "Plus the courses listed in one of the paths below",
+   "status": "reconciled",
+   "sectionSha256": "9b0079f0a663809dd9837a1e3ca5f5b616a3a6cc73c73036e79b888702826a60",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Professional - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "c64e02e8f109e04bd165c784f9596c71e645db061f582f8cbbeebe2494338592",
+   "printedUnits": [
+    19.0,
+    20.0
+   ],
+   "parsedUnits": [
+    19.0,
+    20.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Professional - A.S. Degree",
+   "block": "Plus the courses listed in one of the paths below",
+   "status": "reconciled",
+   "sectionSha256": "3769010bdba70c1853a47be291df86356c8512d89de83bcea09bdcb602d0b94f",
+   "printedUnits": [
+    12.0,
+    13.0
+   ],
+   "parsedUnits": [
+    12.0,
+    13.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Cybersecurity Professional - A.S. Degree",
+   "block": "Plus the following Cybersecurity courses",
+   "status": "reconciled",
+   "sectionSha256": "9602794cc0f8cb4545de8ea22cf55a8841ee824d8a8b07aacad9ef75e8ce0f63",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Dance - A.A. Degree (This Program is Discontinued)",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "1e9f52278f863e239970dc5285c5b56dc6ff9bab08fcd7b7c3411765a98b1dc6",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Dance - A.A. Degree (This Program is Discontinued)",
+   "block": "Any two courses",
+   "status": "unreconciled",
+   "sectionSha256": "ac37f8a587d7d4fb63ca650632043c451715262e5553fbd043d7498510224e61",
+   "printedUnits": [
+    3.75,
+    7.0
+   ],
+   "parsedUnits": [
+    1.75,
+    7.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Dance - A.A. Degree (This Program is Discontinued)",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "f71484442d1de0047658b00cb36ecdac6d85ee857b99e35f29220c2b2d782169",
+   "printedUnits": [
+    1.75,
+    6.0
+   ],
+   "parsedUnits": [
+    1.75,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Dental Assisting - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "488c3deea4f2d4fec00a04c6751fc6cf545de26adfdf5ce977074548137d861d",
+   "printedUnits": [
+    33.0,
+    33.0
+   ],
+   "parsedUnits": [
+    33.0,
+    33.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Dental Assisting - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b36b8e9199447c56224e84b73bc71d9b77397c95ba906da670123c4b75840286",
+   "printedUnits": [
+    33.0,
+    33.0
+   ],
+   "parsedUnits": [
+    33.0,
+    33.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Dietetic Service Supervisor (DSS)/Certified Dietary Manager (CDM) - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b51db7d2d64d7f09b4d22d0f95b7816ebde3d2479cd83d22131768640332ba64",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Early Childhood Education for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "a19d71ee16ea89633c3c30d25df1314e9417b899562f59d2b7efa936b3ef22bd",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Economics for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "4ad35fdca3b53ca3593c41290cf5a47bb19fc3ccb986fc422f22c3ccb4eea4c9",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Economics for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "a9193227a135f8bb51b24530540672f2d6707b96c3537ddea5af7b659fa77a70",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Economics for Transfer - AA-T",
+   "block": "List B - Any one course from the following, or any course not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "0b833e561f45ec0846feb328a90b28919bd7c26061d513a0004d35ace78b83c4",
+   "printedUnits": [
+    3.0,
+    5.0
+   ],
+   "parsedUnits": [
+    3.0,
+    5.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Electromechanical Technology - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "c69c7adc59dd2f918f37dcc17016f66ee840c149649ddecbfc357906c476a618",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Elementary Teacher Education for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "2b27f951153fd0f47ecfa8ea270e6e0a788f9af3205e5f77d1c145e2096a1dce",
+   "printedUnits": [
+    43.0,
+    43.0
+   ],
+   "parsedUnits": [
+    43.0,
+    43.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Elementary Teacher Education for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "7a9683a6263efaf965d55505ac56b877e375b0046d9a1603a47b8c9d05e856ff",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Elementary Teacher Education for Transfer - AA-T",
+   "block": "List B - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "5263e3c91b8c7014a7e1300663f4e89a27443863755f7e08d85d765188073d29",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Emergency Medical Provider - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "9b32231d867148195c082723fd4a1594ad8810434c49b6de0a5c8bfe59e14950",
+   "printedUnits": [
+    20.0,
+    20.0
+   ],
+   "parsedUnits": [
+    20.0,
+    20.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engine Performance (Smog Check) Technician - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "3271639440b7e9d6ecfe45b3626cb563a6f7e493ae0a7a9b77bcfed0aafc25c2",
+   "printedUnits": [
+    23.0,
+    23.0
+   ],
+   "parsedUnits": [
+    23.0,
+    23.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engine Rebuilding - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "6d5bcb8f2b76fab001ea3e4a85c40318208ba9dad6052acf16a31e4ba73c86d3",
+   "printedUnits": [
+    10.0,
+    10.0
+   ],
+   "parsedUnits": [
+    10.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "90bfd89d033c82699f6622740f4ecf1fe441cc51a21945caa888df0379f270d1",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering - A.S. Degree",
+   "block": "Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "0795a4436bf9f0d0fb268a7a940937c7efabd5e73efe1bcfd905f415b179ce62",
+   "printedUnits": [
+    9.0,
+    10.0
+   ],
+   "parsedUnits": [
+    9.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering Technology - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "757eba99912c2640043ce4326d88f300572778f7b0af02d0164ce33c99e17682",
+   "printedUnits": [
+    23.0,
+    24.0
+   ],
+   "parsedUnits": [
+    23.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering Technology - A.S. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "ba85437b4cbd7478b483e84c54bc9a243177686bc69098e11fca2dc700f3a902",
+   "printedUnits": [
+    6.0,
+    8.0
+   ],
+   "parsedUnits": [
+    6.0,
+    8.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering Technology - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "a0b4baad3a63bf51913fe35a31846b92cf6ab7999b8fc52257f48541c5d3a6a3",
+   "printedUnits": [
+    18.0,
+    20.0
+   ],
+   "parsedUnits": [
+    18.0,
+    20.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering Technology - Certificate of Achievement",
+   "block": "Choose one group",
+   "status": "reconciled",
+   "sectionSha256": "cf76e9d16aff21b73196133eddba0374348be4bcb3a357c5001eb6e968067a0e",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Engineering Technology - Certificate of Achievement",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "ba85437b4cbd7478b483e84c54bc9a243177686bc69098e11fca2dc700f3a902",
+   "printedUnits": [
+    6.0,
+    8.0
+   ],
+   "parsedUnits": [
+    6.0,
+    8.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "English as a Second Language - Noncredit Certificate of Competency",
+   "block": "Requirements for the Noncredit Certificate of Competency (NCCC)",
+   "status": "approximated",
+   "sectionSha256": "a877bcda71b85a013b64cf124970070d17cf0fb99107667643f079fc7ee0006d",
+   "printedUnits": null,
+   "parsedUnits": [
+    240.0,
+    270.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "English for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "40ad92dc029e4224909fc264948ca34fadf39444123cdb350d00b925e3646545",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "English for Transfer - AA-T",
+   "block": "List A - Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "a5bc21ff74227516b8182bc43315052a48e5540031fde0acff4c8917565d4ed4",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "English for Transfer - AA-T",
+   "block": "List B - Any one course from the following, or any course not taken from List A, or any English course articulated as lower division preparation for the English major at a CSU",
+   "status": "reconciled",
+   "sectionSha256": "93570d00a3fa12f7ec600fdc517a29ed73f7f3518a8d4d47c26dc3b4760f37a6",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "English for Transfer - AA-T",
+   "block": "List C - Any one course from the following, or any course not taken from List A or B",
+   "status": "reconciled",
+   "sectionSha256": "8b2073877005449f1bdb3ddb7210da0cd7f2fdb3603e07e56988d5d5bfccfa07",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Environmental Science for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "c7c52b93772d573585774f4f4a977a9c754d2c11e7b597c3badf261f4e4177ad",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Environmental Science for Transfer - AS-T",
+   "block": "List A",
+   "status": "reconciled",
+   "sectionSha256": "e52b1db228c24b2b21d9af9a398141e257ed15b8efe3e82d1da9e3ad8f5a1b0a",
+   "printedUnits": [
+    16.0,
+    16.0
+   ],
+   "parsedUnits": [
+    16.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Environmental Science for Transfer - AS-T",
+   "block": "List B",
+   "status": "reconciled",
+   "sectionSha256": "4d9a088f70ddc4dfbe781e40bef7a9cec34d26473d0bb2a9900f7d317c5225ca",
+   "printedUnits": [
+    11.0,
+    11.0
+   ],
+   "parsedUnits": [
+    11.0,
+    11.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Event Planning - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement for the Event Planning Certificate (CA)",
+   "status": "reconciled",
+   "sectionSha256": "f8aeb341d8b92ded9427946b9a7ee427df42f8f0ea9e5d698d21044604cc05bb",
+   "printedUnits": [
+    25.0,
+    25.0
+   ],
+   "parsedUnits": [
+    25.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Facilities Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "2337558ee6063e40ce562c1295a07cc7f80d06cf68b03c61a721386d9219994a",
+   "printedUnits": [
+    27.0,
+    28.0
+   ],
+   "parsedUnits": [
+    27.0,
+    28.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Facilities Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "5e55e8bfd7d64a72b233b0b379b484b96ae7decee5aabcd80ef83913208af3e2",
+   "printedUnits": [
+    27.0,
+    28.0
+   ],
+   "parsedUnits": [
+    27.0,
+    28.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fashion Design - A.S. Degree",
+   "block": "Major requirements for the Associate in Science Degree (AS)",
+   "status": "reconciled",
+   "sectionSha256": "1137239bff9e9c56f295810602b2ab958f557d9c73e1044e06ca1645cce57159",
+   "printedUnits": [
+    41.0,
+    41.0
+   ],
+   "parsedUnits": [
+    41.0,
+    41.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fashion Design - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "f0477eb7a80f94c4479ddd4efd3edd2bafcbffcab1006f4dcf5694461e11b3d6",
+   "printedUnits": [
+    41.0,
+    41.0
+   ],
+   "parsedUnits": [
+    41.0,
+    41.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fashion Merchandising - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "06db4639c619466e69d52849d8d700b4a581a99b794585da4d581e8b5290a9df",
+   "printedUnits": [
+    41.0,
+    41.0
+   ],
+   "parsedUnits": [
+    41.0,
+    41.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fashion Merchandising - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "b83b0f8f511ccd6b6bd34560a5df6b5fd9dcec96888d6285062116af35419ea3",
+   "printedUnits": [
+    32.0,
+    32.0
+   ],
+   "parsedUnits": [
+    32.0,
+    32.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Film, Television and Electronic Media for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "ed03d5738991327b299535bfbfd4cb20fb97d9acf5aea3eefb42729bcc656559",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Film, Television and Electronic Media for Transfer - AS-T",
+   "block": "List A - Choose two courses (one from each area)",
+   "status": "reconciled",
+   "sectionSha256": "a898c22de9b65de3f1754bc2f9a828ea9fedd8a3033dff04cd890ce1f3318986",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Film, Television and Electronic Media for Transfer - AS-T",
+   "block": "List B - Any one course from the following, or any course not taken from Required Core or List A",
+   "status": "reconciled",
+   "sectionSha256": "5a9dcba9fdb3cd1eff49320a1c16b7fc63b84df1cf791ff43c566ecde08130c6",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Film, Television and Electronic Media for Transfer - AS-T",
+   "block": "List C - Any one course from the following, or any course not taken from Required Core, List A, or List B",
+   "status": "reconciled",
+   "sectionSha256": "8e1c5b9f46ad126cada41ae5d171ad25857c00f3a878bf5e2ff200d8380db784",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fire Prevention Inspector - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "728b05c67562c114ee9b67e9e4ff053d3dcf4f795cfba2fa7425c0307c6f6536",
+   "printedUnits": [
+    18.5,
+    18.5
+   ],
+   "parsedUnits": [
+    18.5,
+    18.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fire Technology: Professional Firefighter - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "3cb27593793ad479eed16a9b672626ead44ee24548818e0c061549d4726f9d48",
+   "printedUnits": [
+    25.0,
+    25.0
+   ],
+   "parsedUnits": [
+    25.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fire Technology: Professional Firefighter - A.S. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "afc0ed59151d6ce4bcb654b0c41d67b04ebc10e485dcc18339169c96e4a5ebd4",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fire Technology: Professional Firefighter - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "578cc5bc866dcaf8c41ae4afae42b045b67f89c0cb036482eb39ed63b21561fe",
+   "printedUnits": [
+    25.0,
+    25.0
+   ],
+   "parsedUnits": [
+    25.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Fire Technology: Professional Firefighter - Certificate of Achievement",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "afc0ed59151d6ce4bcb654b0c41d67b04ebc10e485dcc18339169c96e4a5ebd4",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "General Automotive Service Technician - A.S. Degree",
+   "block": "Choose one group",
+   "status": "reconciled",
+   "sectionSha256": "9ba9240a0a59bd6ed3cef3fb90bcd1ffb78155f0678e0bdad99479bc8a6bfe96",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "General Automotive Service Technician - A.S. Degree",
+   "block": "Choose one group",
+   "status": "reconciled",
+   "sectionSha256": "ebb4146a8fa1edc7c0d68b078a9c6ac8be2df14787ef61d4db36ca75d028e7a1",
+   "printedUnits": [
+    9.0,
+    12.0
+   ],
+   "parsedUnits": [
+    9.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "General Automotive Service Technician - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "235386dbf0238c6bc9ab90babbacb6845a086e2e90d939df2f7986a1d2bdb36a",
+   "printedUnits": [
+    21.0,
+    24.0
+   ],
+   "parsedUnits": [
+    21.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "General Business - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "d56b22a107b7e8f341a2e5d4aadb869f8af9eeb7e14da4498fcadc70f88cce8e",
+   "printedUnits": [
+    21.0,
+    22.0
+   ],
+   "parsedUnits": [
+    21.0,
+    22.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "General Business - A.S. Degree",
+   "block": "Any three courses",
+   "status": "approximated",
+   "sectionSha256": "c5fe62008fe868b9f32723b8719ec6e154187593b8debabb3573aa5656354b08",
+   "printedUnits": [
+    9.0,
+    10.0
+   ],
+   "parsedUnits": [
+    9.0,
+    10.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-3 pool"
+   ]
+  },
+  {
+   "program": "General Business - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "ec75883503f381df07d91f7d9307df7737500f1b669ea339c8056ba95e99ff8c",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "General Business - Certificate of Achievement",
+   "block": "Any two courses",
+   "status": "unreconciled",
+   "sectionSha256": "39f1a5e0c7646bb5b92bd70087d87ddd007765eaec83494f864f65cbe7855593",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    3.0,
+    6.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool"
+   ]
+  },
+  {
+   "program": "Geography for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "1830539fa6585a885763218715cba2957ef3d9e9895e1e55ef93c9d13c1f45b8",
+   "printedUnits": [
+    7.0,
+    7.0
+   ],
+   "parsedUnits": [
+    7.0,
+    7.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Geography for Transfer - AA-T",
+   "block": "List A - Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "e70c1850a23d4cd08cc1e29e159f89421dc4580d819bb01a34d7077196a5a26f",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Geography for Transfer - AA-T",
+   "block": "List B - Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "de4c47b77b824735e139fea9405368825f40f9f074e8e27d6ffc8741e0779100",
+   "printedUnits": [
+    6.0,
+    7.0
+   ],
+   "parsedUnits": [
+    6.0,
+    7.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Geology for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "c342447c2e1717e2d90a2c97bc67b659a46b54b6757d7e70c341f03cb9b35b44",
+   "printedUnits": [
+    26.0,
+    26.0
+   ],
+   "parsedUnits": [
+    26.0,
+    26.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Gerontology - A.S. Degree",
+   "block": "Major requirements for the Associate in Science Degree (AS)",
+   "status": "reconciled",
+   "sectionSha256": "93ae51dba1b250feaf7c5068480362a75a505bec96b567a0c7153f87df297148",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Gerontology - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "18b1091b58ee86975a8b64557c245a42a25f8232f34f46873a8612fe419591c3",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Graphic Design for Digital Media - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9796ba3c3ce2acd2abcf3c82143395c67aa6beb95fdc7d05055f5cb4df04d4fc",
+   "printedUnits": [
+    37.0,
+    37.0
+   ],
+   "parsedUnits": [
+    37.0,
+    37.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Graphic Design for Digital Media - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "c34f068c404511a58162ae37ee0fe6b10f5c8c767907e13eb30a7c58ebb56add",
+   "printedUnits": [
+    27.0,
+    27.0
+   ],
+   "parsedUnits": [
+    27.0,
+    27.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Heating, Ventilation, Air Conditioning and Refrigeration Level I - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "approximated",
+   "sectionSha256": "b3c4da65c657d4bd127598201e186673cfafb9a4e916fcd81e953c37ba7df9e8",
+   "printedUnits": null,
+   "parsedUnits": [
+    400.0,
+    450.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "Heating, Ventilation, Air Conditioning and Refrigeration Level II - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "approximated",
+   "sectionSha256": "2d4bba7d1922f2bc192327ca6835d9b957eef2fd95795af68fd474a85bd583a5",
+   "printedUnits": null,
+   "parsedUnits": [
+    400.0,
+    450.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "High Performance Engines Building and Blueprinting - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "f727e5e9ec48c96c5db2908912b30f63899b32ed3c2c868a2c5fc15febd48f98",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "History for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "7d94d5f4622b50553553041eb41e8455b7a28dfad352dff2806f449011776e68",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "History for Transfer - AA-T",
+   "block": "List A - Choose two courses (one from each group)",
+   "status": "reconciled",
+   "sectionSha256": "6fc358dfc4570cd59b613cba2aaf957806258827a3c1e27639220fda58a240a1",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "History for Transfer - AA-T",
+   "block": "List B - Choose two courses (one from each group)",
+   "status": "reconciled",
+   "sectionSha256": "d84966122491273ec141902e287d3b07b1730fd051fe6d31a3bf4a81d267e8ef",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Homeland National Security - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "7b85c121b19bc7852229118dadf721668692a0747ebc51c051a749ec8df43210",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Homeland National Security - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "511c947119658e3384b9fb32f4a0a9575176865ba43ae44bbcd15933db3562df",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "ba1215b5812bf6b3f71dc7b89771a5e8eaae7584ef65406c43c914091e8393f2",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management for Transfer - AS-T",
+   "block": "List A - Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "e41f958432684d428f2f56128c251749476b833aeaa39ef0492133523476a736",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management for Transfer - AS-T",
+   "block": "List B - Any two courses from the following, or any courses not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "1ce5cb4ffc67b19ecc26b03e1f0ed853fa304ab58f7e5f520cc5fdecbb78445b",
+   "printedUnits": [
+    6.0,
+    7.0
+   ],
+   "parsedUnits": [
+    6.0,
+    7.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management: Food Service - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9cc1b5f1aba136268b18c10e87a8f88f978997a05bf445fc3cdd6e4ea9c11e04",
+   "printedUnits": [
+    31.0,
+    31.0
+   ],
+   "parsedUnits": [
+    31.0,
+    31.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management: Food Service - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "6cc6c14418705d75b8b1f99073d9f94748e546c89421ace83ff1b3d7161426c9",
+   "printedUnits": [
+    32.0,
+    32.0
+   ],
+   "parsedUnits": [
+    32.0,
+    32.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management: Hospitality Facilities Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "80a8399613cde02ec2ffb56510678b36456d6f85cf7e83a2554c1d5530acbc01",
+   "printedUnits": [
+    25.0,
+    25.0
+   ],
+   "parsedUnits": [
+    25.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management: Hotel Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "ff358be438637e62a6801e701e268b744efd5691fcf172303f24ed5114ec4950",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Hospitality Management: Hotel Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "000d2eb5a7ee7064e5e9ce8a81b6fa2aa1a84fe19e5dd03dafd83a9a944df10c",
+   "printedUnits": [
+    31.0,
+    31.0
+   ],
+   "parsedUnits": [
+    31.0,
+    31.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Industrial Electrical Technology - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "7dcf93b0abc17b64b5a175858acb6c900ca5478d3b62654ff7d6fbc4ab3dfc58",
+   "printedUnits": [
+    42.0,
+    42.0
+   ],
+   "parsedUnits": [
+    42.0,
+    42.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Industrial Electrical Technology Level I - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "956934a4f4cb3e6b2b84eac2057bae849fc572029818b5a225032670475d4534",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Industrial Electrical Technology Level II - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "824754e2c6ddd7552787daafeadd21632a2d58a4b6357a713d00f30d9fb2587a",
+   "printedUnits": [
+    32.0,
+    32.0
+   ],
+   "parsedUnits": [
+    32.0,
+    32.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Industrial Electrical Technology Level III - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "ddd70e1cea403eb2ff07621fee66efef9eee256e512b3bc422256382b84f2383",
+   "printedUnits": [
+    42.0,
+    42.0
+   ],
+   "parsedUnits": [
+    42.0,
+    42.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Industrial Sewing - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "b6c8f912a7b67553f012144d11879a750b01b842c0b7693881f9a4ed104b30b2",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Interior Design - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "976d349d74b1c3c0d08a6a1b856d1e7b0c1b91e4152a7ec616d5ff9ada599752",
+   "printedUnits": [
+    36.0,
+    36.0
+   ],
+   "parsedUnits": [
+    36.0,
+    36.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Interior Design - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "dfcf8aab02dd03670b99433a4aa904b6c3e0739e28ce05d1c4c9a20ff0588558",
+   "printedUnits": [
+    39.0,
+    39.0
+   ],
+   "parsedUnits": [
+    39.0,
+    39.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Interior Design Visual Communication - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "49419e2a7fbc90281b3b1481f7a1349cc84e27ba466b04d1f48330ee54366689",
+   "printedUnits": [
+    20.5,
+    20.5
+   ],
+   "parsedUnits": [
+    20.5,
+    20.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "International Business - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "219999f80b90bef332484aef0c0dee0e704ca9c4ae98c0ad3ecef7940397897d",
+   "printedUnits": [
+    24.0,
+    25.0
+   ],
+   "parsedUnits": [
+    24.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "International Business - A.S. Degree",
+   "block": "Any two courses",
+   "status": "approximated",
+   "sectionSha256": "2bd3bd786ce8805bcb497fa91b1d2ee07dd573ba2e77e1366422161cf8c74947",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool"
+   ]
+  },
+  {
+   "program": "International Business - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "a399b2d0f44f569ee11d1f3b3a1529c30342c73a0716743bd7a9491cf88c7499",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "International Business - Certificate of Achievement",
+   "block": "Any three courses",
+   "status": "approximated",
+   "sectionSha256": "6343f47749db41091752e6e91b5173abd21366a934717004cd9d382a51ce4a60",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-3 pool"
+   ]
+  },
+  {
+   "program": "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "block": "AREA 1: English Communication",
+   "status": "reconciled",
+   "sectionSha256": "a6b1195e56e237edcfe63f3787d4f7ffe88d91f933daca37b37d1a1b5a03dec0",
+   "printedUnits": [
+    6.0,
+    9.0
+   ],
+   "parsedUnits": [
+    6.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "block": "AREA 2: Mathematical Concepts and Quantitative Reasoning (Required CSU/UC - one course)",
+   "status": "unreconciled",
+   "sectionSha256": "1789c850680dacd3eb698350a9f41d8e0e0fc97e42e238cbe4d0465177dca75c",
+   "printedUnits": [
+    4.0,
+    5.0
+   ],
+   "parsedUnits": [
+    3.0,
+    5.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "block": "AREA 3: Arts and Humanities (Required CSU/UC)",
+   "status": "reconciled",
+   "sectionSha256": "05e6fc7b2c87d337a4f80003ccb1cbd96859a1310d1b342b78966ddccc9d278b",
+   "printedUnits": [
+    9.0,
+    12.0
+   ],
+   "parsedUnits": [
+    9.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "block": "AREA 4: Social and Behavioral Sciences (Required CSU/UC)",
+   "status": "unreconciled",
+   "sectionSha256": "784a5b4132c4c3c93102c528f6655ca8bd042b0484afb08a6be81435cd36b30e",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    11.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "block": "AREA 5: Physical and Biological Sciences (Required CSU/UC)",
+   "status": "reconciled",
+   "sectionSha256": "86f5587f50b8044affed9a2ca3adb07e44e35458af1b56b19c3e33d232862250",
+   "printedUnits": [
+    7.0,
+    10.0
+   ],
+   "parsedUnits": [
+    7.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Intersegmental General Education Transfer Curriculum: UC or CSU - Certificate of Achievement",
+   "block": "AREA 6: Language Other Than English (Required UC only)",
+   "status": "no-courses",
+   "sectionSha256": "2f6c7d807b5e7c891b34d9a780038defb413342962de0de34db98fdea59c601a",
+   "printedUnits": [
+    0.0,
+    4.0
+   ],
+   "parsedUnits": [
+    0.0,
+    0.0
+   ],
+   "notes": [
+    "can be met without coursework; listed, not scored"
+   ]
+  },
+  {
+   "program": "Journalism - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "2d8edc67167b36840dd6dd122fb9986ef7993bcf4545fd46a97a7e99032e2863",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Journalism - Certificate of Achievement",
+   "block": "Three units from the following",
+   "status": "reconciled",
+   "sectionSha256": "71be3c5f924adcc4f14e3d0031599f1365126be94df7a437bb9178687a61f14b",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Journalism for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "234249a5199cf3cadb6d960a425b254271cc504a97c4e4a5e17e6a02f4c6b3fb",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Journalism for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "ab599272f9ed7960b2080dfe8f8274f1c798740883be5bd095e3890edb21557e",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Journalism for Transfer - AA-T",
+   "block": "List B - Any two courses",
+   "status": "approximated",
+   "sectionSha256": "2503c7ddc886d812894ff807fe15761f7156cdbb2f8dd8821386fd8a110a6066",
+   "printedUnits": [
+    6.0,
+    8.0
+   ],
+   "parsedUnits": [
+    6.0,
+    8.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool",
+    "choice 'Choose one' flattened into a choose-2 pool"
+   ]
+  },
+  {
+   "program": "Kinesiology for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9dbd8bffee498b2f21e470b3a526e8cd69d59efad5943c2bc3f4d939277bb5f2",
+   "printedUnits": [
+    11.0,
+    11.0
+   ],
+   "parsedUnits": [
+    11.0,
+    11.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Kinesiology for Transfer - AA-T",
+   "block": "Movement-Based Courses - Any three courses (maximum of one from each category)",
+   "status": "reconciled",
+   "sectionSha256": "50364c99030d75469dab774115169cf5f25972d1ba78afdde219979be2d33a56",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Kinesiology for Transfer - AA-T",
+   "block": "List A - Any two courses",
+   "status": "approximated",
+   "sectionSha256": "0f0d8c4f55ef79f7b31d52369d001b9b63bd73e95f57173fe92c4e2ecca0372c",
+   "printedUnits": [
+    7.0,
+    10.0
+   ],
+   "parsedUnits": [
+    7.0,
+    10.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool",
+    "choice 'Choose one' flattened into a choose-2 pool"
+   ]
+  },
+  {
+   "program": "Law, Public Policy, and Society for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "c94ab61ce6ded3cc5982e3f51ea25c264389ea9e99795a11d499dbd7595701bc",
+   "printedUnits": [
+    25.0,
+    25.0
+   ],
+   "parsedUnits": [
+    25.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Law, Public Policy, and Society for Transfer - AA-T",
+   "block": "List A - Any two courses from two of the following areas",
+   "status": "approximated",
+   "sectionSha256": "61a778aef01375750d8f68c06a22b525f8b6ec79695426abc24b5747377ba72f",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": [
+    "sub-list 'Administration of Justice' merged into the pool",
+    "sub-list 'Business' merged into the pool",
+    "sub-list 'College Success' merged into the pool",
+    "sub-list 'Diversity' merged into the pool",
+    "sub-list 'Economics' merged into the pool",
+    "sub-list 'Political Science' merged into the pool",
+    "sub-list 'Public Policy' merged into the pool"
+   ]
+  },
+  {
+   "program": "Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "f345953326d91476ab6ca834037c74a77e3fa908dcc65bdb54530636bff4031e",
+   "printedUnits": [
+    24.0,
+    25.0
+   ],
+   "parsedUnits": [
+    24.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Management - A.S. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "926a81c94a84c236a690d33351e1a49b3a405ad38065104860fbaa2e888dddb8",
+   "printedUnits": [
+    6.0,
+    7.0
+   ],
+   "parsedUnits": [
+    6.0,
+    7.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "c018d915ea6a15312fe32076528cc9bee7e14899a66397895554070ed475d794",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Management - Certificate of Achievement",
+   "block": "Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "e253ee5adc4ebc90a0284fb3c5d0944c86819f3e95705a710f00b8c390b67fbe",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Marketing - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "28a3a688371063785bee992334d5d52d7c051dd02731c2ec9d92cf88b7acead6",
+   "printedUnits": [
+    24.0,
+    25.0
+   ],
+   "parsedUnits": [
+    24.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Marketing - A.S. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "8a490626bd98ab2d03e5c4d71abb16676eb1e1ad69acf2b513ec346e0feaa4f8",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Marketing - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "024090086db3ee6d43c4049c5255bf4d77894fefe178439eff07835b5dfad624",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Marketing - Certificate of Achievement",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "8cf1033b00dd9afb6d88ad0db53655cf8212c0b706c3f3525b351c86304dba54",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Master Automotive Technician - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9ef754104e4a5cdc2732e2a962abd7f4ff62d0a1b629b55e9f37b43e2bc81b7a",
+   "printedUnits": [
+    39.0,
+    42.0
+   ],
+   "parsedUnits": [
+    39.0,
+    42.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Master Automotive Technician - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "ea929cdb34152c9f6292d3c30af8208060286838d5af8db2fbf0108644336c65",
+   "printedUnits": [
+    39.0,
+    42.0
+   ],
+   "parsedUnits": [
+    39.0,
+    42.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Mathematics for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "a7b2b731f0637a6a597da7550a77ef547db232977e568e4b817bc7aafca6eb98",
+   "printedUnits": [
+    13.0,
+    13.0
+   ],
+   "parsedUnits": [
+    13.0,
+    13.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Mathematics for Transfer - AS-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "d5b0452ddc807a46ed3715333cf1609288a557179c56548cf48354d682fb8519",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Mathematics for Transfer - AS-T",
+   "block": "List B - Any one course from the following, or any course not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "01b17581d6ce847efb6cb61ea766dd00333d0342b42507a1221adeac1703ae9d",
+   "printedUnits": [
+    3.0,
+    5.0
+   ],
+   "parsedUnits": [
+    3.0,
+    5.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Mechatronics - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "3f507bcceaa5219aee3d0fd2c22dbe881b03f45f1520bb3f7229048905959eb5",
+   "printedUnits": [
+    33.0,
+    33.0
+   ],
+   "parsedUnits": [
+    33.0,
+    33.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Mechatronics Level I - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "9c33788025a711b4be4cafa0188ccb683d4f07d59b32507229e7629030c7ea82",
+   "printedUnits": [
+    18.0,
+    18.0
+   ],
+   "parsedUnits": [
+    18.0,
+    18.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Mechatronics Level II - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "086907a002d93de9e011a5b46d78db3395cb32b36f5df2b9c00287df4db95e04",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Microsoft Excel - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "ba7f1bf06b56b4304bc6e1a8ddbffb1da75670da0140820c4532e44ed6bc8dfa",
+   "printedUnits": [
+    12.0,
+    13.0
+   ],
+   "parsedUnits": [
+    12.0,
+    13.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Microsoft Excel - Certificate of Achievement",
+   "block": "Three units from the following",
+   "status": "reconciled",
+   "sectionSha256": "22a9e7ed9aed82953d94c449fdf7b67b8395c552746d66682818238ef9d9e4ea",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Microsoft Office - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "dd65f916930b861de8a384110308ca951f9e53987aa2915dbe22d946a5a9ff8d",
+   "printedUnits": [
+    25.5,
+    25.5
+   ],
+   "parsedUnits": [
+    25.5,
+    25.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Microsoft Word - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "e920e0c5dcb1440f6d03d3d091afad9cbf00b3b30cfdf3021bbb0dd196f2f586",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Microsoft Word - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "02fbec8bac61986ddd2c0fa7d9409178a89689ab93b31b075356551b4cccbfd1",
+   "printedUnits": [
+    1.5,
+    3.0
+   ],
+   "parsedUnits": [
+    1.5,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Motion Picture Production - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "a80d8b558cb9386d109054d3a7ea8564f2e34cb263282ea73d41642a35efb3f7",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Music for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "856f8ab225802c8dff93c86a4b9b5aa56528e57cbe82e4ef852de251de80f93d",
+   "printedUnits": [
+    16.0,
+    16.0
+   ],
+   "parsedUnits": [
+    16.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Music for Transfer - AA-T",
+   "block": "Plus 2 units (0.5 units per semester) of Applied Music",
+   "status": "reconciled",
+   "sectionSha256": "2405993cbaa34e1669385c7a6e8b30f023f88ef5819ec33c8bfc3cded8cc094c",
+   "printedUnits": [
+    2.0,
+    2.0
+   ],
+   "parsedUnits": [
+    2.0,
+    2.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Music for Transfer - AA-T",
+   "block": "Plus 4 to 6 units from the following (each may be taken up to 4 times)",
+   "status": "reconciled",
+   "sectionSha256": "44450fd08af66b792bc101654f74d51b5ff09dcee2a0e9b7cf8cba00065eb69b",
+   "printedUnits": [
+    4.0,
+    6.0
+   ],
+   "parsedUnits": [
+    4.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Network Specialist - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "5c989d21bac3dc964919106c856f7c14c22589ed81779f97cd2df0d9ce7c6409",
+   "printedUnits": [
+    23.5,
+    23.5
+   ],
+   "parsedUnits": [
+    23.5,
+    23.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing Assistant - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "no-courses",
+   "sectionSha256": "a4ba01c142fb8bfa17dbf8c921175469ac97a85f5932aac1b9764cc7bd433996",
+   "printedUnits": null,
+   "parsedUnits": [
+    0.0,
+    0.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing Assistant - Noncredit Certificate of Completion",
+   "block": "Enrollment in the NA program is subject to completion of the following requirements",
+   "status": "approximated",
+   "sectionSha256": "024e931e3f0c428f7282b67c617d4942cebe2471b1dba29e099fc3263d438056",
+   "printedUnits": null,
+   "parsedUnits": [
+    240.0,
+    270.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "Nursing Assistant/Home Health Aide - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "no-courses",
+   "sectionSha256": "10faa6adc26c2cc590d5301a23f8ec47da19a473ced79cbe566a7b927057d423",
+   "printedUnits": null,
+   "parsedUnits": [
+    0.0,
+    0.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing Assistant/Home Health Aide - Noncredit Certificate of Completion",
+   "block": "The application process for the NA/HHA program is as follows",
+   "status": "no-courses",
+   "sectionSha256": "d456ad48539bdde5175c4d63c7fac1700273cc378c423ebe14180d4c99b28aa9",
+   "printedUnits": null,
+   "parsedUnits": [
+    0.0,
+    0.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing Assistant/Home Health Aide - Noncredit Certificate of Completion",
+   "block": "Enrollment in the NA/HHA program is subject to completion of the following requirements",
+   "status": "approximated",
+   "sectionSha256": "65b701f99de96046bb1c4c5b296a74eaca9404d4b661cabf735bd417fde6fa2e",
+   "printedUnits": null,
+   "parsedUnits": [
+    312.0,
+    351.0
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "Nursing VN to RN - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "66357d0f8cbddd156b009d8dfee53f96ef67ce4f476cb8dfc12fbdbc44c31fa3",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing VN to RN: Non-Degree Option - Certificate of Career Preparation",
+   "block": "Requirements for the VN to RN: Non-Degree Option",
+   "status": "reconciled",
+   "sectionSha256": "da065e836fb59706f68e55a7cea86df55a9fec6306c3e5fb4a694ba27b843d26",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing: ADN - A.S. Degree",
+   "block": "Required General Education and additional courses",
+   "status": "reconciled",
+   "sectionSha256": "40d4064b769eb88ab3853de364cda06ec34033ba617b5cbe4e404acd9ceeadea",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing: ADN - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "46650a181d03fa522438ba719ff35b545bc4c78d8eb46968c4fcec555ec65d80",
+   "printedUnits": [
+    37.5,
+    37.5
+   ],
+   "parsedUnits": [
+    37.5,
+    37.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing: Vocational - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9bd92523614fa246ce93f1d3fda82d606fecc35950fdcadb70afff4682254cc4",
+   "printedUnits": [
+    47.0,
+    47.0
+   ],
+   "parsedUnits": [
+    47.0,
+    47.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing: Vocational - A.S. Degree",
+   "block": "Required prerequisite course",
+   "status": "reconciled",
+   "sectionSha256": "83fb71ae62beae98c44ffcb92e3302a0b02c02b266136d355a4964982943c73d",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing: Vocational - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "1deee0219976c445b39d0af16eefcbfb84732cf287a9c7dac9b9bd62646a3c11",
+   "printedUnits": [
+    47.0,
+    47.0
+   ],
+   "parsedUnits": [
+    47.0,
+    47.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nursing: Vocational - Certificate of Achievement",
+   "block": "Required prerequisite course",
+   "status": "reconciled",
+   "sectionSha256": "83fb71ae62beae98c44ffcb92e3302a0b02c02b266136d355a4964982943c73d",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nutrition and Dietetics for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "5019394c1b6221aded3a345a422a27d53df12002c9e11b5c63042cb1bb307b90",
+   "printedUnits": [
+    16.0,
+    16.0
+   ],
+   "parsedUnits": [
+    16.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nutrition and Dietetics for Transfer - AS-T",
+   "block": "List A - Any two courses",
+   "status": "approximated",
+   "sectionSha256": "aecc80382df79d444f0bd4a8ae10a3299c02248c0ab8e57117cb84a95d38a812",
+   "printedUnits": [
+    8.0,
+    8.0
+   ],
+   "parsedUnits": [
+    8.0,
+    8.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool"
+   ]
+  },
+  {
+   "program": "Nutrition and Dietetics for Transfer - AS-T",
+   "block": "List B",
+   "status": "reconciled",
+   "sectionSha256": "eb7205b3a4383f1c3c050c27508989a805519278dbe72b27cecc6252935a7943",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Nutrition and Food - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "264b0e675c147485a9e9af64126c0c95d416c2d882c4a8868bd0a413c2548308",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "On-Air Radio Production - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "ecbc3c959327cee13aa7e288f6a786df0f6e7a61cd2e74305d7f786145b45973",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Paralegal Studies - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "9094cedf662eb1b3b853f8901fce2abbd1e8c4bcd795ca3e70d3e5c8f9a9398e",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Paralegal Studies - A.S. Degree",
+   "block": "Six units from the following",
+   "status": "reconciled",
+   "sectionSha256": "43aea50fbdfd26f5c28e01797654e3a0cc3a0c08c7dcbb81bc6cd0ae0720b78c",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Paralegal Studies - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "dcbc74aae981c10e9fa292d5acbd3cc56eabd2206a70e49e2c84a98e234bb527",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Paralegal Studies - Certificate of Achievement",
+   "block": "Six units from the following",
+   "status": "reconciled",
+   "sectionSha256": "43aea50fbdfd26f5c28e01797654e3a0cc3a0c08c7dcbb81bc6cd0ae0720b78c",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Pathway to Law School - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "bba3562020e8ecfc289c76fc26e6a92e53872ddeb480415425f8de1d476b67f0",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Pathway to Law School - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "8749ea2783324d8d8196b9249d6c1c063836650b6cdf72028030d713e07edaff",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Patternmaking for Apparel - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "8974c2de970935cdfcb53b5c486f226fc43c971a581d7b03f0932519809e7c47",
+   "printedUnits": [
+    26.0,
+    26.0
+   ],
+   "parsedUnits": [
+    26.0,
+    26.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Payroll and Income Tax Preparer - Certificate of Achievement",
+   "block": "Requirements for the Certificate",
+   "status": "reconciled",
+   "sectionSha256": "656365af8b1b01dd4726495bfd1f14099589114c1f57554a7063dfbf239bdce0",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Philosophy for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "2847e7449f1df630f84c951c4d09023e76656e2004e7ca8e6faaed00c02064de",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Philosophy for Transfer - AA-T",
+   "block": "List A - Any one course from the following, or the course not taken from Required Core",
+   "status": "reconciled",
+   "sectionSha256": "7982d785ab5788b2b101c7e1ad9fcd2a9cd36c8d53f662770eeb7bc1430497d5",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Philosophy for Transfer - AA-T",
+   "block": "List B - Any two courses from the following, or any courses not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "1190558478c058ce27322d78f3cea624e3cec2851f41e53b20e4faa5927c7ae9",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Philosophy for Transfer - AA-T",
+   "block": "List C - Any one course from the following, or any course not taken from List A or B",
+   "status": "reconciled",
+   "sectionSha256": "4c8dc7c60e5d8a4a5b7f7a8f334afb8e11a1ffcc569c7ff31fec154ebb231752",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Phlebotomy Technician - Noncredit Certificate of Completion",
+   "block": "Requirements for the Noncredit Certificate of Completion (NCCL)",
+   "status": "approximated",
+   "sectionSha256": "b4f3e90d200b4f2d489165f881a136effe757884da1e81cd71c7f08b87b33e49",
+   "printedUnits": null,
+   "parsedUnits": [
+    196.0,
+    220.5
+   ],
+   "notes": [
+    "no units printed for the section; verified against the pathway total"
+   ]
+  },
+  {
+   "program": "Photography - A.A. Degree",
+   "block": "Major requirements for the Associate in Arts Degree (AA)",
+   "status": "reconciled",
+   "sectionSha256": "0b9ddd37973d73241ebaa0da5935f4ed64b7d62545d2c29d07c8c2678f1a3f74",
+   "printedUnits": [
+    33.0,
+    34.0
+   ],
+   "parsedUnits": [
+    33.0,
+    34.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physical Education - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "f5126a52e12f85637a695c8edfe52ee24bdb4f0e8e0874e5b46d63050c8e9e3d",
+   "printedUnits": [
+    10.0,
+    10.0
+   ],
+   "parsedUnits": [
+    10.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physical Education - A.A. Degree",
+   "block": "Six units from the following",
+   "status": "reconciled",
+   "sectionSha256": "f5660bbea29b740b616f737c17360cd5a715ce662f771d2e8dba02744d9707d7",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physical Education - A.A. Degree",
+   "block": "Three units from the following",
+   "status": "reconciled",
+   "sectionSha256": "0bf5a5b0da810b1e897533c8562c8a3ce689215ee698437155a11f0f94f13442",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physical Science - A.S. Degree",
+   "block": "A minimum of 18 units from at least three different disciplines and a minimum of three courses with laboratory are required.",
+   "status": "reconciled",
+   "sectionSha256": "106b3517582dc6b1d19d03bda1024eb7604862be8da55757255040a9da7ca959",
+   "printedUnits": [
+    18.0,
+    18.0
+   ],
+   "parsedUnits": [
+    18.0,
+    18.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physical Therapist Assistant - A.S. Degree",
+   "block": "Required Prerequisites and General Education (or equivalent)",
+   "status": "reconciled",
+   "sectionSha256": "222f0b9249c8a1abc5be82d4c6a2ee5d92fed5e263b4598bbbf1ce9f390a410c",
+   "printedUnits": [
+    37.0,
+    37.0
+   ],
+   "parsedUnits": [
+    37.0,
+    37.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physical Therapist Assistant - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "090aa184ade5ad83dcb391345c70aaa7f204c33e9c268fad83ee3701c6b4fd85",
+   "printedUnits": [
+    29.5,
+    29.5
+   ],
+   "parsedUnits": [
+    29.5,
+    29.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Physics for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "54e304623fbdba74aa6d614ed9dcbb19e89a608134503de1b1a93d7fe55b8f9b",
+   "printedUnits": [
+    28.0,
+    28.0
+   ],
+   "parsedUnits": [
+    28.0,
+    28.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "University of California Transfer Pathway: Physics - AS-T",
+   "block": "Major requirements for the Associate in Science for UC Transfer Degree (AS-T)",
+   "status": "reconciled",
+   "sectionSha256": "83bae27d9b07d41376b39b8c10cd7520fac3167d748bee681ddf6830da2b03c8",
+   "printedUnits": [
+    46.0,
+    46.0
+   ],
+   "parsedUnits": [
+    46.0,
+    46.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "University of California Transfer Pathway: Physics - AS-T",
+   "block": "General Education IGETC Area 1: English Composition Requirements",
+   "status": "reconciled",
+   "sectionSha256": "486415f1fabb875393101c5c612805e42d2435766ec214c46314faed3ec13a38",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "University of California Transfer Pathway: Physics - AS-T",
+   "block": "Additional IGETC General Education Requirements",
+   "status": "approximated",
+   "sectionSha256": "43622bc2962771b297cd86cdc80c45bb5c5c43c59395977204641fd3751ebfad",
+   "printedUnits": [
+    10.0,
+    14.0
+   ],
+   "parsedUnits": [
+    10.0,
+    14.0
+   ],
+   "notes": [
+    "IGETC Area 6: Language Other Than English*: can be met without coursework; not scored"
+   ]
+  },
+  {
+   "program": "Political Economics - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "11b910a4888ba09bae845ffbc0335f0e56338e57711d2991185512817b9b682b",
+   "printedUnits": [
+    17.0,
+    18.0
+   ],
+   "parsedUnits": [
+    17.0,
+    18.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Political Economics - A.A. Degree",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "d8ae3ebf0c46c0b81f7250e2e7e1121581b4505163dad2ce6225713117e48afa",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Political Science for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "aacba125040fcd608dd953300f8a200992035321aabd4ef2e71e6fcbef046cf7",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Political Science for Transfer - AA-T",
+   "block": "List A - Any three courses",
+   "status": "unreconciled",
+   "sectionSha256": "febd705cc61e477ca036d8452ad1d709b719d5c13d1a08a16ddad599f3e1dcb4",
+   "printedUnits": [
+    9.0,
+    10.0
+   ],
+   "parsedUnits": [
+    9.0,
+    11.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-3 pool"
+   ]
+  },
+  {
+   "program": "Political Science for Transfer - AA-T",
+   "block": "List B - Any two courses from the following, or any courses not taken from List A",
+   "status": "reviewed",
+   "sectionSha256": "5f2143bfdfa4cea447439e5c2376691e0f5685ff592833db0db33a62c5147dff",
+   "printedUnits": [
+    6.0,
+    7.0
+   ],
+   "parsedUnits": [
+    6.0,
+    8.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-2 pool",
+    "verified by review: Bradley Franklin, 2026-11-15"
+   ]
+  },
+  {
+   "program": "Post Production Editing - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "7778a14ad85db52dc2f8ffb072bbd88e0c07bb47494bca2c64124b46bbcda61e",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Administrative Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "99fdab60e5ae5a17a963f8e427c1f5604cb37b1a7540da9b4b1f21495240226a",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Administrative Management - A.S. Degree",
+   "block": "Nine units from the following",
+   "status": "reconciled",
+   "sectionSha256": "d33075cf22e724ee4279d0cc599e9e96695c15a5ac354fc50d92eeab75fc08ef",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Administrative Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "8230f7f50fc114655ad8f1b9fcdbff91be8e6c21ef182c6e18ad3e0a4b71d839",
+   "printedUnits": [
+    21.0,
+    21.0
+   ],
+   "parsedUnits": [
+    21.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Administrative Management - Certificate of Achievement",
+   "block": "Nine units from the following",
+   "status": "reconciled",
+   "sectionSha256": "bebee39bc6044f562c7ddeac11f1db77adfa4fbe78b680931641115d2cb36572",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Baking and Patisserie - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "e92445477622352e11fb3c6be550855706238f42122140962f446d499b10ddc1",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Baking and Patisserie - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "9f45c4756a3b9514f4c0a2f356682afe3ae2431d7b14f69d81cbcc0cf2d98443",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Professional Office Skills - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "d4362801349a077ff7746f556590e4b83955831096e432fedeadd0caaa7b475a",
+   "printedUnits": [
+    19.5,
+    19.5
+   ],
+   "parsedUnits": [
+    19.5,
+    19.5
+   ],
+   "notes": []
+  },
+  {
+   "program": "Programming Foundations - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "65f17e42509ca2f896d05b7b3723b36d1770d3c0d8c6089953d4aa7552ddc5e5",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Project Management - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "13b9902b25ea80373887fef17d3bd16b1b36c2f410709363699b73ebc444e59c",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Psychology for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "40fbb2f65a9433807d0486bdfa2cb05796817188fc7dd13c6f7c2115fb6cd27b",
+   "printedUnits": [
+    11.0,
+    11.0
+   ],
+   "parsedUnits": [
+    11.0,
+    11.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Psychology for Transfer - AA-T",
+   "block": "List A",
+   "status": "reconciled",
+   "sectionSha256": "456d08e3cf9cdcf57b45f03274df1ea6fee8db5243cc010b458106b358854a5b",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Psychology for Transfer - AA-T",
+   "block": "List B - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "2f2be7ffabaa1d8a3774f4004bc539d482b8e1e5a743d8a5878ade529fcaa70e",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Psychology for Transfer - AA-T",
+   "block": "List C - Any one course from the following, or any course not taken from List B, or any other course (in or outside the discipline of Psychology) that is articulated as lower division preparation for the Psychology major at a CSU",
+   "status": "reconciled",
+   "sectionSha256": "57ca43b2d14bdf36a92863fdc7744c7663128a98ae4d5d042ad5f25ded265f23",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Public Health Science for Transfer - AS-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "d6dd3859b38b4a8eee356bed7221cd0930752e23e39990a862afb804b9afb2e7",
+   "printedUnits": [
+    29.0,
+    31.0
+   ],
+   "parsedUnits": [
+    29.0,
+    31.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Public Health Science for Transfer - AS-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "52c31dd101fc921db719f3a447822b4aeb001acaf3cbe98c8c89fd09643d9c63",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Radiologic Technology - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "8fd53cff5675b8cfa0f77d8e5c14c30f9a8a8dcafcfd56b74717b75d1e0d72bb",
+   "printedUnits": [
+    68.0,
+    68.0
+   ],
+   "parsedUnits": [
+    68.0,
+    68.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "1c9736883fcf35e27ed3d54c7a0b4368bd871935cea030f8dfa8130078c56ccd",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate - A.S. Degree",
+   "block": "Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "82d056a3719d761618918b72cb2f98f5ab36d1c71a785e9f3b0ff4d06aa80730",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "e568bc9313636dc8886e493b33b489ac2c6f82625eb2079bbeab134c27ccc374",
+   "printedUnits": [
+    19.0,
+    19.0
+   ],
+   "parsedUnits": [
+    19.0,
+    19.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate - Certificate of Achievement",
+   "block": "Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "82d056a3719d761618918b72cb2f98f5ab36d1c71a785e9f3b0ff4d06aa80730",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate Property Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "5d312660ddf95dd95d4e194775dc7ef428eaab974bcd33cd9b5b397ef83070ea",
+   "printedUnits": [
+    31.0,
+    31.0
+   ],
+   "parsedUnits": [
+    31.0,
+    31.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate Property Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "aa2b6b9fc456752ba946966680585f963c0b67b3da8dc1f8372a51fca99c175d",
+   "printedUnits": [
+    31.0,
+    31.0
+   ],
+   "parsedUnits": [
+    31.0,
+    31.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate Salesperson - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "6a01601a5588c7f00e8ab0936c6fd4c2b554d28222183b53719efc7f789aee67",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Real Estate Salesperson - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "527339c8de49a951c37e0f558757f9370f31fd0bcbd40aca95e795b140fffc27",
+   "printedUnits": [
+    3.0,
+    4.0
+   ],
+   "parsedUnits": [
+    3.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Recording Arts Technician - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "16d2f84c2efb38afc92f809d2c06b320225273defd1ca5f28578730ddeee3aef",
+   "printedUnits": [
+    16.0,
+    16.0
+   ],
+   "parsedUnits": [
+    16.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Retail Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "a7c673464d47d3fec26b28d3fe0db359b6e7f68b3f3e004a88c7ba6f7a0c128f",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Retail Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "6b0caddb0258c04acd2b48acd5995190d7e0a47f1cfa7cd2ceb7e49f119e0dce",
+   "printedUnits": [
+    24.0,
+    24.0
+   ],
+   "parsedUnits": [
+    24.0,
+    24.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Screenwriting - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "053b26905ec2098081af30dddba211718201a3629a95172f5a65233c7bf45739",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Sign Language Studies - A.A. Degree",
+   "block": "Required Core",
+   "status": "unreconciled",
+   "sectionSha256": "43a94ce52b75dae1283925e6093ecb681c8f52adef7e8e5afb77f036b95c727d",
+   "printedUnits": [
+    14.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Sign Language Studies - A.A. Degree",
+   "block": "Six units from the following",
+   "status": "reconciled",
+   "sectionSha256": "6296a1b213980d0dd53b6a371a3a42ea9c2c0f4c5a335aed0c6f3b0365c53464",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Small Business Entrepreneur - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "691566c5a86f058faf64cd539f9bfe9cf55edf5c53eee92cace9892ca843e261",
+   "printedUnits": [
+    21.0,
+    22.0
+   ],
+   "parsedUnits": [
+    21.0,
+    22.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Small Business Entrepreneur - A.S. Degree",
+   "block": "Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "bb7ad8961afc85cc998da6afd069549ff55c2626beefc35ef0df0a8cb358654c",
+   "printedUnits": [
+    9.0,
+    10.0
+   ],
+   "parsedUnits": [
+    9.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Small Business Entrepreneur - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "5202221ff456040cb4de9f553a9508958de27dcddac4af981af5b66ae08bb7ff",
+   "printedUnits": [
+    9.0,
+    10.0
+   ],
+   "parsedUnits": [
+    9.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Small Business Entrepreneur - Certificate of Achievement",
+   "block": "Any three courses",
+   "status": "unreconciled",
+   "sectionSha256": "2a7da73d48b2dee87158911996d83805a7279b0ff1ec6fbc4169ced8ad672e79",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Social Justice Studies for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "3628c0a52a44863d30f7c07f01eb05e41bcb6838088151c50ff54f2a041e53ce",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Social Justice Studies for Transfer - AA-T",
+   "block": "List A - Any three courses from at least two of the following areas",
+   "status": "unreconciled",
+   "sectionSha256": "805dee8e9e05ef21833aa67ee05ab53d9343492dc9be99f732ca5d57ff7bc32a",
+   "printedUnits": [
+    9.0,
+    10.0
+   ],
+   "parsedUnits": [
+    9.0,
+    12.0
+   ],
+   "notes": [
+    "sub-list 'Area 1 - History or Government' merged into the pool",
+    "sub-list 'Area 2 - Arts and Humanities' merged into the pool",
+    "choice 'Area 3 - Social Science' flattened into a choose-3 pool",
+    "choice 'Area 4 - Quantitative Reasoning and Research Methods (only one may be selected)' flattened into a choose-3 pool",
+    "sub-list 'Area 5 - Major Preparation (any course not taken from Required Core)' merged into the pool"
+   ]
+  },
+  {
+   "program": "Social Media Support Specialist - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "2cb14e090eecdd6fd663b0a14d5a5e74f4aca431dfebd1c3a3e58a0d29244c51",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Sociology for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "0344689752358d64a0495ace8595eb9a3d3b41a4d561e9c26925d02768cf133a",
+   "printedUnits": [
+    10.0,
+    10.0
+   ],
+   "parsedUnits": [
+    10.0,
+    10.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Sociology for Transfer - AA-T",
+   "block": "List A - Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "65d75bc14949e3dc4c3c42cf7fdc894776fdc11086060c4a54d8e9546ee82c94",
+   "printedUnits": [
+    6.0,
+    7.0
+   ],
+   "parsedUnits": [
+    6.0,
+    7.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Sociology for Transfer - AA-T",
+   "block": "List B - One course from the following, or any course not taken from List A",
+   "status": "reconciled",
+   "sectionSha256": "ec5f1317ecd7b00866eda48f4c04df3d7ee71a83714c2a49255008a3f0048eb5",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Spanish for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "50cc4f6d5425bcded64f41df16f2dd70760ffe421db1c89ccc1f87f33759851f",
+   "printedUnits": [
+    16.0,
+    16.0
+   ],
+   "parsedUnits": [
+    16.0,
+    16.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Spanish for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "9b870f1c2595a79c4e69a22174c66257667915376af2075c6969185057f78dd4",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Studio Arts for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "03b9aa678330ef1671d52d85864352ebc3c6962c56ec86a8937a5722bee17c85",
+   "printedUnits": [
+    14.0,
+    14.0
+   ],
+   "parsedUnits": [
+    14.0,
+    14.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Studio Arts for Transfer - AA-T",
+   "block": "List A - Any one course",
+   "status": "reconciled",
+   "sectionSha256": "d35c301a7062697cb5386c6adc55a9ef85fddeb686df9c0d7db03d111f7bdf9b",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Studio Arts for Transfer - AA-T",
+   "block": "List B - Any three courses",
+   "status": "approximated",
+   "sectionSha256": "c0b07bef6ba5dfaf6397674181b3692fe04c73eb8e373bd4a43530aabd4728c2",
+   "printedUnits": [
+    9.0,
+    12.0
+   ],
+   "parsedUnits": [
+    9.0,
+    12.0
+   ],
+   "notes": [
+    "choice 'Choose one' flattened into a choose-3 pool",
+    "choice 'Choose one' flattened into a choose-3 pool",
+    "choice 'Choose one' flattened into a choose-3 pool",
+    "choice 'Choose one' flattened into a choose-3 pool"
+   ]
+  },
+  {
+   "program": "Supervision - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "7f3f75f9d3a3999e2d76693c92f2c1d1803ff6744402781ba08bfae637efd950",
+   "printedUnits": [
+    24.0,
+    25.0
+   ],
+   "parsedUnits": [
+    24.0,
+    25.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Supervision - A.S. Degree",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "444e0be540acea637407a9b1ec01fa5c36c4f55cbba3fdd8f6465ca812570cc3",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Supervision - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "a29fdc30c11b84ce3f519dc7cec1e5af8b721d8b58ede3eb3b89377beab4d0c9",
+   "printedUnits": [
+    12.0,
+    12.0
+   ],
+   "parsedUnits": [
+    12.0,
+    12.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Supervision - Certificate of Career Preparation",
+   "block": "Any two courses",
+   "status": "reconciled",
+   "sectionSha256": "b26430b38be624eb719a81a7c77c16f95e91916df676c8075f3df49f7cc29e88",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Supply Chain Management - A.S. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "d9df4b53ad23ee2220f6b2fde4089456df5484db566337d5afc825b60740246e",
+   "printedUnits": [
+    30.0,
+    30.0
+   ],
+   "parsedUnits": [
+    30.0,
+    30.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Supply Chain Management - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "bc96bb37b1dbe920bbd490aa4c116b79afa28107dd6bd196a75b4f5a739e1ed0",
+   "printedUnits": [
+    27.0,
+    27.0
+   ],
+   "parsedUnits": [
+    27.0,
+    27.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Technical Theatre - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "a6245bad91dc465223cdaac1da1fb607065861bc232bb73a3699ed40709124ee",
+   "printedUnits": [
+    6.0,
+    6.0
+   ],
+   "parsedUnits": [
+    6.0,
+    6.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Technical Theatre - Certificate of Achievement",
+   "block": "Four units from the following",
+   "status": "reconciled",
+   "sectionSha256": "af579c06019e7f71caf20dffdf86d141a40be7450519058c1c0479b6b6319831",
+   "printedUnits": [
+    4.0,
+    4.0
+   ],
+   "parsedUnits": [
+    4.0,
+    4.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Technical Theatre - Certificate of Achievement",
+   "block": "Any one course",
+   "status": "reconciled",
+   "sectionSha256": "9964ffda7d30b4ad3d8a45b220a09ef33546dbc244ee74966ebcaebfe640d718",
+   "printedUnits": [
+    3.0,
+    3.0
+   ],
+   "parsedUnits": [
+    3.0,
+    3.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Television and Video Production - Certificate of Achievement",
+   "block": "Requirements for the Certificate of Achievement (CA)",
+   "status": "reconciled",
+   "sectionSha256": "1bc0e14d0455f55d129b70d0bcc5ae085400956fe36fc9854537a379b2624216",
+   "printedUnits": [
+    15.0,
+    15.0
+   ],
+   "parsedUnits": [
+    15.0,
+    15.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Theatre Arts for Transfer - AA-T",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "6960fb8843cd4a4c58d88540a540e7ed7774509b7245148e77f78580f773407c",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Theatre Arts for Transfer - AA-T",
+   "block": "List A - Any three courses",
+   "status": "reconciled",
+   "sectionSha256": "67db66bf22c26b815cc09302186d0f87fc16f0c0eb56439a76e17baddc502ee8",
+   "printedUnits": [
+    9.0,
+    9.0
+   ],
+   "parsedUnits": [
+    9.0,
+    9.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Theatre Performance - A.A. Degree",
+   "block": "Required Core",
+   "status": "reconciled",
+   "sectionSha256": "2afe5ba96cbb92f748c2d58148c7a5577bd57489fc80704e3c6e3bd9642c8c9d",
+   "printedUnits": [
+    20.0,
+    21.0
+   ],
+   "parsedUnits": [
+    20.0,
+    21.0
+   ],
+   "notes": []
+  },
+  {
+   "program": "Web Page Developer - Certificate of Career Preparation",
+   "block": "Requirements for the Certificate of Career Preparation (CCP)",
+   "status": "reconciled",
+   "sectionSha256": "2cec4e4653bad46c25b4fe72a1c7f667e4b9f1b5b1f5d8666f2951d19281cd87",
+   "printedUnits": [
+    13.5,
+    13.5
+   ],
+   "parsedUnits": [
+    13.5,
+    13.5
+   ],
+   "notes": []
+  }
+ ]
+}

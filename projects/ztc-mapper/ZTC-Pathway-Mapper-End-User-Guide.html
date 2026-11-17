@@ -309,8 +309,8 @@
       <p class="masthead-kicker">Chaffey College · Instructional Systems &amp; Pathways Innovation</p>
       <h1>ZTC Pathway Mapper — End-User Guide</h1>
       <p class="masthead-meta">
-        <strong>Version:</strong> 3.5.7 &nbsp;·&nbsp;
-        <strong>Date:</strong> October 8, 2026 &nbsp;·&nbsp;
+        <strong>Version:</strong> 4.1.0 &nbsp;·&nbsp;
+        <strong>Date:</strong> November 15, 2026 &nbsp;·&nbsp;
         <strong>Prepared by:</strong> Bradley Franklin &nbsp;·&nbsp;
         <strong>Audience:</strong> ZTC committee, deans, curriculum &amp; IR staff
       </p>
@@ -322,9 +322,10 @@
         <h2 id="bluf-heading">What this tool does</h2>
         <p>
           The <strong>ZTC Pathway Mapper</strong> shows how close each <strong>active degree, certificate, and transfer pathway</strong>
-          is to being fully <strong>Zero Textbook Cost (ZTC)</strong>. Upload two institutional CSV exports, click
-          <strong>Build dashboard</strong>, and explore adoption by term — all processing stays <strong>in your browser</strong>;
-          data is not uploaded to a server.
+          is to being fully <strong>Zero Textbook Cost (ZTC)</strong>. Pathway requirements are built in from the official
+          college catalog for 2023–24 through 2026–27. Upload one file, the <strong>ZTC course dataset</strong>, click
+          <strong>Build dashboard</strong>, and explore pathways by academic year and courses by term. All processing stays
+          <strong>in your browser</strong>; data is not uploaded to a server.
           <strong>Open the app:</strong>
           <a href="https://bjfranklin.github.io/kbase_website/projects/ztc-mapper/">GitHub Pages</a>
           · <a href="https://www.chairmanx.tech/projects/ztc-mapper/">chairmanx.tech</a>.
@@ -333,22 +334,22 @@
 
       <div class="grid-2">
         <section class="card" aria-labelledby="data-heading">
-          <h2 id="data-heading">Two data files required</h2>
+          <h2 id="data-heading">One data file required</h2>
           <table>
             <thead>
               <tr>
-                <th scope="col">File</th>
+                <th scope="col">Source</th>
                 <th scope="col">What it contains</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <th scope="row">Program Summary</th>
-                <td>Pathway structure — courses, requirement areas, blocks, and units (<strong>Active</strong> programs only)</td>
+                <th scope="row">ZTC course dataset (you upload)</th>
+                <td>The Informer export: per-course, per-term ZTC %, survey completion, and section counts</td>
               </tr>
               <tr>
-                <th scope="row">IE ZTC Course Analytics</th>
-                <td>Per-course, per-term ZTC adoption %, survey completion, and section counts (MASTER export)</td>
+                <th scope="row">College catalog (built in)</th>
+                <td>Each pathway's requirements, read from the catalog's Degrees and Certificates pages. Nothing to upload; the upload screen lists the catalog years included.</td>
               </tr>
             </tbody>
           </table>
@@ -356,13 +357,12 @@
         </section>
 
         <section class="card" aria-labelledby="start-heading">
-          <h2 id="start-heading">Quick start — 5 steps</h2>
+          <h2 id="start-heading">Quick start — 4 steps</h2>
           <ol>
             <li>Open the app in <strong>Chrome</strong> or <strong>Edge</strong> (Firefox/Safari for spot checks).</li>
-            <li>Load the <strong>Program Summary</strong> CSV — click <strong>Choose CSV</strong> or <strong>drag-and-drop</strong> onto the card; wait for green <strong>Loaded</strong>.</li>
-            <li>Load the <strong>IE ZTC Course Analytics</strong> CSV the same way (click or drag-and-drop).</li>
-            <li>Click <strong>Build dashboard</strong> (enabled only when both files are loaded).</li>
-            <li>Use the <strong>Term</strong> selector in the header (defaults to the latest term with data).</li>
+            <li>Load the <strong>ZTC course dataset</strong> CSV — click the card or <strong>drag-and-drop</strong> the file onto it; wait for <strong>Loaded</strong>.</li>
+            <li>Click <strong>Build dashboard</strong>.</li>
+            <li>Use the selector in the header: <strong>Academic year</strong> on Pathway and Dashboard, <strong>Term</strong> on Courses.</li>
           </ol>
           <p class="note">A red error banner usually names a missing column or file read problem — fix the export and try again.</p>
         </section>
@@ -376,9 +376,10 @@
             <h3>Dashboard</h3>
             <ul>
               <li>Open from the graphite <strong>Dashboard</strong> pullout on the far-left edge</li>
-              <li><strong>Needs attention</strong> — pathways below 51% adoption (click to open)</li>
+              <li><strong>Needs attention</strong> — pathways below 75% (click to open)</li>
               <li><strong>Institution overview</strong> — average-adoption headline plus four KPI actions; click to drill into Pathway or Courses</li>
-              <li><strong>Compare pathways</strong> — stacked distribution, five-pathway ranking, progressive details, and a term-trend modal</li>
+              <li><strong>Compare pathways</strong> — stacked distribution, five-pathway ranking, progressive details, and a trend modal</li>
+              <li>Shows the selected <strong>academic year</strong>, its survey completion, and <strong>In progress</strong> while a term is incomplete</li>
               <li><strong>Export:</strong> All pathways summary (CSV) only</li>
             </ul>
           </article>
@@ -387,7 +388,8 @@
             <h3>Pathway</h3>
             <ul>
               <li>Select a pathway in the <strong>sidebar</strong> (search &amp; type filters)</li>
-              <li><strong>Adoption ring</strong> and nested areas (e.g. Cal-GETC AREA 1 → 1A)</li>
+              <li><strong>Adoption ring</strong> and the catalog's sections (e.g. Required Core, List A), with choices shown as "Choose 2 of 6" or "Either … or …"</li>
+              <li>Scored for the selected <strong>academic year</strong> against that year's catalog</li>
               <li>Click a <strong>course row</strong> for detail modal + catalog link (always available in Pathway modal)</li>
               <li><strong>Export:</strong> Current pathway CSV &amp; PDF</li>
             </ul>
@@ -399,7 +401,7 @@
               <li>Search, filter by ZTC status (including <strong>CO ZTC</strong>), sort by ZTC % / name / survey</li>
               <li><strong>Detail panel</strong> matches the pathway course modal</li>
               <li><strong>View in course catalog</strong> — shown for the <strong>two most recent terms</strong> only; older terms show an availability note</li>
-              <li><strong>Term</strong> selector applies to Pathway, Courses, and the Dashboard panel</li>
+              <li>Uses the <strong>Term</strong> selector; Pathway and Dashboard use <strong>Academic year</strong></li>
             </ul>
           </article>
         </div>
@@ -440,12 +442,12 @@
           <h2 id="adoption-heading">Pathway adoption %</h2>
           <p>Adoption is <strong>requirement-based</strong>, not a simple course average:</p>
           <ol>
-            <li>Each declared <strong>requirement slot</strong> must be met with a ZTC course or valid ZTC option.</li>
-            <li><strong>Choose-N</strong> contributes N slots; named subgroup quotas remain separate; every member of an <strong>AND bundle</strong> must qualify.</li>
-            <li>Unavailable or unknown catalog requirements remain unmet; informational lab-reference re-lists are not scored.</li>
-            <li><strong>100%</strong> = every scored requirement can be satisfied with ZTC courses in the selected term.</li>
+            <li>Each catalog requirement counts once: a required course, or each course a choice asks for ("Any two courses" is two requirements).</li>
+            <li>A requirement is met when a course that can fill it is <strong>ZTC</strong> (75%+ of sections). Courses taken together (lecture with lab) must all be ZTC.</li>
+            <li>For an <strong>academic year</strong> (Fall, Spring, Summer) a course must be at 75%+ in <strong>every term it was offered</strong>; the course detail names any term that missed.</li>
+            <li>A pathway is <strong>green only at 100%</strong>, yellow at 75–99%, red below 75%. Chancellor's Office ZTC is for reporting and never counts toward a pathway.</li>
           </ol>
-          <p class="note">Courses not offered in the selected term show as not offered; other terms may still appear in trend charts.</p>
+          <p class="note"><strong>In progress</strong> means the year's surveys are under 90% complete or a term is not in the dataset yet, so the score can still change. <strong>Unverified section</strong> means the app's reading of that catalog section did not add up to the units the catalog prints; select the “i” beside it for details.</p>
         </section>
       </div>
 
@@ -462,7 +464,7 @@
             <tbody>
               <tr>
                 <th scope="row">Save session</th>
-                <td>Automatic after <strong>Build dashboard</strong>. Reload restores the validated dataset plus your selected term, Pathway/Courses view, selected pathway or course, filters, sort, and Dashboard state. Invalid saved data is rejected with a recoverable clear-session action.</td>
+                <td>Automatic after <strong>Build dashboard</strong>. Reload restores the validated dataset plus your selected academic year and term, Pathway/Courses view, selected pathway or course, filters, sort, and Dashboard state. Invalid saved data is rejected with a recoverable clear-session action.</td>
               </tr>
               <tr>
                 <th scope="row">Dark / light theme</th>
@@ -508,7 +510,7 @@
               <tr>
                 <td><strong>Current pathway (PDF)</strong></td>
                 <td>Pathway</td>
-                <td>Printable summary with program name, term, stats, course table</td>
+                <td>Printable summary with program name, academic year, stats, course table</td>
               </tr>
             </tbody>
           </table>
@@ -552,7 +554,7 @@
             </tr>
             <tr>
               <th scope="row">If someone emails you a file</th>
-              <td>Do <strong>not</strong> open a lone <code>index.html</code> attachment — it will not run. Use the hosted link above, or unzip/copy the <strong>entire</strong> <code>ztc-mapper</code> folder (including <code>vendor/</code>) for offline use.</td>
+              <td>Do <strong>not</strong> open a lone <code>index.html</code> attachment — it will not run. Use the hosted link above, or unzip/copy the <strong>entire</strong> <code>ztc-mapper</code> folder (including <code>vendor/</code> and <code>data/</code>) for offline use.</td>
             </tr>
           </tbody>
         </table>
@@ -564,23 +566,23 @@
         <ol class="asks-list">
           <li>
             <span class="ask-num" aria-hidden="true">1</span>
-            <span><strong>Build dashboard disabled</strong> — both CSVs must show green Loaded before build unlocks.</span>
+            <span><strong>Build dashboard disabled</strong> — the ZTC course dataset must show Loaded before build unlocks.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">2</span>
-            <span><strong>No pathways after build</strong> — confirm Program Summary includes <strong>Active</strong> programs only.</span>
+            <span><strong>A pathway is missing</strong> — pathways come from the catalog for the selected academic year; a pathway added or retired in another year appears only in that year.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">3</span>
-            <span><strong>Course shows “no data”</strong> — not in Course Analytics for that term, or not offered.</span>
+            <span><strong>Course shows “no data”</strong> — not in the ZTC course dataset for that term or year, or not offered.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">4</span>
-            <span><strong>Wrong term</strong> — change <strong>Term</strong> in the header; all views update together.</span>
+            <span><strong>Score looks low for the current year</strong> — check for <strong>In progress</strong>; a year is scored on every term offered so far, and unfinished surveys count as not ZTC.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">5</span>
-            <span><strong>Stale session</strong> — use <strong>Load new data</strong> and upload fresh exports.</span>
+            <span><strong>Stale session</strong> — use <strong>Load new data</strong> and upload a fresh export.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">6</span>
@@ -588,11 +590,11 @@
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">7</span>
-            <span><strong>Catalog link missing (Courses tab)</strong> — the Colleague link appears only for the <strong>two most recent terms</strong> in your analytics export; use Pathway course modal for older terms, or switch term.</span>
+            <span><strong>Catalog link missing (Courses tab)</strong> — the Colleague link appears only for the <strong>two most recent terms</strong> in your dataset; use Pathway course modal for older terms, or switch term.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">8</span>
-            <span><strong>Blank page or “missing files”</strong> — you opened <code>index.html</code> without the <code>vendor/</code> folder; use the <a href="https://www.chairmanx.tech/projects/ztc-mapper/">hosted app</a> instead.</span>
+            <span><strong>Blank page or “missing files”</strong> — you opened <code>index.html</code> without the <code>vendor/</code> and <code>data/</code> folders; use the <a href="https://www.chairmanx.tech/projects/ztc-mapper/">hosted app</a> instead.</span>
           </li>
           <li>
             <span class="ask-num" aria-hidden="true">9</span>

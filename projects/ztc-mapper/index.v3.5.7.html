@@ -1,0 +1,3488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZTC Pathway Mapper</title>
+
+  <!-- Tailwind CSS (offline — regenerate: scripts/generate-tailwind-css.sh) -->
+  <link rel="stylesheet" href="vendor/tailwind.min.css">
+
+  <!-- Vendored runtime (pinned — see vendor/deps.json; verify: scripts/check-deps.py) -->
+  <!-- No crossorigin / no SRI integrity attrs: both break file:// opens; CI verifies sha384. -->
+  <script src="vendor/react.production.min.js"></script>
+  <script src="vendor/react-dom.production.min.js"></script>
+  <!-- Babel 7.x only: Babel 8 defaults preset-react to automatic JSX runtime,
+       which emits `import {jsx} from "react/jsx-runtime"` and breaks UMD globals. -->
+  <script src="vendor/babel.min.js"></script>
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="vendor/jspdf.plugin.autotable.min.js"></script>
+  <script src="vendor/chart.umd.min.js"></script>
+
+  <script>
+    // If index.html was opened without the vendor/ folder, show a clear error (not a blank page).
+    (function () {
+      var missing = [];
+      if (typeof React === 'undefined') missing.push('React');
+      if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+      if (typeof Babel === 'undefined') missing.push('Babel');
+      if (!missing.length) return;
+      var hosted = 'https://www.chairmanx.tech/projects/ztc-mapper/';
+      var html = '<div role="alert" style="max-width:36rem;margin:2rem auto;padding:1.25rem 1.5rem;font-family:system-ui,sans-serif;line-height:1.5;color:#e4e4e7;background:#27272a;border:1px solid #52525b;border-radius:0.75rem">'
+        + '<h1 style="margin:0 0 0.75rem;font-size:1.125rem;font-weight:700;color:#fafafa">ZTC Pathway Mapper — missing files</h1>'
+        + '<p style="margin:0 0 0.75rem">This copy of <strong>index.html</strong> cannot run alone. Required libraries in the <code style="color:#93c5fd">vendor/</code> folder did not load'
+        + (missing.length ? ' (' + missing.join(', ') + ').' : '.') + '</p>'
+        + '<p style="margin:0 0 0.75rem"><strong>For most users:</strong> open the hosted app (includes all files):<br>'
+        + '<a href="' + hosted + '" style="color:#60a5fa">' + hosted + '</a></p>'
+        + '<p style="margin:0;font-size:0.875rem;color:#a1a1aa">Offline use: unzip or copy the <strong>entire</strong> <code>ztc-mapper</code> project folder, then open <code>index.html</code> from that folder.</p></div>';
+      function show() {
+        var el = document.getElementById('root');
+        if (el) el.innerHTML = html;
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show);
+      else show();
+      window.__ZTC_VENDOR_MISSING__ = true;
+    })();
+  </script>
+
+  <script>
+    // Apply the saved theme before first paint to avoid a flash of the wrong theme.
+    // Key must match STORAGE_KEY + '-theme' in the app script below.
+    (function () {
+      try {
+        const theme = localStorage.getItem('ztc-pathway-mapper-v3-theme')
+          || localStorage.getItem('ztc-pathway-mapper-v2-theme');
+        if (theme === 'light') document.documentElement.classList.add('theme-light');
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+  <style>
+    html { color-scheme: dark; }
+    html.theme-light { color-scheme: light; }
+
+    /* Theme-aware scrollbars (default = dark, graphite/zinc). Firefox uses scrollbar-color. */
+    html { scrollbar-color: #52525b #18181b; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #71717a; }
+
+    html.theme-light { scrollbar-color: #94a3b8 #e2e8f0; }
+    html.theme-light ::-webkit-scrollbar-track { background: #e2e8f0; }
+    html.theme-light ::-webkit-scrollbar-thumb { background: #94a3b8; }
+    html.theme-light ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .animate-fadeIn { animation: fadeIn 0.18s ease-out; }
+    .animate-scaleIn { animation: scaleIn 0.18s ease-out; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+
+    /* Strong, consistent focus indicator for keyboard users */
+    *:focus-visible { outline: 3px solid #3b82f6; outline-offset: 2px; border-radius: 4px; }
+
+    /* Visually-hidden but available to screen readers */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    /* Skip link: hidden until focused */
+    .skip-link {
+      position: absolute; left: 8px; top: -48px; z-index: 100;
+      background: #2563eb; color: #fff; padding: 8px 14px; border-radius: 8px;
+      transition: top 0.15s ease; font-weight: 600;
+    }
+    .skip-link:focus { top: 8px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Single scroll surface: prevent body overscroll past app shell */
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    #root { height: 100%; }
+
+    /* Dashboard replaces only the left navigation column at tablet/desktop widths. */
+    .sidebar-column { position: relative; overflow: hidden; }
+    .sidebar-pane {
+      position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0;
+      transition: transform 200ms ease-out;
+    }
+    .sidebar-pane-nav.is-off { transform: translateX(-100%); }
+    .sidebar-pane-dash.is-off { transform: translateX(100%); }
+    .sidebar-pane.is-inactive { visibility: hidden; pointer-events: none; }
+    .dashboard-tab-rail {
+      width: 2.75rem; flex: 0 0 2.75rem; display: flex; align-items: flex-start;
+      justify-content: center; padding-top: 1rem; position: relative; z-index: 20;
+    }
+    .dashboard-pullout-tab {
+      width: 100%; min-height: 4.5rem; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.5rem;
+      border-radius: 0 0.75rem 0.75rem 0; border-left: 4px solid transparent;
+      position: relative; transition: background-color 160ms ease, border-color 160ms ease;
+    }
+    .dashboard-pullout-tab.is-open { border-left-color: #3b82f6; }
+    .dashboard-tab-label {
+      position: absolute; left: calc(100% + 0.5rem); top: 50%; transform: translateY(-50%);
+      z-index: 30; opacity: 0; pointer-events: none; white-space: nowrap;
+      padding: 0.35rem 0.55rem; border-radius: 0.5rem; font-size: 0.75rem;
+      background: #27272a; color: #f4f4f5; border: 1px solid #52525b;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+      transition: opacity 140ms ease;
+    }
+    html.theme-light .dashboard-tab-label {
+      background: #fff; color: #1a1a1a; border-color: #d1d5db;
+    }
+    .dashboard-pullout-tab:hover .dashboard-tab-label,
+    .dashboard-pullout-tab:focus-visible .dashboard-tab-label { opacity: 1; }
+    @media (max-width: 639px) {
+      .app-layout.dashboard-primary-canvas .sidebar-column {
+        width: calc(100vw - 2.75rem);
+        flex-basis: calc(100vw - 2.75rem);
+      }
+      .app-layout.dashboard-primary-canvas .reading-pane {
+        flex: 0 0 0;
+        width: 0;
+        min-width: 0;
+        visibility: hidden;
+        overflow: hidden;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // ============================================================
+    // ICONS
+    // ============================================================
+    const Icon = (paths) => (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+        {paths}
+      </svg>
+    );
+    const Icons = {
+      Download: Icon(<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></>),
+      Search: Icon(<><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></>),
+      X: Icon(<><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></>),
+      Check: Icon(<><polyline points="20 6 9 17 4 12"></polyline></>),
+      CheckCircle: Icon(<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></>),
+      AlertCircle: Icon(<><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></>),
+      Sun: Icon(<><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></>),
+      Moon: Icon(<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>),
+      BarChart3: Icon(<><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></>),
+      Landmark: Icon(<><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></>),
+      BookOpen: Icon(<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></>),
+      ChevronRight: Icon(<polyline points="9 18 15 12 9 6"></polyline>),
+      ChevronLeft: Icon(<polyline points="15 18 9 12 15 6"></polyline>),
+      ChevronDown: Icon(<polyline points="6 9 12 15 18 9"></polyline>),
+      Refresh: Icon(<><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>),
+      FileText: Icon(<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></>),
+      Shield: Icon(<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="m9 12 2 2 4-4"></path></>),
+      LineChart: Icon(<><path d="M3 3v18h18"></path><path d="m7 12 4-4 4 4 6-6"></path></>)
+    };
+
+    // PRODUCTION MODEL TEST START
+    // ============================================================
+    // CONSTANTS
+    // ============================================================
+    // ZTC_MIN/PARTIAL_MIN = Chaffey internal adoption thresholds (% of sections).
+    // CO_MIN_SECTIONS = Chancellor's Office definition: ZTC-passing with >=1 ZTC section.
+    const ZTC_THRESHOLDS = { ZTC_MIN: 75, PARTIAL_MIN: 51, CO_MIN_SECTIONS: 1 };
+    const STORAGE_KEY = 'ztc-pathway-mapper-v3';
+    const LEGACY_STORAGE_KEY = 'ztc-pathway-mapper-v2';
+    const UI_STORAGE_KEY = STORAGE_KEY + '-ui';
+    const DATASET_SCHEMA_VERSION = 1;
+    const UI_SCHEMA_VERSION = 1;
+    const COURSE_CATALOG_URL = 'https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=';
+    const APP_HOSTED_URL = 'https://www.chairmanx.tech/projects/ztc-mapper/';
+    const APP_META = {
+      contact: 'Bradley Franklin',
+      department: 'Instructional Systems & Pathways Innovation',
+      useLine: 'Internal — ZTC / OER',
+      accessibility: 'WCAG 2.1 Level AA',
+      a11yNote: 'Status labels include text, not color alone.',
+      hostedUrl: APP_HOSTED_URL
+    };
+
+    const isPlainObject = (value) =>
+      value !== null && typeof value === 'object' && !Array.isArray(value);
+
+    const validatePersistedDataset = (value) => {
+      if (!isPlainObject(value)) throw new Error('Saved data is not an object.');
+      if (value.schemaVersion !== undefined && value.schemaVersion !== DATASET_SCHEMA_VERSION) {
+        throw new Error(`Saved data uses unsupported schema version ${value.schemaVersion}.`);
+      }
+      if (!Array.isArray(value.programs) || value.programs.length === 0) {
+        throw new Error('Saved data has no active pathways.');
+      }
+      if (value.programs.some(p =>
+        !isPlainObject(p) || typeof p.name !== 'string' || !p.name.trim() || !Array.isArray(p.areas)
+      )) {
+        throw new Error('Saved pathway data is incomplete.');
+      }
+      if (!isPlainObject(value.analytics) || !isPlainObject(value.analytics.index)) {
+        throw new Error('Saved course analytics are incomplete.');
+      }
+      if (!Array.isArray(value.terms) || value.terms.length === 0 ||
+          value.terms.some(term => typeof term !== 'string' || !term.trim())) {
+        throw new Error('Saved data has no valid terms.');
+      }
+      const selectedTerm = value.terms.includes(value.selectedTerm)
+        ? value.selectedTerm
+        : value.terms[value.terms.length - 1];
+      // `type` is derived from the name at parse time; re-derive it when a
+      // saved payload lacks it so `undefined` never reaches the type filter.
+      const programs = value.programs.map(p =>
+        typeof p.type === 'string' && p.type.trim() ? p : { ...p, type: programType(p.name) }
+      );
+      return {
+        schemaVersion: DATASET_SCHEMA_VERSION,
+        programs,
+        analytics: value.analytics,
+        terms: value.terms,
+        selectedTerm,
+        savedAt: typeof value.savedAt === 'string' ? value.savedAt : null
+      };
+    };
+
+    const validatePersistedUiState = (value, dataset) => {
+      const programNames = new Set(dataset.programs.map(p => p.name));
+      const courseKeys = new Set(Object.keys(dataset.analytics.index));
+      const validPathwayFilters = new Set(['all', 'full', 'high', 'partial', 'low', 'no-data']);
+      const validCourseFilters = new Set(COURSE_STATUS_OPTIONS.map(option => option.value));
+      const validSorts = new Set([...SORT_BY_OPTIONS, ...COURSE_SORT_OPTIONS].map(option => option.value));
+      const fallback = {
+        selectedTerm: dataset.selectedTerm,
+        selectedProgram: dataset.programs[0]?.name || null,
+        selectedCourseKey: Array.from(courseKeys).sort()[0] || null,
+        primaryView: 'program',
+        search: '',
+        typeFilter: 'all',
+        pathwayAdoptionFilter: 'all',
+        courseStatusFilter: 'all',
+        sortBy: 'adoption',
+        dashboardOpen: false
+      };
+      if (!isPlainObject(value) ||
+          (value.schemaVersion !== undefined && value.schemaVersion !== UI_SCHEMA_VERSION)) {
+        return fallback;
+      }
+      const programTypes = new Set(dataset.programs.map(p => p.type));
+      return {
+        selectedTerm: dataset.terms.includes(value.selectedTerm) ? value.selectedTerm : fallback.selectedTerm,
+        selectedProgram: programNames.has(value.selectedProgram) ? value.selectedProgram : fallback.selectedProgram,
+        selectedCourseKey: courseKeys.has(value.selectedCourseKey) ? value.selectedCourseKey : fallback.selectedCourseKey,
+        primaryView: value.primaryView === 'courses' ? 'courses' : 'program',
+        search: typeof value.search === 'string' ? value.search.slice(0, 200) : '',
+        typeFilter: value.typeFilter === 'all' || programTypes.has(value.typeFilter) ? value.typeFilter : 'all',
+        pathwayAdoptionFilter: validPathwayFilters.has(value.pathwayAdoptionFilter) ? value.pathwayAdoptionFilter : 'all',
+        courseStatusFilter: validCourseFilters.has(value.courseStatusFilter) ? value.courseStatusFilter : 'all',
+        sortBy: validSorts.has(value.sortBy) ? value.sortBy : 'adoption',
+        dashboardOpen: value.dashboardOpen === true
+      };
+    };
+
+    const csvEscape = (value) => {
+      let cell = String(value ?? '');
+      if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
+      return /[",\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
+    };
+
+    const programExportCaveat = (program) =>
+      program?.type === 'GE / Transfer Pattern'
+        ? 'Source export may omit option nesting visible in the catalog; verify catalog structure before decision-making.'
+        : '';
+
+    const buildProgramCsv = (program, view, term) => {
+      if (!program || !view) return '';
+      const rows = [[
+        'Program', 'Area', 'Sub-area', 'Option Group', 'Course', 'Course Title', 'Units',
+        'Header Identifier', 'Lab Reference', 'Term', 'ZTC %', 'Survey %',
+        'Chaffey ZTC (75%+)', 'CO ZTC (1+ section)', 'Status', 'Export Note'
+      ]];
+      const caveat = programExportCaveat(program);
+      const pushCourse = (area, subgroup, optionLabel, course) => {
+        rows.push([
+          program.name, area.title, subgroup.title || '', optionLabel || '',
+          `${course.subject}-${course.number}`, course.courseTitle || course.analyticsTitle || '',
+          course.units ?? '', course.headerId || '', subgroup.isLabReference ? 'Yes' : 'No',
+          term, course.ztcPct ?? '', course.surveyPct ?? '',
+          course.status === 'ztc' ? 'Yes' : 'No', course.coZtc ? 'Yes' : 'No',
+          course.status, caveat
+        ]);
+      };
+      for (const area of view.areas) {
+        for (const subgroup of area.subgroups) {
+          if (subgroup.options?.length) {
+            for (const option of subgroup.options) {
+              for (const course of option.courses) pushCourse(area, subgroup, option.label || '', course);
+            }
+          } else {
+            for (const course of subgroup.courses) pushCourse(area, subgroup, '', course);
+          }
+        }
+      }
+      return rows.map(row => row.map(csvEscape).join(',')).join('\n') + '\n';
+    };
+
+    const SORT_BY_OPTIONS = [
+      { value: 'adoption', label: 'ZTC %' },
+      { value: 'name', label: 'Name' },
+      { value: 'units', label: 'Units' }
+    ];
+    const COURSE_SORT_OPTIONS = [
+      { value: 'adoption', label: 'ZTC %' },
+      { value: 'name', label: 'Name' },
+      { value: 'survey', label: 'Survey %' }
+    ];
+    const COURSE_STATUS_OPTIONS = [
+      { value: 'all', label: 'All statuses' },
+      { value: 'ztc', label: 'ZTC' },
+      { value: 'co', label: 'CO ZTC' },
+      { value: 'partial', label: 'Partial' },
+      { value: 'not-ztc', label: 'Not ZTC' },
+      { value: 'no-data', label: 'No data' }
+    ];
+
+    const THEME = {
+      dark: {
+        bg: 'bg-zinc-950', text: 'text-zinc-100', textMuted: 'text-zinc-300', faint: 'text-zinc-400',
+        header: 'bg-zinc-900/95', headerBorder: 'border-zinc-800',
+        card: 'bg-zinc-800/50', cardHover: 'hover:bg-zinc-800', cardBorder: 'border-zinc-700/60',
+        panel: 'bg-zinc-900', panelBorder: 'border-zinc-800',
+        input: 'bg-zinc-800 border-zinc-700 text-zinc-100', divider: 'border-zinc-800',
+        chip: 'bg-zinc-800 text-zinc-200', sidebar: 'bg-zinc-900/60', track: 'bg-zinc-700/50'
+      },
+      light: {
+        bg: 'bg-gray-50', text: 'text-gray-900', textMuted: 'text-gray-600', faint: 'text-gray-600',
+        header: 'bg-white/95', headerBorder: 'border-gray-200',
+        card: 'bg-white', cardHover: 'hover:bg-gray-50', cardBorder: 'border-gray-200',
+        panel: 'bg-white', panelBorder: 'border-gray-200',
+        input: 'bg-white border-gray-300 text-gray-900', divider: 'border-gray-200',
+        chip: 'bg-gray-200 text-gray-800', sidebar: 'bg-gray-100/60', track: 'bg-gray-200'
+      }
+    };
+
+    // ============================================================
+    // UTILITIES
+    // ============================================================
+    // Lenient percentage/unit parsing for CSV cells: strips "%" and ",", null on blank/NaN.
+    const parseNum = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      const s = String(v).replace(/[%,]/g, '');
+      const n = parseFloat(s);
+      return Number.isNaN(n) ? null : n;
+    };
+    const parsePct = (v) => parseNum(v);
+    const parseUnits = (v) => parseNum(v);
+    const parseCount = (v) => {
+      if (v === null || v === undefined || String(v).trim() === '') return null;
+      const s = String(v).trim().replace(/,/g, '');
+      if (!/^\+?\d+(?:\.\d+)?$/.test(s)) return null;
+      const n = Number(s);
+      return Number.isSafeInteger(n) && n >= 0 ? n : null;
+    };
+    const fmtUnits = (n) => (n === null || n === undefined) ? '' : (Math.round(n * 100) / 100).toString();
+
+    // Robust CSV parser: handles quoted fields with embedded commas + newlines.
+    const parseCSV = (text) => {
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
+      text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const rows = [];
+      let row = [], field = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (text[i + 1] === '"') { field += '"'; i++; }
+            else inQuotes = false;
+          } else field += c;
+        } else {
+          if (c === '"') inQuotes = true;
+          else if (c === ',') { row.push(field); field = ''; }
+          else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+          else field += c;
+        }
+      }
+      if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+      return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
+    };
+
+    // Term ordering: YYYY/SP, YYYY/SU, YYYY/FA
+    const SEM_ORDER = { SP: 0, SU: 1, FA: 2 };
+    const termRank = (t) => {
+      const m = String(t || '').trim().match(/^(\d{4})\/(SP|SU|FA)$/i);
+      if (!m) return -1;
+      return parseInt(m[1], 10) * 10 + (SEM_ORDER[m[2].toUpperCase()] ?? 9);
+    };
+    const sortTerms = (terms) => terms.slice().sort((a, b) => termRank(a) - termRank(b));
+    const getRecentTerms = (terms, count = 2) => sortTerms(terms).slice(-count);
+
+    // Normalize a SUBJECT-NUMBER join key
+    const normKey = (subject, number) => {
+      const s = String(subject || '').trim().toUpperCase().replace(/\s+/g, '');
+      const n = String(number || '').trim().toUpperCase().replace(/\s+/g, '');
+      if (!s || !n) return '';
+      return `${s}-${n}`;
+    };
+    const normCourseField = (v) => String(v || '').trim().toUpperCase().replace(/\s+/g, '');
+    const parseCourseKey = (key) => {
+      const idx = key.lastIndexOf('-');
+      if (idx <= 0) return { subject: key, number: '' };
+      return { subject: key.slice(0, idx), number: key.slice(idx + 1) };
+    };
+
+    // Header lookup helpers
+    const findIdx = (headers, candidates) => {
+      const norm = headers.map(h => String(h).trim().toLowerCase());
+      for (const cand of candidates) {
+        const i = norm.indexOf(cand.toLowerCase());
+        if (i !== -1) return i;
+      }
+      for (const cand of candidates) {
+        const i = norm.findIndex(h => h.includes(cand.toLowerCase()));
+        if (i !== -1) return i;
+      }
+      return -1;
+    };
+
+    // ZTC status from adoption percentage
+    const ztcStatus = (pct) => {
+      if (pct === null || pct === undefined) return 'no-data';
+      if (pct >= ZTC_THRESHOLDS.ZTC_MIN) return 'ztc';
+      if (pct >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'partial';
+      return 'not-ztc';
+    };
+    // Theme-aware so colored numbers meet >=4.5:1 contrast on light backgrounds too.
+    const pctColor = (pct, dark = true) => {
+      if (pct === null || pct === undefined) return dark ? 'text-zinc-400' : 'text-gray-600';
+      if (pct >= ZTC_THRESHOLDS.ZTC_MIN) return dark ? 'text-green-400' : 'text-green-800';
+      if (pct >= ZTC_THRESHOLDS.PARTIAL_MIN) return dark ? 'text-amber-400' : 'text-amber-800';
+      return dark ? 'text-red-400' : 'text-red-800';
+    };
+    const ringColor = (pct) => {
+      if (pct === null || pct === undefined) return '#64748b';
+      if (pct >= ZTC_THRESHOLDS.ZTC_MIN) return '#22c55e';
+      if (pct >= ZTC_THRESHOLDS.PARTIAL_MIN) return '#f59e0b';
+      return '#ef4444';
+    };
+    const barColor = (pct) => {
+      if (pct === null || pct === undefined) return 'bg-slate-500';
+      if (pct >= ZTC_THRESHOLDS.ZTC_MIN) return 'bg-green-500';
+      if (pct >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'bg-amber-500';
+      return 'bg-red-500';
+    };
+    // Border + tint for the big stat card, keyed on ZTC status (no-data renders red, matching legacy behavior).
+    const statusBorderCls = (pct) => {
+      const s = ztcStatus(pct);
+      if (s === 'ztc') return 'border-green-500/40 bg-green-500/10';
+      if (s === 'partial') return 'border-amber-500/40 bg-amber-500/10';
+      return 'border-red-500/40 bg-red-500/10';
+    };
+    // Descending numeric compare with nulls last; ties defer to tie().
+    const cmpNullLast = (ax, ay, tie) => {
+      if (ax == null && ay == null) return tie();
+      if (ax == null) return 1;
+      if (ay == null) return -1;
+      return ay - ax;
+    };
+
+    const pathwayAdoptionMatches = (pct, filter) => {
+      if (filter === 'all') return true;
+      if (filter === 'scored') return pct !== null && pct !== undefined;
+      if (filter === 'full') return pct === 100;
+      if (filter === 'high') return pct !== null && pct !== undefined && pct >= ZTC_THRESHOLDS.ZTC_MIN;
+      return true;
+    };
+
+    const courseStatusMatches = (c, filter) => {
+      if (filter === 'all') return true;
+      if (filter === 'co') return c.coZtc;
+      return c.status === filter;
+    };
+
+    const PATHWAY_ADOPTION_FILTER_LABELS = {
+      scored: 'Scored pathways',
+      full: '100% adoption',
+      high: '≥75% adoption'
+    };
+
+    // Program type classification (from program title)
+    const programType = (name) => {
+      const n = (name || '').toLowerCase();
+      if (/general education|cal-getc|getc|igetc|csu ge|transfer curriculum/.test(n)) return 'GE / Transfer Pattern';
+      if (/transfer|a[ds]-t|aa-t|as-t/.test(n)) return 'Transfer Degree';
+      if (/certificate/.test(n)) return 'Certificate';
+      if (/degree|a\.s\.|a\.a\.|associate/.test(n)) return 'Degree';
+      return 'Other';
+    };
+
+    // FID-1 TEST START: option event helpers
+    // ---- Block-title parsing: requirement + area grouping ----
+    const cleanTitle = (t) => String(t || '').replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim();
+
+    const parseRequirement = (title) => {
+      const s = (title || '').toLowerCase();
+      const numWord = { one: 1, two: 2, three: 3, four: 4, 'a minimum of one': 1 };
+      let m = s.match(/\b(one|two|three|four)\s+courses?\b/);
+      if (!m) m = s.match(/\b(?:choose|select|complete)\s+(one|two|three|four)\b/);
+      if (!m) m = s.match(/\bat least\s+(one|two|three|four)\b/);
+      if (m) return { choice: true, n: numWord[m[1]] || 1 };
+      const md = s.match(/\b(\d+)\s+courses?\b/);
+      if (md) return { choice: true, n: parseInt(md[1], 10) };
+      // "Required" / "Required Core" => all listed courses required
+      if (/required|core/.test(s)) return { choice: false, n: null };
+      return { choice: null, n: null }; // unknown -> inherit / default all
+    };
+
+    // Empty CurriQunet blocks that re-list lab courses marked with Header Identifier (*)
+    const isLabReferenceTitle = (title) => {
+      const s = cleanTitle(title).toLowerCase();
+      if (!s) return false;
+      if (/laboratory\s+(science|activity)\b/.test(s)) return true;
+      if (/^[a-z0-9]+\s*-\s*laboratory\b/.test(s)) return true;
+      return false;
+    };
+    const hasLabAsterisk = (headerId) => String(headerId || '').includes('*');
+    const normGroupLabel = (gt) => cleanTitle(gt).toLowerCase();
+    const isGroupNLabel = (gt) => /^group\s*\d+/.test(normGroupLabel(gt));
+    const isChooseOneGroupLabel = (gt) => {
+      const s = normGroupLabel(gt);
+      return s === 'choose one group' || s.startsWith('required core - choose one group');
+    };
+
+    const isChooseOneLabel = (gt) => {
+      const s = normGroupLabel(gt);
+      return s === 'choose' || s === 'choose one' || s.startsWith('choose one') || s === 'choose both' || s.startsWith('choose both');
+    };
+    const isEitherOrLabel = (gt) => {
+      const s = normGroupLabel(gt);
+      return s === 'either' || s === 'or';
+    };
+
+    // FID-1: collapse only identical marker rows that are adjacent in a block's event stream.
+    const appendMarkerEvent = (events, groupTitle, condition) => {
+      const tail = events[events.length - 1];
+      if (tail && tail.type === 'marker' && tail.groupTitle === groupTitle) return;
+      events.push({ type: 'marker', groupTitle, condition });
+    };
+
+    // Split a labeled course bucket into options using Condition and/or.
+    // Group N / choose-one-group: courses stay in one option (all members of that group).
+    const splitBucketIntoOptions = (label, courseEvents) => {
+      const opts = [];
+      let cur = null;
+      const groupBundle = label && (isGroupNLabel(label) || isChooseOneGroupLabel(label));
+      for (const ev of courseEvents) {
+        const cond = String(ev.condition || '').trim().toLowerCase();
+        if (groupBundle) {
+          if (cond === 'or' && cur && cur.courses.length) {
+            cur = { label, courses: [ev.course] };
+            opts.push(cur);
+          } else {
+            if (!cur) { cur = { label, courses: [] }; opts.push(cur); }
+            cur.courses.push(ev.course);
+          }
+          continue;
+        }
+        if (cond === 'and' && cur) {
+          cur.courses.push(ev.course);
+        } else if (cond === 'or') {
+          cur = { label: label || 'Or', courses: [ev.course] };
+          opts.push(cur);
+        } else {
+          cur = { label: label || null, courses: [ev.course] };
+          opts.push(cur);
+        }
+      }
+      return opts;
+    };
+
+    // Build Either/Or/And option bundles from block event stream (markers + courses).
+    // CurriQunet META exports markers before their courses in file order; reverse options for catalog display.
+    const buildOptionsFromEvents = (events) => {
+      if (!events || !events.length) return null;
+      let label = null;
+      let bucket = [];
+      const options = [];
+      // Consecutive Either:/Or: markers with no courses between — apply to the following cluster.
+      let eitherOrQueue = [];
+
+      const flush = (overrideLabel) => {
+        if (!bucket.length) {
+          eitherOrQueue = [];
+          return;
+        }
+        const useLabel = overrideLabel !== undefined ? overrideLabel : label;
+        if (eitherOrQueue.length > 1) {
+          // Build in catalog order (Either before Or, lecture before lab), then append
+          // reversed so the shared final reverse matches other option streams.
+          const labelsCat = eitherOrQueue.slice().reverse();
+          eitherOrQueue = [];
+          const coursesCat = bucket.map(ev => ev.course).reverse();
+          bucket = [];
+          const built = [];
+          let i = 0;
+          let li = 0;
+          while (i < coursesCat.length && li < labelsCat.length) {
+            const c0 = coursesCat[i];
+            const c1 = coursesCat[i + 1];
+            const n0 = String(c0.number || '').toUpperCase();
+            const n1 = c1 ? String(c1.number || '').toUpperCase() : '';
+            const labPair = c1 && (n1 === n0 + 'L' || n0 === n1 + 'L');
+            const lecture = labPair && n0.endsWith('L') ? c1 : c0;
+            const lab = labPair && n0.endsWith('L') ? c0 : c1;
+            if (labPair && li + 1 < labelsCat.length) {
+              built.push({ label: labelsCat[li], courses: [lecture] });
+              built.push({ label: labelsCat[li + 1], courses: [lecture, lab] });
+              i += 2;
+              li += 2;
+            } else {
+              built.push({ label: labelsCat[li], courses: [c0] });
+              i += 1;
+              li += 1;
+            }
+          }
+          while (i < coursesCat.length) {
+            built.push({ label: null, courses: [coursesCat[i]] });
+            i += 1;
+          }
+          for (let bi = built.length - 1; bi >= 0; bi--) {
+            const o = built[bi];
+            options.push({
+              label: o.label,
+              // file order within AND-bundle so final courses.reverse() yields lecture then lab
+              courses: o.courses.length > 1 ? o.courses.slice().reverse() : o.courses.slice()
+            });
+          }
+          return;
+        }
+        eitherOrQueue = [];
+        for (const o of splitBucketIntoOptions(useLabel, bucket)) options.push(o);
+        bucket = [];
+      };
+
+      for (const ev of events) {
+        if (ev.type === 'marker') {
+          const gt = ev.groupTitle;
+          // FID-1: flush preceding courses unchanged; the marker labels following courses.
+          if (isChooseOneLabel(gt) && bucket.length && !isChooseOneGroupLabel(gt)) {
+            flush();
+            label = cleanTitle(gt);
+            continue;
+          }
+          if (bucket.length) flush();
+          if (isChooseOneGroupLabel(gt)) {
+            if (!label || !isGroupNLabel(label)) label = cleanTitle(gt);
+            continue;
+          }
+          if (isEitherOrLabel(gt)) {
+            eitherOrQueue.push(cleanTitle(gt));
+            label = cleanTitle(gt);
+            continue;
+          }
+          eitherOrQueue = [];
+          label = cleanTitle(gt);
+          continue;
+        }
+        bucket.push(ev);
+      }
+      flush();
+
+      const cleaned = options.filter(o => o.courses && o.courses.length > 0);
+      if (!cleaned.length) return null;
+      const hasStructure = cleaned.some(o => o.label || o.courses.length > 1);
+      if (!hasStructure) return null;
+      // Reverse to approximate catalog / CurriQunet UI order.
+      return cleaned.reverse().map(o => ({
+        label: o.label,
+        courses: o.courses.slice().reverse()
+      }));
+    };
+    // FID-1 TEST END: option event helpers
+
+    // A multi-course option is completable only when every member is offered
+    // in the selected term and meets the ZTC threshold.
+    const optionIsZtc = (courses) =>
+      courses.length > 0 &&
+      courses.every(c =>
+        c.offered &&
+        c.ztcPct !== null &&
+        c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN
+      );
+
+    const courseIsZtc = (course) =>
+      course.offered &&
+      course.ztcPct !== null &&
+      course.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN;
+
+    const candidateOptions = (sg) => {
+      if (sg.options && sg.options.length) {
+        return sg.options.map((option, index) => ({
+          id: `${sg.id}-option-${index}`,
+          courses: option.courses,
+          ztcOk: option.ztcOk
+        }));
+      }
+      return sg.courses.map((course, index) => ({
+        id: `${sg.id}-course-${index}`,
+        courses: [course],
+        ztcOk: courseIsZtc(course)
+      }));
+    };
+
+    const allRequiredGroups = (sg, candidates) =>
+      candidates.map((candidate, index) => ({
+        id: `${sg.id}-required-${index}`,
+        requiredCount: 1,
+        candidates: [candidate]
+      }));
+
+    const choiceGroup = (sg, candidates, requiredCount) => [{
+      id: `${sg.id}-choice`,
+      requiredCount: Math.max(0, requiredCount || 0),
+      candidates
+    }];
+
+    const isRequiredComponent = (area, sg) =>
+      !!(area.isHeaderArea && sg.title && sg.requirement?.choice === false && !/\bcore\b/i.test(sg.title));
+
+    // Build explicit requirement-slot groups. A group with requiredCount=N represents
+    // N distinct slots sharing one candidate pool; separate groups enforce subgroup quotas.
+    const buildRequirementPlan = (area, scoredSubgroups) => {
+      const areaReq = area.requirement || { choice: null, n: null };
+      const namedSubgroups = scoredSubgroups.filter(sg => sg.title);
+      const useSubgroupQuotas = namedSubgroups.length > 1;
+
+      if (useSubgroupQuotas) {
+        return scoredSubgroups.flatMap(sg => {
+          const candidates = candidateOptions(sg);
+          const req = sg.requirement || { choice: null, n: null };
+          if (req.choice === true) return choiceGroup(sg, candidates, req.n || 1);
+          if (isRequiredComponent(area, sg)) return choiceGroup(sg, candidates, 1);
+          return allRequiredGroups(sg, candidates);
+        });
+      }
+
+      const candidates = scoredSubgroups.flatMap(candidateOptions);
+      const base = scoredSubgroups[0] || { id: `${area.id}-empty`, title: null, requirement: areaReq };
+      if (areaReq.choice === true) return choiceGroup(base, candidates, areaReq.n || 1);
+      if (isRequiredComponent(area, base)) return choiceGroup(base, candidates, 1);
+      return allRequiredGroups(base, candidates);
+    };
+
+    const optionUnitSum = (candidate) => {
+      if (!candidate.courses.length || candidate.courses.some(c => c.units === null || c.units === undefined)) return null;
+      return candidate.courses.reduce((sum, course) => sum + course.units, 0);
+    };
+
+    const scoreRequirementPlan = (groups, { contentFloor = null } = {}) => {
+      let reqTotal = 0, reqZtc = 0, ztcCount = 0, displayTotal = 0;
+      let unitsMin = 0, unitsMax = 0;
+      let unitsVerifiable = true;
+
+      for (const group of groups) {
+        const required = group.requiredCount;
+        const qualifying = group.candidates.filter(candidate => candidate.ztcOk).length;
+        reqTotal += required;
+        reqZtc += Math.min(required, qualifying);
+        ztcCount += qualifying;
+        displayTotal += group.candidates.length;
+
+        let unitSums = group.candidates.map(optionUnitSum).filter(sum => sum !== null);
+        if (contentFloor !== null) unitSums = unitSums.filter(sum => sum >= contentFloor);
+        unitSums.sort((a, b) => a - b);
+        if (required === 0) continue;
+        if (unitSums.length < required) {
+          unitsVerifiable = false;
+          continue;
+        }
+        unitsMin += unitSums.slice(0, required).reduce((sum, units) => sum + units, 0);
+        unitsMax += unitSums.slice(-required).reduce((sum, units) => sum + units, 0);
+        if (group.candidates.some(candidate => optionUnitSum(candidate) === null)) unitsVerifiable = false;
+      }
+
+      return {
+        groups,
+        anyZtc: reqZtc > 0,
+        ztcCount,
+        reqTotal,
+        reqZtc,
+        displayTotal,
+        unitsMin,
+        unitsMax,
+        unitsVerifiable
+      };
+    };
+
+    // Kept as a small compatibility seam for focused helper tests.
+    const scoreAreaRequirements = (allCourses, structuredOpts, isChoice, requiredCount = 1) => {
+      const candidates = structuredOpts.length
+        ? structuredOpts.map((option, index) => ({ id: `option-${index}`, courses: option.courses || [], ztcOk: option.ztcOk }))
+        : allCourses.map((course, index) => ({ id: `course-${index}`, courses: [course], ztcOk: courseIsZtc(course) }));
+      const groups = isChoice
+        ? [{ id: 'choice', requiredCount, candidates }]
+        : candidates.map((candidate, index) => ({ id: `required-${index}`, requiredCount: 1, candidates: [candidate] }));
+      return scoreRequirementPlan(groups);
+    };
+
+    // ---- Area ordering / nesting helpers ----
+    const looksLikeArea = (title) => /^area\b/i.test(cleanTitle(title));
+    // A bare sub-item like "A - Arts", "1A - ...", "B2 - ..." (not an "AREA n" header)
+    const looksLikeSubItem = (title) => {
+      const s = cleanTitle(title);
+      if (looksLikeArea(s)) return false;
+      return /^(\d+)?[A-Za-z]\b\s*[-:]/.test(s) || /^(\d+)[A-Za-z]\b/.test(s);
+    };
+    // Numeric/letter ordering key for a top-level AREA (null if not an AREA header)
+    const areaNumKey = (title) => {
+      const s = cleanTitle(title);
+      let m = s.match(/^AREA\s+(\d+)/i); if (m) return parseInt(m[1], 10);
+      m = s.match(/^AREA\s+([A-Z])\b/i); if (m) return m[1].toUpperCase().charCodeAt(0) - 64;
+      return null;
+    };
+    // Ordering key for a sub-group title (1A/3B -> by letter; A/B/C -> by letter)
+    const subOrderKey = (title) => {
+      if (!title) return null;
+      const s = cleanTitle(title);
+      let m = s.match(/^(\d+)([A-Z])\b/i); if (m) return parseInt(m[1], 10) * 100 + (m[2].toUpperCase().charCodeAt(0) - 64);
+      m = s.match(/^([A-Z])\b\s*[-:]/i); if (m) return m[1].toUpperCase().charCodeAt(0) - 64;
+      m = s.match(/^(\d+)\b/); if (m) return parseInt(m[1], 10);
+      return null;
+    };
+    // Stable sort by key, but only reorder when EVERY item has a key (else keep order)
+    const sortByKey = (arr, keyFn) => {
+      const wk = arr.map((a, i) => ({ a, i, k: keyFn(a) }));
+      if (wk.every(x => x.k !== null)) wk.sort((x, y) => (x.k - y.k) || (x.i - y.i));
+      return wk.map(x => x.a);
+    };
+
+    // Extract a grouping token used to nest leaf blocks under area headers
+    const areaGroupToken = (title) => {
+      const s = cleanTitle(title);
+      let m = s.match(/^AREA\s+([A-Z0-9]+)/i);
+      if (m) return 'G' + m[1].toUpperCase();
+      m = s.match(/^(\d+)[A-Z]\b/);            // 1A, 3B
+      if (m) return 'G' + m[1];
+      m = s.match(/^([A-Z])\d\b/);             // C2, B1
+      if (m) return 'G' + m[1].toUpperCase();
+      m = s.match(/^(\d+)\b/);                 // leading number
+      if (m) return 'G' + m[1];
+      return null;
+    };
+
+    // ============================================================
+    // MODEL BUILDERS
+    // ============================================================
+    // Analytics index: key -> { title, terms: { term -> metrics } }
+    const buildAnalytics = (rows) => {
+      const headers = rows[0];
+      const data = rows.slice(1);
+      const I = {
+        course: findIdx(headers, ['course']),
+        title: findIdx(headers, ['course title', 'title']),
+        term: findIdx(headers, ['sec term', 'term']),
+        total: findIdx(headers, ['total sections term', 'total sections']),
+        ztcSec: findIdx(headers, ['ztc sections term', 'ztc sections']),
+        surveysSub: findIdx(headers, ['surveys submitted term', 'surveys submitted']),
+        surveysPend: findIdx(headers, ['pending surveys term', 'pending surveys']),
+        surveyPct: findIdx(headers, ['survey completion pct term', 'survey completion']),
+        ztcPct: findIdx(headers, ['ztc percent term', 'ztc percent']),
+        ztca: findIdx(headers, ['oer ztca percent term']),
+        ztcc: findIdx(headers, ['oer ztcc percent term']),
+        ztce: findIdx(headers, ['oer ztce percent term']),
+        ztcf: findIdx(headers, ['oer ztcf percent term']),
+        ztcg: findIdx(headers, ['oer ztcg percent term']),
+        lct: findIdx(headers, ['lct percent term'])
+      };
+      if (I.course === -1 || I.term === -1 || I.ztcPct === -1) {
+        throw new Error('Course Analytics file is missing required columns (Course, Sec Term, Ztc Percent Term).');
+      }
+      const index = {};
+      const termSet = new Set();
+      for (const r of data) {
+        const key = normCourseField(r[I.course]);
+        if (!key) continue;
+        const term = String(r[I.term] || '').trim();
+        if (!term) continue;
+        termSet.add(term);
+        if (!index[key]) index[key] = { title: (r[I.title] || '').trim(), terms: {} };
+        if (!index[key].title && I.title !== -1) index[key].title = (r[I.title] || '').trim();
+        index[key].terms[term] = {
+          ztcPct: parsePct(r[I.ztcPct]),
+          surveyPct: I.surveyPct !== -1 ? parsePct(r[I.surveyPct]) : null,
+          surveysSub: I.surveysSub !== -1 ? parseCount(r[I.surveysSub]) : null,
+          surveysPend: I.surveysPend !== -1 ? parseCount(r[I.surveysPend]) : null,
+          totalSec: I.total !== -1 ? parseCount(r[I.total]) : null,
+          ztcSec: I.ztcSec !== -1 ? parseCount(r[I.ztcSec]) : null,
+          ztca: I.ztca !== -1 ? parsePct(r[I.ztca]) : null,
+          ztcc: I.ztcc !== -1 ? parsePct(r[I.ztcc]) : null,
+          ztce: I.ztce !== -1 ? parsePct(r[I.ztce]) : null,
+          ztcf: I.ztcf !== -1 ? parsePct(r[I.ztcf]) : null,
+          ztcg: I.ztcg !== -1 ? parsePct(r[I.ztcg]) : null,
+          lct: I.lct !== -1 ? parsePct(r[I.lct]) : null
+        };
+      }
+      return { index, terms: sortTerms(Array.from(termSet)) };
+    };
+
+    // Programs: active only -> nested areas -> subgroups -> courses (+ option bundles)
+    const buildPrograms = (rows) => {
+      const headers = rows[0];
+      const data = rows.slice(1);
+      const I = {
+        title: findIdx(headers, ['program entity title']),
+        status: findIdx(headers, ['program status']),
+        subj: findIdx(headers, ['program_course block_course block item course subject code', 'course subject code']),
+        num: findIdx(headers, ['program_course block_course block item course number', 'course block item course number']),
+        cTitle: findIdx(headers, ['program_course block_course block item course title', 'course block item course title']),
+        block: findIdx(headers, ['course block title']),
+        minU: findIdx(headers, ['min units']),
+        headerId: findIdx(headers, ['header identifier (*)', 'header identifier']),
+        groupTitle: findIdx(headers, ['group title']),
+        condition: findIdx(headers, ['condition'])
+      };
+      if (I.title === -1 || I.subj === -1 || I.num === -1 || I.block === -1) {
+        throw new Error('Program Summary file is missing required columns (Program Entity Title, Subject Code, Course Number, Course Block Title).');
+      }
+      // group rows by program (active only), preserving block + course + marker order
+      const progMap = new Map();
+      for (const r of data) {
+        const status = (I.status !== -1 ? r[I.status] : 'Active') || '';
+        if (status.trim().toLowerCase() !== 'active') continue;
+        const pname = (r[I.title] || '').trim();
+        if (!pname) continue;
+        const blockRaw = (r[I.block] || '').trim();
+        const key = normKey(r[I.subj], r[I.num]);
+        const groupTitle = I.groupTitle !== -1 ? String(r[I.groupTitle] || '').trim() : '';
+        const condition = I.condition !== -1 ? String(r[I.condition] || '').trim() : '';
+        const headerId = I.headerId !== -1 ? String(r[I.headerId] || '').trim() : '';
+        if (!progMap.has(pname)) progMap.set(pname, { name: pname, blockOrder: [], blocks: new Map() });
+        const prog = progMap.get(pname);
+        const bClean = cleanTitle(blockRaw) || '(Untitled block)';
+        if (!prog.blocks.has(bClean)) {
+          prog.blocks.set(bClean, {
+            title: bClean,
+            raw: blockRaw,
+            courses: [],
+            courseKeys: new Set(),
+            events: [],
+            isLabReference: isLabReferenceTitle(bClean)
+          });
+          prog.blockOrder.push(bClean);
+        }
+        const blk = prog.blocks.get(bClean);
+
+        // Group Title marker row (no course): Either / Or / Choose one / Group N
+        if (groupTitle && !key) {
+          appendMarkerEvent(blk.events, groupTitle, condition);
+          continue;
+        }
+
+        if (key && !blk.courseKeys.has(key)) {
+          blk.courseKeys.add(key);
+          const course = {
+            key,
+            subject: String(r[I.subj] || '').trim(),
+            number: String(r[I.num] || '').trim(),
+            courseTitle: I.cTitle !== -1 ? (r[I.cTitle] || '').trim() : '',
+            units: I.minU !== -1 ? parseUnits(r[I.minU]) : null,
+            headerId,
+            groupTitle: groupTitle || '',
+            condition
+          };
+          blk.courses.push(course);
+          blk.events.push({ type: 'course', course, condition, groupTitle });
+        } else if (key && condition && blk.courseKeys.has(key)) {
+          // Outcome-duplicate row may carry Condition — keep first non-empty on the course
+          const existing = blk.courses.find(c => c.key === key);
+          if (existing && !existing.condition && condition) existing.condition = condition;
+        }
+      }
+
+      // Attach option bundles derived from Group Title + Condition events
+      for (const prog of progMap.values()) {
+        for (const blk of prog.blocks.values()) {
+          blk.options = buildOptionsFromEvents(blk.events);
+        }
+      }
+
+      // Build areas from ordered blocks. When adjacency=true, bare-letter sub-items
+      // (e.g. "A - Arts") are buffered and attached to the next area header.
+      // Lab-reference empty blocks (C - Laboratory Science) buffer too — not dropped.
+      const buildAreas = (blocksInOrder, adjacency) => {
+        const isHeaderOnly = b => b.courses.length === 0;
+        const headersByGroup = new Map(); // group token -> header block title (no courses)
+        for (const b of blocksInOrder) {
+          if (isHeaderOnly(b) && looksLikeArea(b.title)) {
+            const g = areaGroupToken(b.title);
+            if (g && !headersByGroup.has(g)) headersByGroup.set(g, b.title);
+          }
+        }
+        const areas = [];
+        const areaByTitle = new Map();
+        const ensureArea = (title) => {
+          if (!areaByTitle.has(title)) {
+            const node = { id: 'a' + areas.length, title, requirement: parseRequirement(title), subgroups: [], isHeaderArea: true };
+            areas.push(node); areaByTitle.set(title, node);
+          }
+          return areaByTitle.get(title);
+        };
+        const makeSubgroup = (area, b, req) => ({
+          id: area.id + '-' + area.subgroups.length,
+          title: b.title,
+          requirement: req,
+          courses: b.courses.slice(),
+          options: b.options || null,
+          isLabReference: !!b.isLabReference
+        });
+        const standalone = (b, req) => {
+          const node = {
+            id: 'a' + areas.length,
+            title: b.title,
+            requirement: req,
+            subgroups: [{
+              id: 'a' + areas.length + '-0',
+              title: null,
+              requirement: req,
+              courses: b.courses.slice(),
+              options: b.options || null,
+              isLabReference: !!b.isLabReference
+            }],
+            isHeaderArea: false
+          };
+          areas.push(node); areaByTitle.set(b.title, node);
+        };
+        const attach = (area, b, leafReq) => {
+          const req = leafReq.choice === null ? area.requirement : leafReq;
+          area.subgroups.push(makeSubgroup(area, b, req));
+        };
+        let buffer = [];
+        // Prefer attaching buffered sub-items to a matching AREA header (handles reverse
+        // CurriQunet order where 1A/1B/1C appear after AREA 1 was already seen).
+        const flushStandalone = () => {
+          for (const o of buffer) {
+            const g = areaGroupToken(o.b.title);
+            const parentTitle = g ? headersByGroup.get(g) : null;
+            if (parentTitle && parentTitle !== o.b.title) attach(ensureArea(parentTitle), o.b, o.req);
+            else standalone(o.b, o.req);
+          }
+          buffer = [];
+        };
+        for (const b of blocksInOrder) {
+          const labRef = !!b.isLabReference || isLabReferenceTitle(b.title);
+          if (isHeaderOnly(b)) {
+            // AREA headers flush buffer; lab-ref / bare-letter empties buffer as sub-items
+            if (looksLikeArea(b.title)) {
+              const area = ensureArea(b.title);
+              for (const o of buffer) attach(area, o.b, o.req);
+              buffer = [];
+              continue;
+            }
+            if (adjacency && (looksLikeSubItem(b.title) || labRef)) {
+              b.isLabReference = labRef;
+              buffer.push({ b, req: parseRequirement(b.title) });
+              continue;
+            }
+            // Non-adjacency: keep lab-ref as standalone empty (filled later if nested fails)
+            if (labRef) {
+              b.isLabReference = true;
+              flushStandalone();
+              standalone(b, parseRequirement(b.title));
+              continue;
+            }
+            const area = ensureArea(b.title);
+            for (const o of buffer) attach(area, o.b, o.req);
+            buffer = [];
+            continue;
+          }
+          const g = areaGroupToken(b.title);
+          const leafReq = parseRequirement(b.title);
+          const parentTitle = g ? headersByGroup.get(g) : null;
+          if (parentTitle && parentTitle !== b.title) { flushStandalone(); attach(ensureArea(parentTitle), b, leafReq); }
+          else if (adjacency && (looksLikeSubItem(b.title) || labRef)) {
+            b.isLabReference = labRef;
+            buffer.push({ b, req: leafReq });
+          }
+          else { flushStandalone(); standalone(b, leafReq); }
+        }
+        flushStandalone();
+
+        // Fill lab-reference subgroups from sibling * courses in the same area
+        for (const area of areas) {
+          const labRefs = area.subgroups.filter(sg => sg.isLabReference);
+          if (!labRefs.length) continue;
+          const starred = [];
+          const seen = new Set();
+          for (const sg of area.subgroups) {
+            if (sg.isLabReference) continue;
+            for (const c of sg.courses) {
+              if (hasLabAsterisk(c.headerId) && c.key && !seen.has(c.key)) {
+                seen.add(c.key);
+                starred.push({ ...c });
+              }
+            }
+          }
+          for (const lr of labRefs) {
+            lr.courses = starred.map(c => ({ ...c }));
+            lr.options = null; // flat re-list
+          }
+        }
+
+        // Keep areas that have courses, or lab-ref subgroups that received * courses
+        return areas.filter(a => a.subgroups.some(sg => sg.courses.length > 0 || sg.isLabReference));
+      };
+
+      // Only reorder/nest when the result is a clean, uniquely-numbered AREA set
+      // (e.g. Cal-GETC: AREA 1..6). Otherwise keep the original layout untouched.
+      const isCleanNumbered = (areas) => {
+        if (areas.length < 2) return false;
+        const keys = areas.map(a => areaNumKey(a.title));
+        if (keys.some(k => k === null)) return false;
+        return new Set(keys).size === keys.length;
+      };
+
+      const fillLabRefsFromProgram = (areas) => {
+        const allStarred = [];
+        const seen = new Set();
+        for (const area of areas) {
+          for (const sg of area.subgroups) {
+            if (sg.isLabReference) continue;
+            for (const c of sg.courses) {
+              if (hasLabAsterisk(c.headerId) && c.key && !seen.has(c.key)) {
+                seen.add(c.key);
+                allStarred.push({ ...c });
+              }
+            }
+          }
+        }
+        for (const area of areas) {
+          for (const sg of area.subgroups) {
+            if (!sg.isLabReference) continue;
+            if (sg.courses.length === 0 && allStarred.length) {
+              sg.courses = allStarred.map(c => ({ ...c }));
+            }
+          }
+        }
+        return areas.filter(a => a.subgroups.some(sg => sg.courses.length > 0));
+      };
+
+      const programs = [];
+      for (const prog of progMap.values()) {
+        const blocksInOrder = prog.blockOrder.map(t => prog.blocks.get(t));
+        const areasNew = buildAreas(blocksInOrder, true);
+        let areas;
+        if (isCleanNumbered(areasNew)) {
+          areas = sortByKey(areasNew, a => areaNumKey(a.title));
+          for (const a of areas) a.subgroups = sortByKey(a.subgroups, sg => subOrderKey(sg.title));
+        } else {
+          areas = buildAreas(blocksInOrder, false);
+        }
+        areas = fillLabRefsFromProgram(areas);
+        programs.push({ name: prog.name, type: programType(prog.name), areas });
+      }
+      programs.sort((a, b) => a.name.localeCompare(b.name));
+      return programs;
+    };
+
+    // ============================================================
+    // PROGRAM METRIC COMPUTATION (per selected term)
+    // ============================================================
+    const courseMetrics = (analytics, key, term) => {
+      const rec = analytics.index[key];
+      if (!rec) return { found: false, offered: false, m: null, title: '' };
+      const m = rec.terms[term];
+      if (!m) return { found: true, offered: false, m: null, title: rec.title };
+      return { found: true, offered: true, m, title: rec.title };
+    };
+
+    // Merge per-term analytics into a course descriptor. `base` carries whatever
+    // is already known (subject/number/title/units from the Program Summary file).
+    const enrichCourse = (base, analytics, term) => {
+      const cm = courseMetrics(analytics, base.key, term);
+      const pct = cm.offered ? cm.m.ztcPct : null;
+      return {
+        ...base,
+        analyticsTitle: cm.title,
+        offered: cm.offered,
+        found: cm.found,
+        ztcPct: pct,
+        surveyPct: cm.offered ? cm.m.surveyPct : null,
+        status: ztcStatus(pct),
+        // Chancellor's Office definition: ZTC-passing with >=1 ZTC section
+        coZtc: !!(cm.offered && cm.m.ztcSec !== null && cm.m.ztcSec >= ZTC_THRESHOLDS.CO_MIN_SECTIONS),
+        metrics: cm.offered ? cm.m : null
+      };
+    };
+
+    const enrichCourseFromKey = (key, analytics, term) =>
+      enrichCourse({ key, ...parseCourseKey(key), courseTitle: '' }, analytics, term);
+
+    // Build an enriched view for one program at a given term
+    const computeProgramView = (program, analytics, term) => {
+      let reqTotal = 0, reqZtc = 0;
+      let unitsRequired = 0;
+      let unitsRequiredUnverifiable = false;
+
+      const areas = program.areas.map(area => {
+        const subgroups = area.subgroups.map(sg => {
+          const courses = sg.courses.map(c => enrichCourse(c, analytics, term));
+          let options = null;
+          if (sg.options && sg.options.length) {
+            options = sg.options.map(opt => {
+              const oCourses = opt.courses.map(c => enrichCourse(c, analytics, term));
+              return {
+                label: opt.label,
+                courses: oCourses,
+                ztcOk: optionIsZtc(oCourses)
+              };
+            });
+          }
+          return { ...sg, courses, options };
+        });
+
+        // Lab-reference subgroups are display-only (re-list of * courses) — exclude from rollup
+        const scoredSubgroups = subgroups.filter(sg => !sg.isLabReference);
+        const req = area.requirement || { choice: null, n: null };
+        const isChoice = req.choice === true;
+
+        // Denominators come from the catalog requirement structure, not only
+        // courses offered in the selected term. Unavailable or unknown courses
+        // remain unmet requirements and therefore cannot inflate adoption.
+        const requirementPlan = buildRequirementPlan(area, scoredSubgroups);
+        const hasLabConstraint = subgroups.some(sg => sg.isLabReference);
+        const score = scoreRequirementPlan(
+          requirementPlan,
+          { contentFloor: hasLabConstraint ? 3 : null }
+        );
+        const { anyZtc, ztcCount, reqTotal: aReqTotal, reqZtc: aReqZtc } = score;
+        reqTotal += aReqTotal; reqZtc += aReqZtc;
+
+        let unitsMin = score.unitsMin;
+        let unitsMax = score.unitsMax;
+        let unitsUnverifiable = !score.unitsVerifiable;
+        if (hasLabConstraint) {
+          // The title proves a lab component exists, but without Header Identifier
+          // the qualifying course cannot be identified. Add only the smallest
+          // observable supplemental-unit floor and keep compliance unverifiable.
+          const supplementalUnits = scoredSubgroups
+            .flatMap(sg => sg.courses)
+            .filter(c => c.units !== null && c.units > 0 && (c.units < 3 || /L$/i.test(c.number || '')))
+            .map(c => c.units)
+            .sort((a, b) => a - b);
+          if (supplementalUnits.length) {
+            unitsMin += supplementalUnits[0];
+            unitsMax += supplementalUnits[0];
+          }
+          unitsUnverifiable = true;
+        }
+        unitsRequired += unitsMin;
+        unitsRequiredUnverifiable = unitsRequiredUnverifiable || unitsUnverifiable;
+        const unitsLabel = unitsMin <= 0
+          ? (unitsUnverifiable ? 'unverifiable' : '')
+          : (unitsUnverifiable
+            ? `≥${fmtUnits(unitsMin)}`
+            : (unitsMin === unitsMax ? fmtUnits(unitsMin) : `${fmtUnits(unitsMin)}–${fmtUnits(unitsMax)}`));
+
+        const dataCount = score.displayTotal;
+        const areaPct = aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null;
+        return {
+          ...area, subgroups,
+          isChoice, requiredCount: req.n,
+          unitsLabel, anyZtc, ztcCount, dataCount,
+          requirementSlots: score.groups,
+          unitsUnverifiable,
+          areaPct,
+          satisfiable: aReqTotal > 0 && aReqZtc === aReqTotal && !hasLabConstraint
+        };
+      });
+
+      // Course-summary metrics are program-wide unique-course metrics. A course
+      // appearing in multiple areas or in a lab-reference re-list counts once.
+      let coursesWithData = 0, coursesTotal = 0;
+      let surveySum = 0, surveyN = 0;
+      let coCount = 0;
+      const seenKeys = new Set();
+      for (const area of areas) {
+        for (const sg of area.subgroups) {
+          for (const c of sg.courses) {
+            if (c.key && seenKeys.has(c.key)) continue;
+            if (c.key) seenKeys.add(c.key);
+            coursesTotal += 1;
+            if (c.offered && c.ztcPct !== null) coursesWithData += 1;
+            if (c.offered && c.surveyPct !== null) { surveySum += c.surveyPct; surveyN += 1; }
+            if (c.coZtc) coCount += 1;
+          }
+        }
+      }
+
+      const adoptionPct = reqTotal > 0 ? Math.round((reqZtc / reqTotal) * 100) : null;
+      const avgSurvey = surveyN > 0 ? Math.round(surveySum / surveyN) : null;
+      return {
+        areas, adoptionPct, reqTotal, reqZtc,
+        coursesWithData, coursesTotal, avgSurvey, coCount,
+        unitsRequired: Math.round(unitsRequired * 100) / 100,
+        unitsRequiredUnverifiable,
+        unitsRequiredLabel: `${unitsRequiredUnverifiable ? '≥' : ''}${fmtUnits(unitsRequired)}`
+      };
+    };
+
+    // Institution rollup from all active pathways (institution KPIs are not sidebar-filtered).
+    const computeInstitutionStats = (programList, adoptionMap) => {
+      const vals = programList.map(p => adoptionMap[p.name]?.pct).filter(v => v !== null && v !== undefined);
+      const avg = vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
+      return {
+        total: programList.length,
+        scored: vals.length,
+        noData: programList.length - vals.length,
+        avg,
+        full: vals.filter(v => v >= 100).length,
+        high: vals.filter(v => v >= ZTC_THRESHOLDS.ZTC_MIN).length,
+        partial: vals.filter(v => v >= ZTC_THRESHOLDS.PARTIAL_MIN && v < ZTC_THRESHOLDS.ZTC_MIN).length,
+        low: vals.filter(v => v < ZTC_THRESHOLDS.PARTIAL_MIN).length
+      };
+    };
+
+    // PRODUCTION MODEL TEST END
+    // ============================================================
+    // SMALL COMPONENTS
+    // ============================================================
+    const DashboardSection = ({ title, subtitle, badge, children, compact = false }) => (
+      <section className={compact ? 'space-y-2' : 'space-y-4'}>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            {compact
+              ? <h3 className="text-sm font-bold tracking-tight">{title}</h3>
+              : <h2 className="text-lg font-bold tracking-tight">{title}</h2>}
+            {subtitle && <p className={`${compact ? 'text-xs mt-0.5' : 'text-sm opacity-70 mt-0.5'}`}>{subtitle}</p>}
+          </div>
+          {badge}
+        </div>
+        {children}
+      </section>
+    );
+
+    const DashboardInfoButton = ({ label, onClick, t }) => (
+      <button type="button" onClick={onClick}
+        aria-label={`Explain ${label}`}
+        title={`Explain ${label}`}
+        style={{ width: '28px', height: '28px' }}
+        className={`flex-shrink-0 rounded-full border ${t.cardBorder} ${t.card} ${t.cardHover} inline-flex items-center justify-center text-sm font-bold leading-none`}>
+        <span aria-hidden="true">!</span>
+      </button>
+    );
+
+    const AppFooter = ({ t }) => (
+      <footer role="contentinfo" className={`flex-shrink-0 border-t ${t.headerBorder} ${t.header} px-4 py-2 text-center`}>
+        <h2 className="sr-only">Application information</h2>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          <strong className={`font-semibold ${t.text}`}>Contact:</strong> {APP_META.contact} · {APP_META.department}
+        </p>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          {APP_META.useLine} · {APP_META.accessibility} · {APP_META.a11yNote}
+        </p>
+        <p className={`text-[10px] leading-snug ${t.textMuted} my-0.5`}>
+          <strong className={`font-semibold ${t.text}`}>Hosted app:</strong>{' '}
+          <a href={APP_META.hostedUrl} className="underline hover:opacity-90">{APP_META.hostedUrl}</a>
+        </p>
+      </footer>
+    );
+
+    const SidebarSearch = ({ value, onChange, label, placeholder, t }) => (
+      <div className={`flex items-center gap-2 rounded-lg border ${t.cardBorder} ${t.input} px-2.5 py-1.5`}>
+        <Icons.Search className={`w-4 h-4 ${t.faint}`} aria-hidden="true" />
+        <input value={value} onChange={(e) => onChange(e.target.value)} aria-label={label} placeholder={placeholder} className="bg-transparent text-sm outline-none w-full" />
+        {value && <button type="button" onClick={() => onChange('')} aria-label="Clear search"><Icons.X className="w-4 h-4" aria-hidden="true" /></button>}
+      </div>
+    );
+    const Ring = ({ pct, size = 72, stroke = 8, label }) => {
+      const r = (size - stroke) / 2;
+      const c = 2 * Math.PI * r;
+      const val = pct === null || pct === undefined ? 0 : pct;
+      const off = c - (val / 100) * c;
+      const text = pct === null || pct === undefined ? 'no data' : pct + '%';
+      return (
+        <svg width={size} height={size} className="flex-shrink-0" role="img"
+          aria-label={`${label || 'ZTC adoption'}: ${text}`}>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(148,163,184,0.25)" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ringColor(pct)} strokeWidth={stroke}
+            strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: 'stroke-dashoffset 0.4s ease' }} />
+          <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle"
+            fill={ringColor(pct)} fontSize={size * 0.26} fontWeight="700">
+            {pct === null || pct === undefined ? '—' : pct + '%'}
+          </text>
+        </svg>
+      );
+    };
+
+    const StatusBadge = ({ status, small, dark = true }) => {
+      // Text shades chosen for >=4.5:1 contrast against the translucent tint on each theme.
+      const cfg = {
+        'ztc': ['bg-green-500/20 border-green-500/40', dark ? 'text-green-300' : 'text-green-800', 'ZTC'],
+        'partial': ['bg-amber-500/20 border-amber-500/40', dark ? 'text-amber-200' : 'text-amber-800', 'Partial'],
+        'not-ztc': ['bg-red-500/20 border-red-500/40', dark ? 'text-red-300' : 'text-red-800', 'Not ZTC'],
+        'no-data': ['bg-slate-500/25 border-slate-500/50', dark ? 'text-slate-200' : 'text-slate-700', 'No data']
+      }[status] || ['bg-slate-500/25 border-slate-500/50', dark ? 'text-slate-200' : 'text-slate-700', '—'];
+      return (
+        <span className={`inline-flex items-center rounded-full border ${cfg[0]} ${cfg[1]} ${small ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} font-semibold`}>
+          {cfg[2]}
+        </span>
+      );
+    };
+
+    // Purple Chancellor's Office ZTC identifier (course has >=1 ZTC section).
+    // Distinct from the green Chaffey badge (>=75% of sections ZTC).
+    const CoBadge = ({ small, dark = true }) => (
+      <span role="img" aria-label="Chancellor's Office ZTC: at least one section is zero textbook cost"
+        title="Chancellor's Office ZTC — at least one section is offered at Zero Textbook Cost (Chaffey's internal bar is 75%+ of sections)."
+        className={`inline-flex items-center gap-1 rounded-full border border-violet-500/50 bg-violet-500/20 ${dark ? 'text-violet-200' : 'text-violet-800'} ${small ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} font-semibold`}>
+        <Icons.Landmark className={small ? 'w-3 h-3' : 'w-3.5 h-3.5'} aria-hidden="true" /> CO ZTC
+      </span>
+    );
+
+    // Custom listbox — native <select> popups ignore theme CSS on macOS.
+    const ThemedSelect = ({ value, onChange, options, ariaLabel, t, dark, className = '', buttonClassName = '', align = 'left', menuClassName = '' }) => {
+      const [open, setOpen] = useState(false);
+      const [activeIdx, setActiveIdx] = useState(0);
+      const rootRef = useRef(null);
+      const btnRef = useRef(null);
+      const display = options.find(o => o.value === value)?.label ?? value;
+      const selectedIdx = Math.max(0, options.findIndex(o => o.value === value));
+
+      useEffect(() => {
+        if (!open) return;
+        setActiveIdx(selectedIdx);
+        const onDown = (e) => {
+          if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+        };
+        const onKey = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setOpen(false);
+            btnRef.current?.focus();
+            return;
+          }
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveIdx(i => Math.min(i + 1, options.length - 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveIdx(i => Math.max(i - 1, 0));
+          } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const pick = options[activeIdx];
+            if (pick) { onChange(pick.value); setOpen(false); btnRef.current?.focus(); }
+          }
+        };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => {
+          document.removeEventListener('mousedown', onDown);
+          document.removeEventListener('keydown', onKey);
+        };
+      }, [open, activeIdx, options, onChange, selectedIdx]);
+
+      const pickedCls = dark ? 'bg-blue-600/30 font-semibold' : 'bg-blue-50 text-blue-900 font-semibold';
+      const activeCls = dark ? 'bg-zinc-700/70' : 'bg-gray-100';
+
+      return (
+        <div ref={rootRef} className={`relative ${className}`}>
+          <button ref={btnRef} type="button"
+            aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel}
+            onClick={() => setOpen(o => !o)}
+            className={`w-full flex items-center justify-between gap-2 rounded-lg border ${t.cardBorder} ${t.input} cursor-pointer ${buttonClassName}`}>
+            <span className="truncate text-left flex-1">{display}</span>
+            <Icons.ChevronDown className={`w-4 h-4 flex-shrink-0 opacity-70 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+          {open && (
+            <ul role="listbox" aria-label={ariaLabel}
+              className={`absolute z-50 mt-1 max-h-64 overflow-auto rounded-lg border ${t.panelBorder} ${t.panel} shadow-xl py-1 list-none m-0 ${align === 'right' ? 'right-0' : 'left-0'} min-w-full ${menuClassName}`}>
+              {options.map((opt, i) => {
+                const isSelected = opt.value === value;
+                const isActive = i === activeIdx;
+                return (
+                  <li key={opt.value} role="presentation">
+                    <button type="button" role="option" aria-selected={isSelected}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${isSelected ? pickedCls : ''} ${!isSelected && isActive ? activeCls : ''} ${!isSelected ? t.cardHover : ''}`}
+                      onMouseEnter={() => setActiveIdx(i)}
+                      onClick={() => { onChange(opt.value); setOpen(false); btnRef.current?.focus(); }}>
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 flex-shrink-0 flex items-center justify-center" aria-hidden="true">
+                          {isSelected ? <Icons.Check className="w-4 h-4 text-blue-500" /> : null}
+                        </span>
+                        <span className="leading-snug">{opt.label}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      );
+    };
+
+    // Soft label for exported Group Title bands (not a CurriQunet tree replica)
+    const formatGroupLabel = (label) => {
+      if (!label) return '';
+      const s = cleanTitle(label);
+      if (!s) return '';
+      if (/^(either|or)$/i.test(s) || /^group\s*\d+$/i.test(s) || /^choose\b/i.test(s)) {
+        return /:$/.test(s) ? s : s + ':';
+      }
+      return s;
+    };
+
+    // Course row — ZTC decision card (primary Pathway layout)
+    const CourseRow = ({ c, t, dark, selectedTerm, onOpen, showLabStar = true }) => {
+      const title = c.courseTitle || c.analyticsTitle || '';
+      const labStar = showLabStar && hasLabAsterisk(c.headerId);
+      const label = `${c.subject}-${c.number}${labStar ? ' (lab asterisk)' : ''}, ${title}. ` +
+        (c.offered ? `ZTC adoption ${c.ztcPct === null ? 'no data' : c.ztcPct + '%'}, survey completion ${c.surveyPct === null ? 'no data' : c.surveyPct + '%'}, status ${c.status}.` : `Not offered in ${selectedTerm}.`) +
+        (c.coZtc ? ' Chancellor\u2019s Office ZTC.' : '') +
+        (c.found ? ' Activate for details.' : '');
+      const inner = (
+        <>
+          <div className="min-w-0">
+            <div className="font-mono text-sm font-semibold">
+              {c.subject}-{c.number}
+              {labStar && (
+                <span className={`ml-1 font-sans text-xs font-semibold ${dark ? 'text-zinc-400' : 'text-gray-500'}`} title="Laboratory course (*)" aria-hidden="true">*</span>
+              )}
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm line-clamp-2 sm:truncate">{title}</div>
+            <div className={`text-[11px] ${t.faint}`}>
+              {c.units !== null ? `${fmtUnits(c.units)} units` : ''}
+              {!c.offered && <span className="ml-1">· not offered {selectedTerm}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-3 justify-end flex-shrink-0">
+            <div className="text-right hidden sm:block w-14">
+              <div className={`text-[10px] ${t.faint} leading-none`}>survey</div>
+              <div className="text-xs font-semibold">{c.surveyPct === null ? '—' : c.surveyPct + '%'}</div>
+            </div>
+            <div className="text-right w-12">
+              <div className={`text-[10px] ${t.faint} leading-none`}>ZTC</div>
+              <div className={`text-sm font-bold ${pctColor(c.ztcPct, dark)}`}>{c.ztcPct === null ? '—' : c.ztcPct + '%'}</div>
+            </div>
+            {c.coZtc && <CoBadge small dark={dark} />}
+            <StatusBadge status={c.status} small dark={dark} />
+          </div>
+        </>
+      );
+      const cls = `w-full text-left grid grid-cols-[auto_1fr_auto] items-center gap-1.5 sm:gap-3 px-2.5 sm:px-3 py-2 rounded-lg border min-w-0 ${t.cardBorder} ${t.card} transition-colors`;
+      if (!c.found) {
+        return <div className={cls} aria-label={label} data-course-key={c.key}>{inner}</div>;
+      }
+      return (
+        <button type="button" onClick={(e) => onOpen(c, e.currentTarget)} aria-label={label} data-course-key={c.key} className={`${cls} ${t.cardHover} cursor-pointer`}>
+          {inner}
+        </button>
+      );
+    };
+
+    // Compact choice-band chip when Group Title is present in the export
+    const ChoiceBand = ({ label, ztcOk, dark }) => {
+      const text = formatGroupLabel(label);
+      if (!text) return null;
+      return (
+        <div className="flex items-center flex-wrap gap-2 px-0.5 mb-2 mt-1">
+          <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
+            dark ? 'bg-zinc-800/80 border-zinc-600 text-zinc-200' : 'bg-gray-100 border-gray-300 text-gray-800'
+          }`}>
+            {text}
+          </span>
+          {ztcOk && (
+            <span className={`text-[11px] font-medium ${dark ? 'text-green-400' : 'text-green-700'}`}>ZTC path</span>
+          )}
+        </div>
+      );
+    };
+
+    // Pathway subgroup: flat ZTC decision list; soft choice bands only when export provides them
+    const SubgroupCourses = ({ sg, t, dark, selectedTerm, onOpen }) => {
+      const open = (course, el) => onOpen(course, el);
+
+      if (sg.isLabReference) {
+        return (
+          <div
+            className={`rounded-lg border border-dashed px-3 py-2.5 ${dark ? 'border-zinc-500 bg-zinc-800/60' : 'border-gray-400 bg-gray-100'}`}
+            role="note"
+          >
+            <p className={`text-xs leading-snug ${dark ? 'text-zinc-200' : 'text-gray-800'}`}>
+              <span className="font-semibold">Lab reference — informational (not scored).</span>
+              {' '}Satisfied by any course in this area with a laboratory (*). Listed below for ZTC reference only.
+            </p>
+            {sg.courses.length > 0 && (
+              <ul className="mt-2 space-y-2" aria-label="Laboratory courses in this area (informational)">
+                {sg.courses.map((c, i) => (
+                  <li key={sg.id + '-lab-' + i}>
+                    <CourseRow c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      }
+
+      if (sg.options && sg.options.length) {
+        const anyLabeled = sg.options.some(o => o.label);
+        return (
+          <div className="space-y-3 min-w-0" role="list" aria-label="Course options">
+            {sg.options.map((opt, oi) => {
+              const multi = opt.courses.length > 1;
+              return (
+                <div key={sg.id + '-opt-' + oi} role="listitem" className={`min-w-0 ${anyLabeled && opt.label ? 'space-y-1' : ''}`}>
+                  {opt.label && <ChoiceBand label={opt.label} ztcOk={opt.ztcOk} dark={dark} />}
+                  <div className={multi ? `space-y-1 rounded-lg border px-2.5 py-2 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}` : 'space-y-2 min-w-0'}>
+                    {opt.courses.map((c, ci) => (
+                      <React.Fragment key={sg.id + '-opt-' + oi + '-' + ci}>
+                        {ci > 0 && (
+                          <div className={`text-[10px] font-semibold uppercase tracking-wider px-1 my-1 ${t.faint}`} aria-hidden="true">
+                            and
+                          </div>
+                        )}
+                        <CourseRow c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-2 min-w-0">
+          {sg.courses.map((c, i) => (
+            <CourseRow key={sg.id + '-' + i} c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+          ))}
+        </div>
+      );
+    };
+
+    // ============================================================
+    // TREND CHART (Chart.js) — accessible: role=img + aria-label + sr-only table
+    // ============================================================
+    const TrendChart = ({ series, dark, height = 200, ariaLabel, summary, type = 'line' }) => {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+      useEffect(() => {
+        if (!canvasRef.current || !window.Chart) return;
+        const grid = dark ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.18)';
+        const tick = dark ? '#cbd5e1' : '#475569';
+        const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isBar = type === 'bar';
+        const ds = series.map(s => isBar ? ({
+          label: s.label, data: s.data,
+          backgroundColor: s.colors || (s.color + 'cc'), borderColor: s.colors || s.color, borderWidth: 1,
+          borderRadius: 3, maxBarThickness: 26
+        }) : ({
+          label: s.label, data: s.data, borderColor: s.color, backgroundColor: s.color + '33',
+          borderWidth: 2, pointRadius: 2.5, pointHoverRadius: 5, tension: 0.3, spanGaps: true, fill: false
+        }));
+        chartRef.current = new window.Chart(canvasRef.current, {
+          type,
+          data: { labels: series[0] ? series[0].labels : [], datasets: ds },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            animation: reduce ? false : { duration: 400 },
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              y: { min: 0, max: 100, ticks: { color: tick, callback: (v) => v + '%' }, grid: { color: grid } },
+              x: { ticks: { color: tick, maxRotation: 0, autoSkip: true, maxTicksLimit: isBar ? 12 : 8 }, grid: { color: grid, display: !isBar } }
+            },
+            plugins: {
+              legend: { display: ds.length > 1, labels: { color: tick, boxWidth: 12 } },
+              tooltip: { callbacks: { label: (it) => `${it.dataset.label}: ${it.parsed.y === null ? 'n/a' : it.parsed.y + '%'}` } }
+            }
+          }
+        });
+        return () => { if (chartRef.current) chartRef.current.destroy(); };
+      }, [series, dark, type]);
+      return (
+        <div style={{ height }} role="img" aria-label={ariaLabel}>
+          <canvas ref={canvasRef} aria-hidden="true"></canvas>
+          {summary && <span className="sr-only">{summary}</span>}
+        </div>
+      );
+    };
+
+    const Sparkline = ({ data, color = '#22c55e', ariaLabel }) => {
+      const points = data
+        .map((value, index) => value === null || value === undefined ? null : {
+          x: data.length <= 1 ? 80 : 4 + (index / (data.length - 1)) * 152,
+          y: 40 - (Math.max(0, Math.min(100, value)) / 100) * 36
+        })
+        .filter(Boolean);
+      const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+      return (
+        <svg viewBox="0 0 160 44" className="w-full h-11" role="img" aria-label={ariaLabel}>
+          <line x1="4" y1="40" x2="156" y2="40" stroke="currentColor" opacity="0.18" aria-hidden="true" />
+          {path && <path d={path} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" />}
+          {points.length === 1 && <circle cx={points[0].x} cy={points[0].y} r="3" fill={color} aria-hidden="true" />}
+        </svg>
+      );
+    };
+
+    // ============================================================
+    // COURSE DETAIL (shared by the Courses view and the course modal)
+    // Stat cards, ZTC section count, OER type breakdown, per-term trend,
+    // and catalog link. `compact` renders the tighter modal layout.
+    // ============================================================
+    const CourseDetail = ({ c, analytics, selectedTerm, t, dark, compact = false, showCatalogLink = true, showProgramMembership = true, programsForCourse = [], onOpenProgram }) => {
+      const rec = analytics.index[c.key];
+      const trend = rec ? sortTerms(Object.keys(rec.terms)).map(term => ({ term, pct: rec.terms[term].ztcPct })) : [];
+      const m = c.metrics;
+      const types = m ? [
+        ['ZTC-A', m.ztca], ['ZTC-C', m.ztcc], ['ZTC-E', m.ztce],
+        ['ZTC-F', m.ztcf], ['ZTC-G', m.ztcg], ['LCT', m.lct]
+      ].filter(x => x[1] !== null) : [];
+      const sectionPct = m && m.totalSec ? Math.round((m.ztcSec / m.totalSec) * 100) : null;
+      const mb = compact ? 'mb-5' : 'mb-6';
+
+      const trendChart = (
+        <TrendChart dark={dark} height={compact ? 150 : 180} type="bar"
+          ariaLabel={`Bar chart: ZTC adoption by term for ${c.subject}-${c.number}`}
+          summary={'ZTC adoption by term: ' + trend.map(x => `${x.term} ${x.pct === null ? 'no data' : x.pct + '%'}`).join(', ') + '.'}
+          series={[{
+            label: 'ZTC adoption', labels: trend.map(x => x.term), data: trend.map(x => x.pct),
+            colors: trend.map(x => x.term === selectedTerm ? '#3b82f6' : ringColor(x.pct))
+          }]} />
+      );
+
+      const formatMembershipPlacement = (placements) => {
+        const list = (placements || []).filter(Boolean);
+        if (!list.length) return '';
+        if (list.length <= 2) return list.join(' · ');
+        return `${list[0]} · +${list.length - 1} more`;
+      };
+
+      const programMembership = (
+        <div className={mb}>
+          <h3 className={`text-xs font-semibold ${t.textMuted} uppercase mb-2 tracking-wide`}>
+            In pathways{programsForCourse.length ? ` (${programsForCourse.length})` : ''}
+          </h3>
+          {programsForCourse.length === 0 ? (
+            <div className="space-y-1">
+              <p className={`text-xs ${t.faint}`}>Not listed in any active pathway in the Program Summary.</p>
+              <p className={`text-[11px] ${t.faint}`}>Deactivated programs in the export are not listed.</p>
+            </div>
+          ) : (
+            <ul className={`grid gap-2 list-none p-0 m-0 ${compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}
+              style={{ gridAutoRows: '1fr' }} aria-label="Pathways including this course">
+              {programsForCourse.map((p) => {
+                const placement = formatMembershipPlacement(p.placements);
+                const pctLabel = p.pct === null || p.pct === undefined ? 'no adoption data' : p.pct + '% ZTC adoption';
+                const nameEndsDegree = /\bdegree\b/i.test(p.name || '');
+                const ariaBits = [p.name, placement, !nameEndsDegree ? (p.type || '') : '', pctLabel, 'Activate to open pathway'].filter(Boolean);
+                return (
+                  <li key={p.name} className="min-w-0" style={{ height: '100%' }}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenProgram && onOpenProgram(p.name)}
+                      aria-label={ariaBits.join('. ') + '.'}
+                      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                      className={`w-full rounded-lg border ${t.cardBorder} ${dark ? 'hover:border-zinc-500 hover:bg-zinc-800/80' : 'hover:border-gray-400 hover:bg-gray-50'} ${t.card} text-left px-3 py-2.5 transition-colors cursor-pointer min-w-0`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-sm font-semibold line-clamp-2 min-w-0">{p.name}</div>
+                        <span className={`font-semibold tabular-nums text-sm flex-shrink-0 ${pctColor(p.pct, dark)}`}>
+                          {p.pct === null || p.pct === undefined ? '—' : p.pct + '%'}
+                        </span>
+                      </div>
+                      {placement && (
+                        <div className={`text-[11px] leading-snug mt-1 line-clamp-2 ${t.textMuted}`}>{placement}</div>
+                      )}
+                      <div className={`text-[11px] mt-1 ${t.faint}`} style={{ marginTop: 'auto', paddingTop: '0.25rem' }}>
+                        {p.type || 'Pathway'}
+                        <span className="mx-1" aria-hidden="true">·</span>
+                        Open pathway
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      );
+
+      return (
+        <>
+          {!c.offered ? (
+            <>
+              <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-6 text-center ${mb}`}>
+                <Icons.AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-400" aria-hidden="true" />
+                <p className={`text-sm ${t.textMuted}`}>{c.found ? `No analytics for ${selectedTerm}. This course was not offered (or not reported) in the selected term.` : 'This course was not found in the Course Analytics datasource.'}</p>
+              </div>
+              {showProgramMembership && programMembership}
+            </>
+          ) : (
+            <>
+              <div className={`grid ${compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2 gap-4'} ${mb}`}>
+                <div className={`rounded-xl border-2 ${statusBorderCls(c.ztcPct)} ${compact ? 'p-4' : 'p-5'} text-center`}>
+                  <div className={`text-[10px] uppercase ${dark ? t.faint : 'text-gray-700'} mb-1`}>ZTC adoption</div>
+                  <div className={`text-4xl font-bold ${pctColor(c.ztcPct, dark)}`}>{c.ztcPct === null ? '—' : c.ztcPct + '%'}</div>
+                  {compact && (
+                    <div className="mt-1 flex flex-wrap items-center justify-center gap-1">
+                      <StatusBadge status={c.status} dark={dark} />
+                      {c.coZtc && <CoBadge dark={dark} />}
+                    </div>
+                  )}
+                </div>
+                <div className={`rounded-xl border ${t.cardBorder} ${t.card} ${compact ? 'p-4' : 'p-5'} text-center`}>
+                  <div className={`text-[10px] uppercase ${dark ? t.faint : 'text-gray-700'} mb-1`}>Survey completion</div>
+                  <div className="text-4xl font-bold">{c.surveyPct === null ? '—' : c.surveyPct + '%'}</div>
+                  <div className={`text-[11px] ${t.faint} mt-1`}>
+                    {m.surveysSub !== null ? `${m.surveysSub} submitted` : ''}{m.surveysPend ? ` · ${m.surveysPend} pending` : ''}
+                  </div>
+                </div>
+              </div>
+
+              {showProgramMembership && programMembership}
+
+              {m.totalSec !== null && (
+                <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3 ${mb} flex items-center gap-3`}>
+                  <Icons.Shield className={`w-5 h-5 ${sectionPct >= ZTC_THRESHOLDS.ZTC_MIN ? 'text-green-400' : 'text-slate-400'}`} aria-hidden="true" />
+                  <div className="text-xs">
+                    <span className="font-semibold">{m.ztcSec ?? 0}/{m.totalSec} sections ZTC</span>
+                    {sectionPct !== null && <span className={`ml-1 ${t.textMuted}`}>({sectionPct}%)</span>}
+                    <span className={`ml-1 ${t.faint}`}>· Chaffey ZTC rule = 75%+ of sections</span>
+                  </div>
+                </div>
+              )}
+
+              {types.length > 0 && (
+                <div className={mb}>
+                  <h3 className={`text-xs font-semibold ${t.textMuted} uppercase mb-2 tracking-wide`}>OER / ZTC type breakdown</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {types.map(([label, val]) => (
+                      <div key={label} className={`rounded-lg border ${t.cardBorder} ${t.card} p-2 text-center`}>
+                        <div className={`text-[10px] ${t.faint}`}>{label}</div>
+                        <div className="text-lg font-bold">{val}%</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {trend.filter(x => x.pct !== null).length > 1 && (
+            compact ? (
+              <div className="mb-5">
+                <h4 className={`text-xs font-semibold ${t.textMuted} uppercase mb-2`}>ZTC adoption by term</h4>
+                {trendChart}
+              </div>
+            ) : (
+              <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-5 mb-6`}>
+                <h3 className="font-semibold mb-3 flex items-center gap-2"><Icons.LineChart className="w-4 h-4 text-blue-400" aria-hidden="true" /> ZTC adoption by term</h3>
+                {trendChart}
+              </div>
+            )
+          )}
+
+          {showCatalogLink ? (
+            <a href={`${COURSE_CATALOG_URL}${encodeURIComponent(c.subject + '-' + c.number)}`} target="_blank" rel="noopener noreferrer"
+              className={`${compact ? 'flex w-full' : 'inline-flex'} items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm`}>
+              <Icons.FileText className="w-4 h-4" aria-hidden="true" /> View in course catalog
+            </a>
+          ) : !compact && (
+            <div role="note" tabIndex={0}
+              className={`text-xs ${t.faint} text-center rounded px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}>
+              Catalog link available for current and future term only.
+            </div>
+          )}
+        </>
+      );
+    };
+
+    // ============================================================
+    // MAIN APP
+    // ============================================================
+    class AppErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { error: null };
+      }
+      static getDerivedStateFromError(error) {
+        return { error };
+      }
+      componentDidCatch(error, info) {
+        console.error('ZTC Pathway Mapper render failure', error, info);
+      }
+      clearAndReload = () => {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          localStorage.removeItem(UI_STORAGE_KEY);
+        } finally {
+          window.location.reload();
+        }
+      };
+      render() {
+        if (!this.state.error) return this.props.children;
+        return (
+          <main className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6">
+            <div className="max-w-lg rounded-xl border border-red-500/50 bg-red-500/10 p-6">
+              <h1 className="text-xl font-bold">The saved session could not be displayed</h1>
+              <p className="mt-2 text-sm text-zinc-200">
+                Clear the local session and reload the mapper. Your source CSV files are not affected.
+              </p>
+              <button type="button" onClick={this.clearAndReload}
+                className="mt-4 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700">
+                Clear saved session and reload
+              </button>
+            </div>
+          </main>
+        );
+      }
+    }
+
+    const App = () => {
+      const [darkMode, setDarkMode] = useState(() => {
+        try {
+          const themePref = localStorage.getItem(STORAGE_KEY + '-theme');
+          return themePref ? themePref === 'dark' : true;
+        } catch (e) { return true; }
+      });
+      const [programs, setPrograms] = useState(null);
+      const [analytics, setAnalytics] = useState(null); // { index, terms }
+      const [terms, setTerms] = useState([]);
+      const [selectedTerm, setSelectedTerm] = useState('');
+      const [selectedProgram, setSelectedProgram] = useState(null);
+      const [search, setSearch] = useState('');
+      const [typeFilter, setTypeFilter] = useState('all');
+      const [pathwayAdoptionFilter, setPathwayAdoptionFilter] = useState('all');
+      const [sortBy, setSortBy] = useState('adoption');
+      const [primaryView, setPrimaryView] = useState('program'); // 'program' | 'courses'
+      const [dashboardOpen, setDashboardOpen] = useState(false);
+      const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
+        typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+      );
+      const [selectedCourseKey, setSelectedCourseKey] = useState(null);
+      const [courseStatusFilter, setCourseStatusFilter] = useState('all');
+      const [selectedCourse, setSelectedCourse] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [pendingProgRows, setPendingProgRows] = useState(null);
+      const [pendingAnalRows, setPendingAnalRows] = useState(null);
+      const [savedAt, setSavedAt] = useState(null);
+      const [exportOpen, setExportOpen] = useState(false);
+      const [showTrend, setShowTrend] = useState(true);
+      const [showDashboardDetails, setShowDashboardDetails] = useState(false);
+      const [dashboardModal, setDashboardModal] = useState(null);
+      const [announce, setAnnounce] = useState('');
+      const [storageNotice, setStorageNotice] = useState('');
+      const [dragOverSlot, setDragOverSlot] = useState(null);
+      const [landingAnnounce, setLandingAnnounce] = useState('');
+      const [pendingScrollCourseKey, setPendingScrollCourseKey] = useState(null);
+      const [restoreError, setRestoreError] = useState('');
+
+      const exportMenuRef = useRef(null);
+      const exportBtnRef = useRef(null);
+      const dashboardToggleRef = useRef(null);
+      const dashboardModalRef = useRef(null);
+      const dashboardModalTriggerRef = useRef(null);
+      const courseModalRef = useRef(null);
+      const lastFocusedRef = useRef(null);
+      const jumpAnnounceRef = useRef(null);
+      const restoreCompleteRef = useRef(false);
+
+      const t = darkMode ? THEME.dark : THEME.light;
+
+      // ---- persistence ----
+      useEffect(() => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+          if (raw) {
+            const d = validatePersistedDataset(JSON.parse(raw));
+            let uiRaw = null;
+            try {
+              const storedUi = localStorage.getItem(UI_STORAGE_KEY);
+              uiRaw = storedUi ? JSON.parse(storedUi) : null;
+            } catch (uiError) {
+              console.warn('Ignoring invalid saved navigation state.', uiError);
+            }
+            const ui = validatePersistedUiState(uiRaw, d);
+            setPrograms(d.programs);
+            setAnalytics(d.analytics);
+            setTerms(d.terms);
+            setSelectedTerm(ui.selectedTerm);
+            setSelectedProgram(ui.selectedProgram);
+            setSelectedCourseKey(ui.selectedCourseKey);
+            setPrimaryView(ui.primaryView);
+            setSearch(ui.search);
+            setTypeFilter(ui.typeFilter);
+            setPathwayAdoptionFilter(ui.pathwayAdoptionFilter);
+            setCourseStatusFilter(ui.courseStatusFilter);
+            setSortBy(ui.sortBy);
+            setDashboardOpen(ui.dashboardOpen);
+            setSavedAt(d.savedAt);
+          }
+        } catch (e) {
+          console.warn('Saved ZTC Mapper data was rejected.', e);
+          setRestoreError(`${e.message || 'Saved data is invalid'} Load the source CSV files again or clear the saved session.`);
+        } finally {
+          restoreCompleteRef.current = true;
+        }
+      }, []);
+
+      useEffect(() => {
+        if (!restoreCompleteRef.current || !programs || !analytics) return;
+        let written = false;
+        const persist = () => {
+          if (written) return;
+          written = true;
+          try {
+            localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({
+              schemaVersion: UI_SCHEMA_VERSION,
+              selectedTerm,
+              selectedProgram,
+              selectedCourseKey,
+              primaryView,
+              search,
+              typeFilter,
+              pathwayAdoptionFilter,
+              courseStatusFilter,
+              sortBy,
+              dashboardOpen
+            }));
+          } catch (e) {
+            console.warn('Could not persist navigation state.', e);
+            setStorageNotice('Could not save navigation state to this browser. The current tab will continue to work.');
+          }
+        };
+        const timeout = window.setTimeout(persist, 250);
+        // Flush a pending debounced write if the tab is hidden or unloaded
+        // before the 250 ms timer fires (tab close, navigation, bfcache).
+        window.addEventListener('pagehide', persist);
+        return () => {
+          window.clearTimeout(timeout);
+          window.removeEventListener('pagehide', persist);
+        };
+      }, [
+        programs, analytics, selectedTerm, selectedProgram, selectedCourseKey, primaryView,
+        search, typeFilter, pathwayAdoptionFilter, courseStatusFilter, sortBy, dashboardOpen
+      ]);
+
+      useEffect(() => {
+        localStorage.setItem(STORAGE_KEY + '-theme', darkMode ? 'dark' : 'light');
+        document.documentElement.classList.toggle('theme-light', !darkMode);
+        document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
+      }, [darkMode]);
+
+      useEffect(() => {
+        const media = window.matchMedia('(max-width: 639px)');
+        const updateViewport = () => setIsNarrowViewport(media.matches);
+        updateViewport();
+        media.addEventListener('change', updateViewport);
+        return () => media.removeEventListener('change', updateViewport);
+      }, []);
+
+      // Export menu: dismiss on outside click / Escape (keyboard accessible)
+      useEffect(() => {
+        if (!exportOpen) return;
+        const onDown = (e) => {
+          if (exportMenuRef.current && !exportMenuRef.current.contains(e.target) &&
+              exportBtnRef.current && !exportBtnRef.current.contains(e.target)) setExportOpen(false);
+        };
+        const onKey = (e) => { if (e.key === 'Escape') { setExportOpen(false); exportBtnRef.current && exportBtnRef.current.focus(); } };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+      }, [exportOpen]);
+
+      // Dashboard panel: Escape closes without trapping focus (non-modal).
+      useEffect(() => {
+        if (!dashboardOpen) return;
+        const onKey = (e) => {
+          if (e.key !== 'Escape') return;
+          if (exportOpen || selectedCourse || dashboardModal) return;
+          if (document.querySelector('ul[role="listbox"]')) return;
+          e.preventDefault();
+          setDashboardOpen(false);
+          window.requestAnimationFrame(() => dashboardToggleRef.current && dashboardToggleRef.current.focus());
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+      }, [dashboardOpen, exportOpen, selectedCourse, dashboardModal]);
+
+      // Dashboard modal: focus the dialog, trap Tab, Escape to close, and restore the trigger.
+      useEffect(() => {
+        if (!dashboardModal) return;
+        const node = dashboardModalRef.current;
+        const getFocusable = () => node ? Array.from(node.querySelectorAll('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')) : [];
+        const timer = setTimeout(() => { const f = getFocusable(); (f[0] || node) && (f[0] || node).focus(); }, 0);
+        const onKey = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setDashboardModal(null);
+            return;
+          }
+          if (e.key === 'Tab') {
+            const f = getFocusable();
+            if (!f.length) return;
+            const first = f[0], last = f[f.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => {
+          clearTimeout(timer);
+          document.removeEventListener('keydown', onKey);
+          const trigger = dashboardModalTriggerRef.current;
+          dashboardModalTriggerRef.current = null;
+          if (trigger && trigger.focus && document.contains(trigger)) trigger.focus();
+        };
+      }, [dashboardModal]);
+
+      // Course modal: focus the dialog, trap Tab, Escape to close, restore focus on close
+      useEffect(() => {
+        if (!selectedCourse) return;
+        if (!lastFocusedRef.current) lastFocusedRef.current = document.activeElement;
+        const node = courseModalRef.current;
+        const getFocusable = () => node ? Array.from(node.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])')) : [];
+        const timer = setTimeout(() => { const f = getFocusable(); (f[0] || node) && (f[0] || node).focus(); }, 0);
+        const onKey = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); setSelectedCourse(null); return; }
+          if (e.key === 'Tab') {
+            const f = getFocusable(); if (!f.length) return;
+            const first = f[0], last = f[f.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => {
+          clearTimeout(timer);
+          document.removeEventListener('keydown', onKey);
+          const prev = lastFocusedRef.current;
+          lastFocusedRef.current = null;
+          if (prev && prev.focus && document.contains(prev)) prev.focus();
+        };
+      }, [selectedCourse]);
+
+      // Announce context changes to assistive tech
+      useEffect(() => {
+        if (!programs || !selectedTerm) return;
+        if (jumpAnnounceRef.current) {
+          setAnnounce(jumpAnnounceRef.current);
+          jumpAnnounceRef.current = null;
+          return;
+        }
+        setAnnounce(dashboardOpen
+          ? `Dashboard panel opened. Institution-wide ZTC adoption, term ${selectedTerm}. ${primaryView === 'courses' ? (selectedCourseKey || 'No course selected') : (selectedProgram || 'No pathway selected')} ${isNarrowViewport ? 'is preserved while the reading pane is temporarily hidden.' : 'remains visible.'}`
+          : primaryView === 'courses'
+            ? `Courses, ${selectedCourseKey || 'none selected'}, term ${selectedTerm}`
+            : `${selectedProgram || 'no pathway'}, term ${selectedTerm}`);
+      }, [selectedProgram, selectedCourseKey, selectedTerm, primaryView, dashboardOpen, isNarrowViewport, programs]);
+
+      const persist = (progs, anal, termList, term) => {
+        try {
+          const payload = {
+            schemaVersion: DATASET_SCHEMA_VERSION,
+            programs: progs,
+            analytics: anal,
+            terms: termList,
+            selectedTerm: term,
+            savedAt: new Date().toISOString()
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          setSavedAt(payload.savedAt);
+          setStorageNotice('');
+        } catch (e) {
+          console.warn('Could not persist dataset (storage limit). Data remains for this session.', e);
+          setStorageNotice('Could not save data to this browser (storage limit). Your session will work until you close the tab.');
+        }
+      };
+
+      const readFile = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(parseCSV(e.target.result));
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+
+      const isCsvFile = (file) => {
+        const name = String(file.name || '').toLowerCase();
+        return name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/vnd.ms-excel';
+      };
+
+      const loadPendingCsv = async (slot, file) => {
+        const label = slot === 'prog' ? 'Program Summary' : 'Course Analytics';
+        if (!file || !isCsvFile(file)) {
+          setError(`${label} must be a .csv file.`);
+          return;
+        }
+        try {
+          setError('');
+          const rows = await readFile(file);
+          if (slot === 'prog') setPendingProgRows(rows);
+          else setPendingAnalRows(rows);
+          setLandingAnnounce(`${label} loaded, ${rows.length - 1} rows.`);
+        } catch (err) {
+          setError(`Could not read ${label} file.`);
+        }
+      };
+
+      const handleProgFile = async (e) => {
+        const f = e.target.files[0];
+        if (f) await loadPendingCsv('prog', f);
+        e.target.value = '';
+      };
+      const handleAnalFile = async (e) => {
+        const f = e.target.files[0];
+        if (f) await loadPendingCsv('anal', f);
+        e.target.value = '';
+      };
+
+      const uploadDropHandlers = (slot) => ({
+        onDragEnter: (e) => { e.preventDefault(); e.stopPropagation(); setDragOverSlot(slot); },
+        onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
+        onDragLeave: (e) => {
+          e.preventDefault();
+          if (!e.currentTarget.contains(e.relatedTarget)) setDragOverSlot(s => s === slot ? null : s);
+        },
+        onDrop: async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOverSlot(null);
+          const file = e.dataTransfer?.files?.[0];
+          if (file) await loadPendingCsv(slot, file);
+        }
+      });
+
+      const uploadCardCls = (slot, loaded) => {
+        if (loaded) return 'border-green-500/60 bg-green-500/5';
+        if (dragOverSlot === slot) return darkMode ? 'border-blue-400 bg-blue-500/10' : 'border-blue-500 bg-blue-50';
+        return t.cardBorder;
+      };
+
+      const buildDataset = () => {
+        if (!pendingProgRows || !pendingAnalRows) return;
+        setLoading(true); setError('');
+        try {
+          const anal = buildAnalytics(pendingAnalRows);
+          const progs = buildPrograms(pendingProgRows);
+          if (progs.length === 0) throw new Error('No active programs found in the Program Summary file.');
+          const term = anal.terms[anal.terms.length - 1] || '';
+          setAnalytics({ index: anal.index });
+          setTerms(anal.terms);
+          setSelectedTerm(term);
+          setPrograms(progs);
+          setSelectedProgram(progs[0].name);
+          setSelectedCourseKey(Object.keys(anal.index).sort()[0] || null);
+          setPrimaryView('program');
+          setDashboardOpen(false);
+          setPendingProgRows(null);
+          setPendingAnalRows(null);
+          persist(progs, { index: anal.index }, anal.terms, term);
+        } catch (err) {
+          setError(err.message || 'Failed to build dataset.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const resetData = () => {
+        if (!confirm('Clear the loaded datasets and start over?')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.removeItem(UI_STORAGE_KEY);
+        setPrograms(null); setAnalytics(null); setTerms([]); setSelectedTerm('');
+        setSelectedProgram(null); setSelectedCourseKey(null); setPendingProgRows(null); setPendingAnalRows(null); setSavedAt(null);
+        setSearch(''); setTypeFilter('all'); setPathwayAdoptionFilter('all'); setCourseStatusFilter('all');
+        setSortBy('adoption'); setPrimaryView('program'); setDashboardOpen(false); setRestoreError('');
+      };
+
+      const clearRejectedSession = () => {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.removeItem(UI_STORAGE_KEY);
+        setRestoreError('');
+        setLandingAnnounce('Saved session cleared. Load both source CSV files to continue.');
+      };
+
+      // ---- derived ----
+      const activeProgram = useMemo(
+        () => programs ? programs.find(p => p.name === selectedProgram) : null,
+        [programs, selectedProgram]
+      );
+      const programViewCache = useMemo(() => {
+        const cache = new Map();
+        if (!programs || !analytics) return cache;
+        for (const term of terms) {
+          for (const program of programs) {
+            cache.set(`${program.name}\u0000${term}`, computeProgramView(program, analytics, term));
+          }
+        }
+        return cache;
+      }, [programs, analytics, terms]);
+      const cachedProgramView = (program, term) =>
+        program ? programViewCache.get(`${program.name}\u0000${term}`) || null : null;
+      const programView = useMemo(
+        () => cachedProgramView(activeProgram, selectedTerm),
+        [activeProgram, selectedTerm, programViewCache]
+      );
+
+      // After Courses → Pathway jump, scroll to the first matching course row
+      useEffect(() => {
+        if (primaryView !== 'program' || !pendingScrollCourseKey || !programView) return;
+        const key = pendingScrollCourseKey;
+        const id = window.requestAnimationFrame(() => {
+          const el = document.querySelector(`[data-course-key="${CSS.escape(key)}"]`);
+          if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+          setPendingScrollCourseKey(null);
+        });
+        return () => window.cancelAnimationFrame(id);
+      }, [primaryView, selectedProgram, pendingScrollCourseKey, programView]);
+
+      // adoption for every program at the selected term (for sidebar + dashboard)
+      const programAdoption = useMemo(() => {
+        if (!programs || !analytics || !selectedTerm) return {};
+        const out = {};
+        for (const p of programs) {
+          const v = cachedProgramView(p, selectedTerm);
+          out[p.name] = {
+            pct: v.adoptionPct, reqTotal: v.reqTotal, reqZtc: v.reqZtc,
+            units: v.unitsRequired, survey: v.avgSurvey, coCount: v.coCount,
+            coursesWithData: v.coursesWithData, coursesTotal: v.coursesTotal
+          };
+        }
+        return out;
+      }, [programs, analytics, selectedTerm, programViewCache]);
+
+      const programTypes = useMemo(() => {
+        if (!programs) return [];
+        return Array.from(new Set(programs.map(p => p.type))).sort();
+      }, [programs]);
+
+      const filteredPrograms = useMemo(() => {
+        if (!programs) return [];
+        let list = programs.filter(p => {
+          const pct = programAdoption[p.name]?.pct;
+          return (typeFilter === 'all' || p.type === typeFilter)
+            && (search.trim() === '' || p.name.toLowerCase().includes(search.toLowerCase()))
+            && pathwayAdoptionMatches(pct, pathwayAdoptionFilter);
+        });
+        if (selectedProgram && !list.some(p => p.name === selectedProgram)) {
+          const sel = programs.find(p => p.name === selectedProgram);
+          if (sel) list = [sel, ...list];
+        }
+        const a = (n) => programAdoption[n]?.pct;
+        list = list.slice().sort((x, y) => {
+          if (sortBy === 'name') return x.name.localeCompare(y.name);
+          if (sortBy === 'units') return (programAdoption[y.name]?.units || 0) - (programAdoption[x.name]?.units || 0);
+          return cmpNullLast(a(x.name), a(y.name), () => x.name.localeCompare(y.name));
+        });
+        return list;
+      }, [programs, typeFilter, pathwayAdoptionFilter, search, sortBy, programAdoption, selectedProgram]);
+
+      const recentTerms = useMemo(() => new Set(getRecentTerms(terms, 2)), [terms]);
+
+      const allCourses = useMemo(() => {
+        if (!analytics || !selectedTerm) return [];
+        return Object.keys(analytics.index).sort().map(key => enrichCourseFromKey(key, analytics, selectedTerm));
+      }, [analytics, selectedTerm]);
+
+      const filteredCourses = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        let list = allCourses.filter(c => {
+          const label = `${c.subject}-${c.number} ${c.courseTitle || c.analyticsTitle || ''}`.toLowerCase();
+          const statusOk = courseStatusMatches(c, courseStatusFilter);
+          const searchOk = q === '' || label.includes(q);
+          return statusOk && searchOk;
+        });
+        list = list.slice().sort((x, y) => {
+          const byCode = () => `${x.subject}-${x.number}`.localeCompare(`${y.subject}-${y.number}`);
+          if (sortBy === 'name') return byCode();
+          if (sortBy === 'survey') return cmpNullLast(x.surveyPct, y.surveyPct, byCode);
+          return cmpNullLast(x.ztcPct, y.ztcPct, byCode);
+        });
+        return list;
+      }, [allCourses, courseStatusFilter, search, sortBy]);
+
+      const activeCourse = useMemo(() => {
+        if (!selectedCourseKey || !analytics || !selectedTerm) return null;
+        return enrichCourseFromKey(selectedCourseKey, analytics, selectedTerm);
+      }, [selectedCourseKey, analytics, selectedTerm]);
+
+      // Keep a valid course selected in Courses view when filters change
+      useEffect(() => {
+        if (primaryView !== 'courses' || !filteredCourses.length) return;
+        if (!selectedCourseKey || !filteredCourses.some(c => c.key === selectedCourseKey)) {
+          setSelectedCourseKey(filteredCourses[0].key);
+        }
+      }, [primaryView, filteredCourses, selectedCourseKey]);
+
+      // institution-wide stats (all active pathways — global dashboard)
+      const institution = useMemo(() => {
+        if (!programs) return null;
+        const base = computeInstitutionStats(programs, programAdoption);
+        let chaffeyZtcCourses = 0, coZtcCourses = 0, coursesOffered = 0;
+        if (analytics && selectedTerm) {
+          for (const key of Object.keys(analytics.index)) {
+            const c = enrichCourseFromKey(key, analytics, selectedTerm);
+            if (c.offered) {
+              coursesOffered++;
+              if (c.ztcPct !== null && c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN) chaffeyZtcCourses++;
+              if (c.coZtc) coZtcCourses++;
+            }
+          }
+        }
+        return { ...base, chaffeyZtcCourses, coZtcCourses, coursesOffered };
+      }, [programs, programAdoption, analytics, selectedTerm]);
+
+      const needsAttention = useMemo(() => {
+        if (!programs) return [];
+        return programs
+          .map(p => ({ name: p.name, type: p.type, ...programAdoption[p.name] }))
+          .filter(p => p.pct !== null && p.pct !== undefined && p.pct < ZTC_THRESHOLDS.PARTIAL_MIN)
+          .sort((a, b) => a.pct - b.pct)
+          .slice(0, 5);
+      }, [programs, programAdoption]);
+
+      // Trend: selected program's ZTC adoption + avg survey completion across all terms
+      const programTrend = useMemo(() => {
+        if (!activeProgram || !analytics || !terms.length) return null;
+        const ztc = [], survey = [];
+        for (const tm of terms) {
+          const v = cachedProgramView(activeProgram, tm);
+          ztc.push(v.adoptionPct);
+          survey.push(v.avgSurvey);
+        }
+        return { labels: terms, ztc, survey };
+      }, [activeProgram, analytics, terms, programViewCache]);
+
+      // Trend: institution-wide average ZTC adoption + survey completion (all pathways)
+      const institutionTrend = useMemo(() => {
+        if (!programs || !analytics || !terms.length) return null;
+        const avg = [], survey = [], scored = [];
+        for (const tm of terms) {
+          let ztcSum = 0, ztcN = 0, surveySum = 0, surveyN = 0;
+          for (const p of programs) {
+            const v = cachedProgramView(p, tm);
+            if (v.adoptionPct !== null) { ztcSum += v.adoptionPct; ztcN++; }
+            if (v.avgSurvey !== null) { surveySum += v.avgSurvey; surveyN++; }
+          }
+          avg.push(ztcN ? Math.round(ztcSum / ztcN) : null);
+          survey.push(surveyN ? Math.round(surveySum / surveyN) : null);
+          scored.push(ztcN);
+        }
+        return { labels: terms, avg, survey, scored };
+      }, [programs, analytics, terms, programViewCache]);
+
+      const switchPrimaryView = (next) => {
+        if (next !== 'program' && next !== 'courses') return;
+        if ((primaryView === 'program' && next === 'courses') || (primaryView === 'courses' && next === 'program')) {
+          setSearch('');
+        }
+        if (primaryView === 'program' && next !== 'program') setPathwayAdoptionFilter('all');
+        if (primaryView === 'courses' && next !== 'courses') setCourseStatusFilter('all');
+        if (next === 'courses' && sortBy === 'units') setSortBy('adoption');
+        if (next === 'program' && sortBy === 'survey') setSortBy('adoption');
+        setPrimaryView(next);
+      };
+
+      const toggleDashboard = () => {
+        setDashboardOpen((open) => !open);
+      };
+
+      const closeDashboard = ({ restoreToggle = false } = {}) => {
+        setDashboardOpen(false);
+        window.requestAnimationFrame(() => {
+          if (restoreToggle) dashboardToggleRef.current?.focus();
+        });
+      };
+
+      const closeDashboardToReading = () => {
+        setDashboardOpen(false);
+        window.requestAnimationFrame(() => {
+          document.getElementById('main-content')?.focus();
+        });
+      };
+
+      const openInstitutionTrendDetail = () => {
+        dashboardModalTriggerRef.current = document.activeElement;
+        setDashboardModal({ type: 'institution-trend' });
+      };
+
+      const openDashboardExplainer = (detail) => {
+        dashboardModalTriggerRef.current = document.activeElement;
+        setDashboardModal({ type: 'explainer', ...detail });
+      };
+
+      const selectProgramFromDashboard = (name) => {
+        setPathwayAdoptionFilter('all');
+        setSelectedProgram(name);
+        switchPrimaryView('program');
+        closeDashboardToReading();
+      };
+
+      const navigateFromOverviewKpi = (action) => {
+        setSearch('');
+        if (action.view === 'program') {
+          setTypeFilter('all');
+          setPathwayAdoptionFilter(action.pathwayAdoptionFilter || 'all');
+          setSortBy(action.sortBy || 'adoption');
+          setCourseStatusFilter('all');
+          const pctOf = (n) => programAdoption[n]?.pct;
+          const list = programs.slice().filter(p => pathwayAdoptionMatches(programAdoption[p.name]?.pct, action.pathwayAdoptionFilter || 'all')).sort((x, y) => {
+            if ((action.sortBy || 'adoption') === 'name') return x.name.localeCompare(y.name);
+            return cmpNullLast(pctOf(x.name), pctOf(y.name), () => x.name.localeCompare(y.name));
+          });
+          if (list.length) setSelectedProgram(list[0].name);
+          switchPrimaryView('program');
+          closeDashboardToReading();
+        } else {
+          setPathwayAdoptionFilter('all');
+          setTypeFilter('all');
+          setCourseStatusFilter(action.courseStatusFilter || 'all');
+          setSortBy('adoption');
+          const list = allCourses.slice().filter(c => courseStatusMatches(c, action.courseStatusFilter || 'all')).sort((x, y) => cmpNullLast(x.ztcPct, y.ztcPct, () => `${x.subject}-${x.number}`.localeCompare(`${y.subject}-${y.number}`)));
+          if (list.length) setSelectedCourseKey(list[0].key);
+          switchPrimaryView('courses');
+          closeDashboardToReading();
+        }
+      };
+
+      const openProgramFromCourse = (programName, courseKey) => {
+        setPathwayAdoptionFilter('all');
+        setTypeFilter('all');
+        setSearch('');
+        setSelectedProgram(programName);
+        setSelectedCourse(null);
+        if (courseKey) setPendingScrollCourseKey(courseKey);
+        jumpAnnounceRef.current = `Opened pathway: ${programName}`;
+        switchPrimaryView('program');
+      };
+
+      // Reverse index: course key -> programs that include it (deduped by program name)
+      // Placement labels come from export area/subgroup titles (not invented nesting).
+      const courseProgramsByKey = useMemo(() => {
+        const map = new Map();
+        if (!programs) return map;
+        const placementFor = (area, sg) => {
+          const areaLabel = cleanTitle(area?.title);
+          const sgLabel = cleanTitle(sg?.title);
+          if (sgLabel && sgLabel !== areaLabel) return sgLabel;
+          return areaLabel || '';
+        };
+        const add = (key, prog, placement) => {
+          if (!key) return;
+          if (!map.has(key)) map.set(key, new Map());
+          const byName = map.get(key);
+          if (!byName.has(prog.name)) {
+            byName.set(prog.name, { name: prog.name, type: prog.type, placements: [] });
+          }
+          const entry = byName.get(prog.name);
+          const label = cleanTitle(placement);
+          if (label && !entry.placements.includes(label)) entry.placements.push(label);
+        };
+        for (const prog of programs) {
+          for (const area of prog.areas || []) {
+            for (const sg of area.subgroups || []) {
+              const placement = placementFor(area, sg);
+              for (const c of sg.courses || []) add(c.key, prog, placement);
+              if (sg.options) {
+                for (const opt of sg.options) {
+                  for (const c of opt.courses || []) add(c.key, prog, placement);
+                }
+              }
+            }
+          }
+        }
+        return map;
+      }, [programs]);
+
+      const programsForCourseKey = (key) => {
+        if (!key) return [];
+        const byName = courseProgramsByKey.get(key);
+        if (!byName) return [];
+        return Array.from(byName.values())
+          .map(p => ({ ...p, pct: programAdoption[p.name]?.pct ?? null }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      };
+
+      const trendSummary = (labels, series) => labels.map((l, i) => {
+        const parts = series.map(s => `${s.name} ${s.data[i] === null ? 'no data' : s.data[i] + '%'}`).join(', ');
+        return `${l}: ${parts}`;
+      }).join('; ');
+
+      // ============================================================
+      // LANDING (two-source loader)
+      // ============================================================
+      if (!programs || !analytics) {
+        return (
+          <div className={`h-screen ${t.bg} ${t.text} flex flex-col overflow-hidden`}>
+            <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center p-6 pb-3">
+            <div className="max-w-2xl w-full">
+              <div className="flex items-center gap-3 mb-2">
+                <Icons.Landmark className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />
+                <h1 className="text-3xl font-bold">ZTC Pathway Mapper</h1>
+              </div>
+              <p className={`${t.textMuted} mb-8`}>
+                Load two datasources to map Zero Textbook Cost adoption across every active degree, certificate, and transfer pathway.
+              </p>
+
+              {(error || restoreError) && (
+                <div role="alert" className={`mb-6 flex items-start gap-2 rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm ${darkMode ? 'text-red-300' : 'text-red-800'}`}>
+                  <Icons.AlertCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                  <div>
+                    <span>{error || restoreError}</span>
+                    {restoreError && (
+                      <button type="button" onClick={clearRejectedSession}
+                        className="mt-2 block font-semibold underline underline-offset-2">
+                        Clear saved session
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="sr-only" role="status" aria-live="polite">{landingAnnounce}</div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label {...uploadDropHandlers('prog')}
+                  className={`cursor-pointer rounded-xl border-2 border-dashed ${uploadCardCls('prog', pendingProgRows)} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
+                  {pendingProgRows ? <Icons.CheckCircle className={`w-8 h-8 mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`} aria-hidden="true" /> : <Icons.BookOpen className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />}
+                  <div className="font-semibold mb-1">1. Program Summary</div>
+                  <div className={`text-xs ${t.textMuted} mb-3`}>Program / certificate / degree structure (course blocks &amp; units)</div>
+                  <div className={`text-xs font-medium ${pendingProgRows ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-blue-400' : 'text-blue-700')}`}>
+                    {pendingProgRows ? `Loaded · ${pendingProgRows.length - 1} rows` : 'Choose CSV or drop file…'}
+                  </div>
+                  <input type="file" accept=".csv,text/csv" className="sr-only" aria-label="Upload Program Summary CSV" onChange={handleProgFile} />
+                </label>
+
+                <label {...uploadDropHandlers('anal')}
+                  className={`cursor-pointer rounded-xl border-2 border-dashed ${uploadCardCls('anal', pendingAnalRows)} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
+                  {pendingAnalRows ? <Icons.CheckCircle className={`w-8 h-8 mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`} aria-hidden="true" /> : <Icons.BarChart3 className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />}
+                  <div className="font-semibold mb-1">2. Course Analytics</div>
+                  <div className={`text-xs ${t.textMuted} mb-3`}>ZTC adoption % &amp; survey completion by course &amp; term</div>
+                  <div className={`text-xs font-medium ${pendingAnalRows ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-blue-400' : 'text-blue-700')}`}>
+                    {pendingAnalRows ? `Loaded · ${pendingAnalRows.length - 1} rows` : 'Choose CSV or drop file…'}
+                  </div>
+                  <input type="file" accept=".csv,text/csv" className="sr-only" aria-label="Upload Course Analytics CSV" onChange={handleAnalFile} />
+                </label>
+              </div>
+
+              <button type="button"
+                onClick={buildDataset}
+                disabled={!pendingProgRows || !pendingAnalRows || loading}
+                className={`mt-6 w-full rounded-lg px-4 py-3 font-semibold transition-colors flex items-center justify-center gap-2 ${(!pendingProgRows || !pendingAnalRows || loading) ? (darkMode ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' : 'bg-gray-300 text-gray-600 cursor-not-allowed') : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                {loading ? <><Icons.Refresh className="w-5 h-5 animate-spin" aria-hidden="true" /> Building…</> : <>Build dashboard <Icons.ChevronRight className="w-5 h-5" aria-hidden="true" /></>}
+              </button>
+
+              <button type="button" onClick={() => setDarkMode(d => !d)} className={`mt-4 text-xs ${t.textMuted} hover:underline flex items-center gap-1 mx-auto`}>
+                {darkMode ? <Icons.Sun className="w-4 h-4" aria-hidden="true" /> : <Icons.Moon className="w-4 h-4" aria-hidden="true" />} Toggle theme
+              </button>
+            </div>
+            </div>
+            <AppFooter t={t} />
+          </div>
+        );
+      }
+
+      // ============================================================
+      // DASHBOARD VIEW
+      // ============================================================
+      const renderDashboard = () => {
+        if (!institution) return null;
+        const distro = [
+          { label: 'Fully ZTC-able', range: '100%', hint: 'All requirements met with ZTC', n: institution.full, color: 'bg-green-600' },
+          { label: 'High', range: '75–99%', hint: 'Most requirements met with ZTC', n: institution.high - institution.full, color: 'bg-green-400' },
+          { label: 'Partial', range: '51–74%', hint: 'Some requirements met with ZTC', n: institution.partial, color: 'bg-amber-500' },
+          { label: 'Low', range: '0–50%', hint: 'Few requirements met with ZTC', n: institution.low, color: 'bg-red-600' }
+        ];
+        const rankedAll = programs
+          .map(p => ({ name: p.name, type: p.type, ...programAdoption[p.name] }))
+          .filter(p => p.pct !== null && p.pct !== undefined)
+          .sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
+        const ranked = rankedAll.slice(0, 5);
+        const instSub = `Term ${selectedTerm}`;
+        const headlineAction = { view: 'program', pathwayAdoptionFilter: 'all', sortBy: 'name' };
+        const overviewKpis = [
+          { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' }, meaning: 'Active pathways where every scored catalog requirement can be completed with a qualifying ZTC option.', calculation: `Counts scored pathways whose requirement-based ZTC adoption is 100% for ${selectedTerm}. Unavailable or unknown required courses remain in the denominator as unmet.` },
+          { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' }, meaning: 'Active pathways where at least three quarters of scored catalog requirements can be completed with qualifying ZTC options.', calculation: `Counts scored pathways with requirement-based ZTC adoption of 75% or higher for ${selectedTerm}; the count includes pathways at 100%.` },
+          { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' }, meaning: 'Courses offered in the selected term that meet Chaffey’s ZTC threshold.', calculation: `Counts offered courses whose Course Analytics ZTC percentage is 75% or higher for ${selectedTerm}. The denominator shown is all courses reported as offered that term.` },
+          { label: "Chancellor's Office ZTC courses", val: institution.coZtcCourses, sub: `≥1 ZTC section · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-violet-200' : 'text-violet-800', title: "Courses offered this term with at least one zero textbook cost section (Chancellor's Office ZTC threshold).", action: { view: 'courses', courseStatusFilter: 'co' }, meaning: 'Courses offered in the selected term with at least one section reported as zero textbook cost.', calculation: `Counts offered courses with one or more ZTC sections in Course Analytics for ${selectedTerm}. The denominator shown is all courses reported as offered that term.` }
+        ];
+        const averageExplainer = {
+          title: 'Average ZTC adoption',
+          meaning: 'The institution-wide mean of active pathways’ requirement-based ZTC adoption for the selected term.',
+          calculation: `For ${selectedTerm}, the app calculates each pathway’s percentage of catalog requirements that can be met with qualifying ZTC options, averages the scored pathway percentages, and rounds to the nearest whole percent. Pathways with no scored requirements are excluded.`
+        };
+        const attentionExplainer = {
+          title: 'Needs attention',
+          meaning: 'The lowest-adoption active pathways below the partial-adoption threshold.',
+          calculation: `Filters scored pathways below 51% requirement-based ZTC adoption for ${selectedTerm}, sorts them from lowest to highest, and displays up to five. Unavailable or unknown required courses remain in each pathway denominator as unmet.`
+        };
+        const trendExplainer = {
+          title: 'Adoption trend',
+          meaning: 'How institution-wide pathway ZTC adoption changes across available terms.',
+          calculation: 'For each term, the app calculates every active pathway’s requirement-based ZTC adoption, excludes pathways with no scored requirements, averages the remaining pathway percentages, and rounds to the nearest whole percent. The delta compares the selected term with the nearest earlier term that has data.'
+        };
+        const distributionExplainer = {
+          title: 'Distribution by ZTC-ability',
+          meaning: 'How scored active pathways are distributed across requirement-based ZTC adoption ranges.',
+          calculation: 'Places each scored pathway into one exclusive range: 100%, 75–99%, 51–74%, or 0–50%. Each displayed percentage is the range count divided by all scored pathways for the selected term.'
+        };
+        const rankingExplainer = {
+          title: 'Top pathways',
+          meaning: 'The active pathways with the highest requirement-based ZTC adoption in the selected term.',
+          calculation: 'Sorts scored pathways by ZTC adoption from highest to lowest, breaks ties alphabetically by pathway name, and displays the first five.'
+        };
+        let trendIndex = institutionTrend ? institutionTrend.labels.indexOf(selectedTerm) : -1;
+        if (institutionTrend && trendIndex < 0) trendIndex = institutionTrend.labels.length - 1;
+        const trendCurrent = institutionTrend && trendIndex >= 0 ? institutionTrend.avg[trendIndex] : null;
+        let trendPrevious = null;
+        if (institutionTrend) {
+          for (let i = trendIndex - 1; i >= 0; i--) {
+            if (institutionTrend.avg[i] !== null && institutionTrend.avg[i] !== undefined) {
+              trendPrevious = institutionTrend.avg[i];
+              break;
+            }
+          }
+        }
+        const trendDelta = trendCurrent !== null && trendPrevious !== null ? trendCurrent - trendPrevious : null;
+        const deltaLabel = trendDelta === null
+          ? 'No comparable prior term'
+          : `${trendDelta > 0 ? '+' : ''}${trendDelta} point${Math.abs(trendDelta) === 1 ? '' : 's'} from prior term`;
+        const distroSummary = distro.map(d => {
+          const pct = institution.scored ? Math.round((d.n / institution.scored) * 100) : 0;
+          return `${d.label} ${d.range}: ${d.n} pathways, ${pct}%`;
+        }).join('; ');
+        return (
+          <>
+            <div className={`flex-shrink-0 px-3 py-2.5 border-b ${t.headerBorder}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 id="dashboard-panel-title" className="text-sm font-bold tracking-tight">Dashboard</h2>
+                  <p className={`text-xs ${t.textMuted} mt-0.5`}>Institution-wide ZTC · {programs.length} pathways · {selectedTerm}</p>
+                </div>
+                <button type="button" onClick={() => closeDashboard({ restoreToggle: true })}
+                  aria-label="Close Dashboard"
+                  className={`min-w-[44px] min-h-[44px] p-2.5 rounded-lg flex-shrink-0 inline-flex items-center justify-center ${t.cardHover}`}>
+                  <Icons.X className="w-4 h-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 space-y-5">
+              <DashboardSection compact title="Institution overview" subtitle={instSub}
+                badge={<DashboardInfoButton label="Average ZTC adoption" t={t} onClick={() => openDashboardExplainer(averageExplainer)} />}>
+                <div className="relative">
+                  <button type="button" onClick={() => navigateFromOverviewKpi(headlineAction)}
+                    aria-label={`Average ZTC adoption: ${institution.avg === null ? 'no scored data' : institution.avg + '%'}. ${institution.scored} of ${institution.total} active pathways scored. Open Pathway view.`}
+                    className={`w-full rounded-xl border ${darkMode ? 'border-blue-500/45 bg-blue-500/10' : 'border-blue-300 bg-blue-50'} p-3 text-left ${t.cardHover}`}>
+                    <span className={`block text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Average ZTC adoption</span>
+                    <span className={`block text-3xl font-bold mt-1 ${institution.avg === null ? t.faint : (darkMode ? 'text-green-300' : 'text-green-800')}`}>
+                      {institution.avg === null ? '—' : institution.avg + '%'}
+                    </span>
+                    <span className={`block text-xs mt-1 ${t.textMuted}`}>{institution.scored} of {institution.total} active pathways scored</span>
+                  </button>
+                </div>
+              </DashboardSection>
+
+              {needsAttention.length > 0 && (
+                <div className={`rounded-xl border ${darkMode ? 'border-red-400/45 bg-red-500/10' : 'border-red-300 bg-red-50'} p-3`}>
+                  <DashboardSection compact title="Needs attention" subtitle="Below 51% ZTC adoption"
+                    badge={<DashboardInfoButton label="Needs attention" t={t} onClick={() => openDashboardExplainer(attentionExplainer)} />}>
+                    <div className="space-y-1.5">
+                      {needsAttention.map(p => (
+                        <button key={p.name} type="button"
+                          onClick={() => selectProgramFromDashboard(p.name)}
+                          aria-label={`${p.name}. ZTC adoption ${p.pct}%. Open pathway view.`}
+                          className={`w-full min-h-[44px] flex items-center gap-2 rounded-lg border ${t.cardBorder} ${t.card} px-2.5 py-2 text-sm text-left ${t.cardHover} transition-colors`}>
+                          <span className={`font-bold w-10 text-right tabular-nums flex-shrink-0 ${pctColor(p.pct, darkMode)}`}>{p.pct}%</span>
+                          <span className="truncate">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </DashboardSection>
+                </div>
+              )}
+
+              <DashboardSection compact title="Key counts" subtitle="Select a metric to open its filtered reading view">
+                <div className="grid grid-cols-2 gap-2" style={{ gridAutoRows: '1fr' }}>
+                  {overviewKpis.map((kpi, i) => (
+                    <div key={i} className="relative" style={{ height: '100%' }}>
+                      <button type="button" onClick={() => navigateFromOverviewKpi(kpi.action)}
+                        aria-label={`${kpi.label}: ${kpi.val}. ${kpi.sub}. Open ${kpi.action.view === 'program' ? 'Pathway' : 'Courses'} view.`}
+                        title={kpi.title}
+                        style={{ height: '100%' }}
+                        className={`w-full min-h-[72px] rounded-lg border ${t.cardBorder} ${t.card} pl-2.5 pr-10 py-2 text-left ${t.cardHover} transition-colors cursor-pointer`}>
+                        <span className={`block text-xs font-semibold ${t.textMuted} leading-tight`}>{kpi.label}</span>
+                        <span className={`block text-xl font-bold mt-0.5 ${kpi.color}`}>{kpi.val}</span>
+                        <span className={`block text-xs ${t.faint} leading-snug mt-0.5`}>{kpi.sub}</span>
+                      </button>
+                      <span className="absolute top-1 right-1">
+                        <DashboardInfoButton label={kpi.label} t={t}
+                          onClick={() => openDashboardExplainer({ title: kpi.label, meaning: kpi.meaning, calculation: kpi.calculation })} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {institution.noData > 0 && (
+                  <p className={`text-xs ${t.textMuted} flex items-start gap-1.5`}>
+                    <Icons.AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <span>{institution.noData} pathway{institution.noData !== 1 ? 's' : ''} ha{institution.noData !== 1 ? 've' : 's'} no scored requirements for {selectedTerm} (excluded from averages).</span>
+                  </p>
+                )}
+              </DashboardSection>
+
+              {institutionTrend && institutionTrend.avg.some(v => v !== null) && (
+                <DashboardSection compact title="Adoption trend" subtitle="Institution-wide mean by term"
+                  badge={<DashboardInfoButton label="Adoption trend" t={t} onClick={() => openDashboardExplainer(trendExplainer)} />}>
+                  <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-3`}>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className={`text-xs ${t.textMuted}`}>{selectedTerm}</p>
+                        <p className="text-2xl font-bold">{trendCurrent === null ? '—' : trendCurrent + '%'}</p>
+                      </div>
+                      <p className={`text-xs text-right ${trendDelta === null ? t.textMuted : (trendDelta >= 0 ? (darkMode ? 'text-green-300' : 'text-green-800') : (darkMode ? 'text-red-300' : 'text-red-800'))}`}>
+                        {deltaLabel}
+                      </p>
+                    </div>
+                    <Sparkline data={institutionTrend.avg}
+                      ariaLabel={`Institution-wide average ZTC adoption by term. ${trendSummary(institutionTrend.labels, [{ name: 'Average ZTC adoption', data: institutionTrend.avg }])}. ${deltaLabel}.`} />
+                    <button type="button" onClick={openInstitutionTrendDetail}
+                      className={`min-h-[44px] w-full rounded-lg border ${t.cardBorder} ${t.cardHover} px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2`}>
+                      View trend details <Icons.ChevronRight className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                </DashboardSection>
+              )}
+
+              <DashboardSection compact title="Compare pathways" subtitle={`${institution.scored} scored · requirement-based`}>
+                <button type="button" onClick={() => setShowDashboardDetails(s => !s)}
+                  aria-expanded={showDashboardDetails} aria-controls="dashboard-comparison-details"
+                  className={`min-h-[44px] w-full rounded-lg border ${t.cardBorder} ${t.card} ${t.cardHover} px-3 py-2 text-sm font-semibold flex items-center justify-between gap-3`}>
+                  <span>{showDashboardDetails ? 'Hide pathway details' : 'Explore pathway details'}</span>
+                  <Icons.ChevronDown className={`w-4 h-4 transition-transform ${showDashboardDetails ? 'rotate-180' : ''}`} aria-hidden="true" />
+                </button>
+                {showDashboardDetails && (
+                  <div id="dashboard-comparison-details" className="space-y-3">
+                    <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3`}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="text-sm font-semibold">Distribution by ZTC-ability</h4>
+                        <DashboardInfoButton label="Distribution by ZTC-ability" t={t}
+                          onClick={() => openDashboardExplainer(distributionExplainer)} />
+                      </div>
+                      <div role="img" aria-label={`Distribution by ZTC-ability. ${distroSummary}.`}>
+                        <div className={`h-4 rounded-full ${t.track} overflow-hidden flex`} aria-hidden="true">
+                          {distro.map((d, i) => {
+                            const pct = institution.scored ? (d.n / institution.scored) * 100 : 0;
+                            return <span key={i} className={`h-full ${d.color}`} style={{ width: pct + '%' }}></span>;
+                          })}
+                        </div>
+                        <div className="mt-3 space-y-1.5">
+                          {distro.map((d, i) => {
+                            const pct = institution.scored ? Math.round((d.n / institution.scored) * 100) : 0;
+                            return (
+                              <div key={i} className="flex items-center justify-between gap-2 text-xs">
+                                <span className="flex items-center gap-2 min-w-0">
+                                  <span className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${d.color}`} aria-hidden="true"></span>
+                                  <span className={t.textMuted}>{d.label} ({d.range})</span>
+                                </span>
+                                <span className="font-semibold whitespace-nowrap">{d.n} · {pct}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`rounded-lg border ${t.cardBorder} ${t.card} p-3`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-semibold">Top pathways</h4>
+                        <DashboardInfoButton label="Top pathways" t={t}
+                          onClick={() => openDashboardExplainer(rankingExplainer)} />
+                      </div>
+                      <p className={`text-xs ${t.textMuted} mb-2`}>Select a pathway to open it</p>
+                      <div className="space-y-1">
+                        {ranked.length === 0 ? (
+                          <p className={`text-sm ${t.textMuted} px-1 py-3`}>No scored pathways for {selectedTerm}.</p>
+                        ) : ranked.map((p, i) => {
+                          const surveyLabel = p.survey === null ? 'no survey data' : p.survey + '% survey completion';
+                          return (
+                            <button key={p.name} type="button"
+                              onClick={() => selectProgramFromDashboard(p.name)}
+                              aria-label={`${i + 1}. ${p.name}. ZTC adoption ${p.pct}%. ${surveyLabel}.`}
+                              className={`w-full min-h-[44px] text-left flex items-center gap-2 rounded-lg px-2 py-2 ${t.cardHover} transition-colors ${p.name === selectedProgram ? (darkMode ? 'bg-blue-500/10 border border-blue-500/40' : 'bg-blue-50 border border-blue-200') : 'border border-transparent'}`}>
+                              <span className={`text-xs font-bold w-4 flex-shrink-0 ${t.faint}`} aria-hidden="true">{i + 1}</span>
+                              <span className="truncate text-sm flex-1 min-w-0">{p.name}</span>
+                              <span className={`text-sm font-bold tabular-nums flex-shrink-0 ${pctColor(p.pct, darkMode)}`} aria-hidden="true">{p.pct}%</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {rankedAll.length > 5 && (
+                        <button type="button"
+                          onClick={() => navigateFromOverviewKpi({ view: 'program', pathwayAdoptionFilter: 'all', sortBy: 'adoption' })}
+                          className={`mt-2 min-h-[44px] w-full rounded-lg border ${t.cardBorder} ${t.cardHover} px-3 py-2 text-sm font-semibold`}>
+                          View all pathways
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </DashboardSection>
+            </div>
+          </>
+        );
+      };
+
+      const renderDashboardModal = () => {
+        if (!dashboardModal) return null;
+        const isTrend = dashboardModal.type === 'institution-trend';
+        return (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
+            onClick={(e) => { if (e.target === e.currentTarget) setDashboardModal(null); }}>
+            <div ref={dashboardModalRef} role="dialog" aria-modal="true" aria-labelledby="dashboard-modal-title" tabIndex={-1}
+              className={`${t.panel} ${t.text} rounded-xl border ${t.panelBorder} ${isTrend ? 'max-w-3xl' : 'max-w-lg'} w-full max-h-[90vh] overflow-auto animate-scaleIn focus:outline-none`}>
+              <div className="p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div>
+                    {isTrend && <p className={`text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Institution-wide</p>}
+                    <h2 id="dashboard-modal-title" className="text-xl font-bold mt-1">
+                      {isTrend ? 'ZTC adoption trend' : dashboardModal.title}
+                    </h2>
+                    {isTrend && <p className={`text-sm ${t.textMuted} mt-1`}>Average adoption and survey completion by term.</p>}
+                  </div>
+                  <button type="button" onClick={() => setDashboardModal(null)}
+                    aria-label={`Close ${isTrend ? 'adoption trend' : dashboardModal.title} explainer`}
+                    className={`min-w-[44px] min-h-[44px] p-2 rounded-lg inline-flex items-center justify-center ${t.cardHover}`}>
+                    <Icons.X className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
+                {isTrend && institutionTrend ? (
+                  <>
+                    <TrendChart dark={darkMode} height={360}
+                      ariaLabel="Line chart: institution-wide average ZTC adoption and average survey completion by term, with scored pathway counts per term"
+                      summary={'By term: ' + trendSummary(institutionTrend.labels, [
+                        { name: 'Avg ZTC adoption', data: institutionTrend.avg },
+                        { name: 'Avg survey completion', data: institutionTrend.survey }
+                      ]) + '. Scored pathways per term: ' + institutionTrend.labels.map((l, i) => `${l}: ${institutionTrend.scored[i]}`).join('; ') + '.'}
+                      series={[
+                        { label: 'Avg ZTC', labels: institutionTrend.labels, data: institutionTrend.avg, color: '#22c55e' },
+                        { label: 'Avg survey', labels: institutionTrend.labels, data: institutionTrend.survey, color: '#3b82f6' }
+                      ]} />
+                    <div className={`mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs ${t.textMuted}`}>
+                      {institutionTrend.labels.map((label, i) => (
+                        <span key={label}>{label}: <span className="font-semibold">{institutionTrend.scored[i]} scored</span></span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <section>
+                      <h3 className="text-sm font-semibold">What this metric means</h3>
+                      <p className={`text-sm leading-relaxed mt-1 ${t.textMuted}`}>{dashboardModal.meaning}</p>
+                    </section>
+                    <section>
+                      <h3 className="text-sm font-semibold">How it is calculated</h3>
+                      <p className={`text-sm leading-relaxed mt-1 ${t.textMuted}`}>{dashboardModal.calculation}</p>
+                    </section>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // ============================================================
+      // PROGRAM VIEW
+      // ============================================================
+      const renderProgram = () => {
+        if (!programView) return null;
+        return (
+          <div className="p-6 pb-10 overflow-visible">
+            {/* program header */}
+            <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-5 mb-6`}>
+              <div className="flex items-start gap-5 flex-wrap">
+                <Ring pct={programView.adoptionPct} size={96} stroke={10} />
+                <div className="flex-1 min-w-[240px]">
+                  <span className={`text-[11px] ${t.chip} px-2 py-0.5 rounded-full`}>{activeProgram.type}</span>
+                  <h2 className="text-xl font-bold mt-1.5 leading-snug">{activeProgram.name}</h2>
+                  <p className={`text-sm ${t.textMuted} mt-1`}>
+                    <span className={`font-semibold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{programView.reqZtc}</span> of <span className="font-semibold">{programView.reqTotal}</span> requirements can be met with zero textbook cost
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className={`text-[10px] uppercase ${t.faint}`}>Required units</div>
+                    <div className="text-xl font-bold">{programView.unitsRequiredLabel}</div>
+                    {programView.unitsRequiredUnverifiable && (
+                      <div className={`text-[10px] ${t.faint}`}>Lab evidence unverifiable</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className={`text-[10px] uppercase ${t.faint}`}>Courses w/ data</div>
+                    <div className="text-xl font-bold">{programView.coursesWithData}<span className={`text-sm ${t.faint}`}>/{programView.coursesTotal}</span></div>
+                  </div>
+                  <div>
+                    <div className={`text-[10px] uppercase ${t.faint}`}>Avg survey</div>
+                    <div className="text-xl font-bold">{programView.avgSurvey === null ? '—' : programView.avgSurvey + '%'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* program trend */}
+            {programTrend && (programTrend.ztc.some(v => v !== null) || programTrend.survey.some(v => v !== null)) && (
+              <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-5 mb-6`}>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-semibold flex items-center gap-2"><Icons.LineChart className="w-4 h-4 text-blue-400" aria-hidden="true" /> ZTC adoption &amp; survey completion over time</h3>
+                  <button type="button" onClick={() => setShowTrend(s => !s)} aria-expanded={showTrend}
+                    className={`text-xs px-2.5 py-1 rounded-lg ${t.cardHover} border ${t.cardBorder}`}>
+                    {showTrend ? 'Hide' : 'Show'} trend
+                  </button>
+                </div>
+                {showTrend && (
+                  <>
+                    <p className={`text-xs ${t.textMuted} mb-3`}>This pathway across all terms. Selected term: <span className="font-semibold">{selectedTerm}</span></p>
+                    <TrendChart dark={darkMode} height={220}
+                      ariaLabel={`Line chart: ZTC adoption and average survey completion by term for ${activeProgram.name}`}
+                      summary={'By term: ' + trendSummary(programTrend.labels, [
+                        { name: 'ZTC adoption', data: programTrend.ztc },
+                        { name: 'Avg survey completion', data: programTrend.survey }
+                      ]) + '.'}
+                      series={[
+                        { label: 'ZTC adoption', labels: programTrend.labels, data: programTrend.ztc, color: '#22c55e' },
+                        { label: 'Avg survey completion', labels: programTrend.labels, data: programTrend.survey, color: '#3b82f6' }
+                      ]} />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* badge legend */}
+            <div className={`rounded-xl border ${t.cardBorder} ${t.card} px-4 py-3 mb-6`}>
+              <h3 className="sr-only">Badge legend</h3>
+              <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <dt><StatusBadge status="ztc" small dark={darkMode} /></dt>
+                  <dd className={t.textMuted}>Chaffey ZTC — 75%+ of sections are zero textbook cost</dd>
+                </div>
+                <div className="flex items-center gap-2">
+                  <dt><CoBadge small dark={darkMode} /></dt>
+                  <dd className={t.textMuted}>Chancellor&rsquo;s Office ZTC — at least one ZTC section</dd>
+                </div>
+              </dl>
+            </div>
+
+            {activeProgram.type === 'GE / Transfer Pattern' && (
+              <p className={`text-xs leading-snug mb-5 px-0.5 ${t.textMuted}`} role="note">
+                Choice groups (Either / Or / Choose one) appear only when present in the Program Summary export. The catalog may show additional groupings not included in this file.
+              </p>
+            )}
+
+            {/* areas */}
+            <div className="space-y-5">
+              {programView.areas.map((area) => (
+                <div key={area.id} id={`area-${area.id}`} className={`rounded-xl border ${t.cardBorder} ${t.panel} overflow-hidden scroll-mt-4`}>
+                  <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b ${t.divider}`}>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm sm:text-base truncate">{area.title}</div>
+                      <div className={`text-[11px] ${t.textMuted}`}>
+                        {area.isChoice ? `Choose ${area.requiredCount || 1}` : 'All required'}
+                        {area.dataCount > 0 && <span> · {area.ztcCount}/{area.dataCount} options ZTC</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <div className={`text-[10px] uppercase ${t.faint}`}>units</div>
+                        <div className="font-semibold text-sm">{area.unitsLabel || '—'}</div>
+                      </div>
+                      {area.areaPct !== null && (
+                        area.satisfiable
+                          ? <span className={`inline-flex items-center gap-1 rounded-full bg-green-500/20 ${darkMode ? 'text-green-300' : 'text-green-800'} border border-green-500/40 px-2.5 py-1 text-xs font-semibold`}><Icons.Check className="w-3.5 h-3.5" aria-hidden="true" />ZTC path</span>
+                          : <span className={`text-sm font-bold ${pctColor(area.areaPct, darkMode)}`}>{area.areaPct}%</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3 space-y-3">
+                    {area.subgroups.map((sg) => (
+                      <div key={sg.id}>
+                        {sg.title && sg.title !== area.title && (
+                          <div className={`text-xs font-semibold px-0.5 mb-1.5 ${t.textMuted}`}>
+                            {sg.title}
+                            {sg.isLabReference && <span className={`ml-2 font-medium ${t.faint}`}>· informational</span>}
+                          </div>
+                        )}
+                        <SubgroupCourses
+                          sg={sg}
+                          t={t}
+                          dark={darkMode}
+                          selectedTerm={selectedTerm}
+                          onOpen={(course, el) => { lastFocusedRef.current = el; setSelectedCourse(course); }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      // ============================================================
+      // COURSES VIEW
+      // ============================================================
+      const renderCourseView = () => {
+        if (!filteredCourses.length) {
+          return (
+            <div className="p-6 pb-10">
+              <p className={`text-sm ${t.textMuted}`}>No courses match the current filters for term {selectedTerm}.</p>
+            </div>
+          );
+        }
+        const c = activeCourse;
+        if (!c) return null;
+        return (
+          <div className="p-6 pb-10 overflow-visible">
+            <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-5 mb-6`}>
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-bold">{c.subject}-{c.number}</h2>
+                  <p className={`text-sm ${t.textMuted} mt-1`}>{c.courseTitle || c.analyticsTitle}</p>
+                  <p className={`text-xs ${t.faint} mt-0.5`}>Term: {selectedTerm}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={c.status} dark={darkMode} />
+                  {c.coZtc && <CoBadge dark={darkMode} />}
+                </div>
+              </div>
+            </div>
+
+            <CourseDetail c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode}
+              showCatalogLink={recentTerms.has(selectedTerm)}
+              programsForCourse={programsForCourseKey(c.key)}
+              onOpenProgram={(name) => openProgramFromCourse(name, c.key)} />
+          </div>
+        );
+      };
+
+      // ============================================================
+      // COURSE DETAIL MODAL
+      // ============================================================
+      const renderCourseModal = () => {
+        const c = selectedCourse;
+        if (!c) return null;
+        return (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fadeIn"
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedCourse(null); }}>
+            <div ref={courseModalRef} role="dialog" aria-modal="true" aria-labelledby="course-modal-title" tabIndex={-1}
+              className={`${t.panel} ${t.text} rounded-xl border ${t.panelBorder} max-w-lg w-full max-h-[90vh] overflow-auto animate-scaleIn focus:outline-none`}>
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-5">
+                  <div>
+                    <h3 id="course-modal-title" className="text-2xl font-bold">{c.subject}-{c.number}</h3>
+                    <p className={`text-sm ${t.textMuted}`}>{c.courseTitle || c.analyticsTitle}</p>
+                    <p className={`text-xs ${t.faint} mt-0.5`}>Term: {selectedTerm}{c.units !== null ? ` · ${fmtUnits(c.units)} units` : ''}</p>
+                  </div>
+                  <button type="button" onClick={() => setSelectedCourse(null)} aria-label="Close course details" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.X className="w-5 h-5" aria-hidden="true" /></button>
+                </div>
+
+                <CourseDetail compact c={c} analytics={analytics} selectedTerm={selectedTerm} t={t} dark={darkMode}
+                  showProgramMembership={false} />
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // ============================================================
+      // EXPORTS
+      // ============================================================
+      const downloadFile = (content, filename, type) => {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+      };
+      const exportProgramCSV = () => {
+        if (!programView) return;
+        downloadFile(
+          buildProgramCsv(activeProgram, programView, selectedTerm),
+          `ztc-${activeProgram.name.replace(/[^a-z0-9]+/gi, '-').slice(0, 50)}-${selectedTerm.replace('/', '')}.csv`,
+          'text/csv'
+        );
+      };
+      const exportAllProgramsCSV = () => {
+        const rows = [['Program', 'Type', 'Term', 'ZTC Adoption %', 'Requirements ZTC', 'Requirements Total', 'Required Units', 'Avg Survey %', 'CO ZTC Courses (1+ section)']];
+        for (const p of programs) {
+          const a = programAdoption[p.name];
+          rows.push([p.name, p.type, selectedTerm, a.pct ?? '', a.reqZtc, a.reqTotal, a.units, a.survey ?? '', a.coCount ?? 0]);
+        }
+        downloadFile(rows.map(r => r.map(csvEscape).join(',')).join('\n'), `ztc-all-programs-${selectedTerm.replace('/', '')}.csv`, 'text/csv');
+      };
+      const exportProgramPDF = () => {
+        if (!programView) return;
+        if (!window.jspdf) {
+          setStorageNotice('PDF export is unavailable — the PDF library did not load. Try refreshing the page.');
+          return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(14); doc.text(activeProgram.name, 14, 16);
+        doc.setFontSize(10); doc.setTextColor(120);
+        doc.text(`${activeProgram.type} · Term ${selectedTerm} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${programView.unitsRequiredLabel} units${programView.unitsRequiredUnverifiable ? ' (lab evidence unverifiable)' : ''}`, 14, 22);
+        const caveat = programExportCaveat(activeProgram);
+        if (caveat) {
+          doc.setFontSize(8);
+          doc.text(doc.splitTextToSize(`Note: ${caveat}`, 180), 14, 27);
+        }
+        const body = [];
+        const pushPdf = (area, sg, optLabel, c) => {
+          const courseLabel = `${c.subject}-${c.number}${hasLabAsterisk(c.headerId) ? '*' : ''}`;
+          const sub = [sg.title, optLabel, sg.isLabReference ? 'Lab ref' : ''].filter(Boolean).join(' · ').slice(0, 28);
+          body.push([
+            area.title.slice(0, 22),
+            sub,
+            courseLabel,
+            (c.courseTitle || c.analyticsTitle || '').slice(0, 24),
+            c.units ?? '',
+            c.ztcPct === null ? '—' : c.ztcPct + '%',
+            c.surveyPct === null ? '—' : c.surveyPct + '%',
+            c.coZtc ? 'Yes' : '—',
+            c.status
+          ]);
+        };
+        for (const area of programView.areas) {
+          for (const sg of area.subgroups) {
+            if (sg.options && sg.options.length) {
+              for (const opt of sg.options) {
+                for (const c of opt.courses) pushPdf(area, sg, opt.label || '', c);
+              }
+            } else {
+              for (const c of sg.courses) pushPdf(area, sg, '', c);
+            }
+          }
+        }
+        doc.autoTable({
+          startY: caveat ? 38 : 28, head: [['Area', 'Sub / Option', 'Course', 'Title', 'Units', 'ZTC', 'Survey', 'CO ZTC', 'Status']], body,
+          styles: { fontSize: 7 }, headStyles: { fillColor: [37, 99, 235] }
+        });
+        doc.save(`ztc-${activeProgram.name.replace(/[^a-z0-9]+/gi, '-').slice(0, 50)}-${selectedTerm.replace('/', '')}.pdf`);
+      };
+
+      // ============================================================
+      // SHELL
+      // ============================================================
+      return (
+        <div className={`h-screen flex flex-col overflow-hidden ${t.bg} ${t.text}`}>
+          <a href="#main-content" className="skip-link">Skip to main content</a>
+          <h1 className="sr-only">ZTC Pathway Mapper</h1>
+          <div className="sr-only" role="status" aria-live="polite">{announce}</div>
+          {storageNotice && (
+            <div role="alert" className={`flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2 text-sm border-b ${darkMode ? 'bg-amber-500/15 border-amber-500/40 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+              <span className="flex items-center gap-2"><Icons.AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />{storageNotice}</span>
+              <button type="button" onClick={() => setStorageNotice('')} aria-label="Dismiss storage notice" className={`p-1 rounded ${t.cardHover}`}><Icons.X className="w-4 h-4" aria-hidden="true" /></button>
+            </div>
+          )}
+          {/* top bar */}
+          <header className={`${t.header} backdrop-blur border-b ${t.headerBorder} flex items-center gap-3 px-4 py-2.5 flex-shrink-0`}>
+            <Icons.Landmark className="w-6 h-6 text-blue-400 flex-shrink-0" aria-hidden="true" />
+            <span className="font-bold hidden sm:inline" aria-hidden="true">ZTC Pathway Mapper</span>
+            <nav aria-label="Views" className="flex items-center gap-1 ml-2">
+              <button type="button" onClick={() => switchPrimaryView('program')} aria-current={primaryView === 'program' ? 'page' : undefined} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${primaryView === 'program' ? 'bg-blue-600 text-white' : t.cardHover}`}>Pathway</button>
+              <button type="button" onClick={() => switchPrimaryView('courses')} aria-current={primaryView === 'courses' ? 'page' : undefined} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${primaryView === 'courses' ? 'bg-blue-600 text-white' : t.cardHover}`}>Courses</button>
+            </nav>
+            <div className="flex-1"></div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold ${t.textMuted} hidden sm:inline`}>Term</span>
+              <ThemedSelect value={selectedTerm} onChange={setSelectedTerm}
+                options={terms.map(tm => ({ value: tm, label: tm }))}
+                ariaLabel="Select term" t={t} dark={darkMode} align="right"
+                buttonClassName="font-semibold text-sm py-1.5 px-2.5 min-w-[5.5rem]" menuClassName="w-36" />
+            </div>
+            <div className="relative">
+              <button type="button" ref={exportBtnRef} onClick={() => setExportOpen(o => !o)} aria-haspopup="menu" aria-expanded={exportOpen}
+                aria-label="Export data" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.Download className="w-5 h-5" aria-hidden="true" /></button>
+              {exportOpen && (
+                <div ref={exportMenuRef} role="menu" aria-label="Export options"
+                  className={`absolute right-0 mt-1 w-56 rounded-lg border ${t.panelBorder} ${t.panel} shadow-xl p-1 z-40`}>
+                  <button type="button" role="menuitem" onClick={() => { exportProgramCSV(); setExportOpen(false); }} className={`w-full text-left text-sm px-3 py-2 rounded ${t.cardHover}`}>Current pathway (CSV)</button>
+                  <button type="button" role="menuitem" onClick={() => { exportProgramPDF(); setExportOpen(false); }} className={`w-full text-left text-sm px-3 py-2 rounded ${t.cardHover}`}>Current pathway (PDF)</button>
+                  <button type="button" role="menuitem" onClick={() => { exportAllProgramsCSV(); setExportOpen(false); }} className={`w-full text-left text-sm px-3 py-2 rounded ${t.cardHover}`}>All pathways summary (CSV)</button>
+                </div>
+              )}
+            </div>
+            <button type="button" onClick={() => setDarkMode(d => !d)} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} className={`p-2 rounded-lg ${t.cardHover}`}>
+              {darkMode ? <Icons.Sun className="w-5 h-5" aria-hidden="true" /> : <Icons.Moon className="w-5 h-5" aria-hidden="true" />}
+            </button>
+            <button type="button" onClick={resetData} aria-label="Load new data" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.Refresh className="w-5 h-5" aria-hidden="true" /></button>
+          </header>
+
+          <div className={`app-layout flex-1 flex min-h-0${dashboardOpen && isNarrowViewport ? ' dashboard-primary-canvas' : ''}`}>
+            <div className={`dashboard-tab-rail border-r ${t.headerBorder} ${t.sidebar}`}>
+              <button type="button" id="dashboard-toggle" ref={dashboardToggleRef}
+                data-dashboard-pullout="true"
+                onClick={toggleDashboard}
+                aria-label="Dashboard"
+                aria-expanded={dashboardOpen}
+                aria-controls="dashboard-panel"
+                title={dashboardOpen ? 'Close Dashboard' : 'Open Dashboard'}
+                className={`dashboard-pullout-tab${dashboardOpen ? ' is-open' : ''} text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${darkMode ? 'bg-zinc-800/80 text-zinc-100' : 'bg-gray-100 text-gray-900'} ${t.cardHover}`}>
+                <Icons.BarChart3 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                {dashboardOpen
+                  ? <Icons.ChevronLeft className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                  : <Icons.ChevronRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />}
+                <span className="dashboard-tab-label">{dashboardOpen ? 'Close Dashboard' : 'Open Dashboard'}</span>
+              </button>
+            </div>
+            <aside data-sidebar-column="true" data-dashboard-open={dashboardOpen ? 'true' : 'false'}
+              className={`sidebar-column w-72 lg:w-80 flex-shrink-0 border-r ${t.headerBorder} ${t.sidebar} min-h-0`}>
+              <div id="sidebar-nav-panel"
+                className={`sidebar-pane sidebar-pane-nav${dashboardOpen ? ' is-off is-inactive' : ''}`}
+                aria-label={primaryView === 'courses' ? 'Courses' : 'Pathways'}
+                aria-hidden={dashboardOpen ? 'true' : undefined}
+                {...(dashboardOpen ? { inert: '' } : {})}>
+              {primaryView === 'courses' ? (
+                <>
+                  <div className={`p-3 space-y-2 border-b ${t.headerBorder}`}>
+                    <SidebarSearch value={search} onChange={setSearch} label="Search courses" placeholder="Search courses…" t={t} />
+                    <div className="flex gap-2">
+                      <ThemedSelect value={courseStatusFilter} onChange={setCourseStatusFilter}
+                        options={COURSE_STATUS_OPTIONS}
+                        ariaLabel="Filter by ZTC status" t={t} dark={darkMode} className="flex-1 min-w-0"
+                        buttonClassName="text-xs py-1.5 px-2" menuClassName="w-56" />
+                      <ThemedSelect value={sortBy} onChange={setSortBy} options={COURSE_SORT_OPTIONS}
+                        ariaLabel="Sort courses by" t={t} dark={darkMode}
+                        buttonClassName="text-xs py-1.5 px-2" menuClassName="w-32" />
+                    </div>
+                    <div className={`text-[11px] ${t.textMuted} px-1`} aria-live="polite">{filteredCourses.length} of {allCourses.length} courses</div>
+                  </div>
+                  <ul className="flex-1 overflow-auto p-2 space-y-1 list-none m-0">
+                    {filteredCourses.map(c => {
+                      const sel = c.key === selectedCourseKey;
+                      const pctLabel = c.ztcPct == null ? 'no data' : c.ztcPct + '%';
+                      const surveyLabel = c.surveyPct === null ? 'no survey data' : c.surveyPct + '% survey completion';
+                      const title = c.courseTitle || c.analyticsTitle || '';
+                      return (
+                        <li key={c.key}>
+                          <button type="button" onClick={() => setSelectedCourseKey(c.key)}
+                            aria-current={sel ? 'true' : undefined}
+                            aria-label={`${c.subject}-${c.number}, ${title}. ZTC adoption ${pctLabel}. ${surveyLabel}.`}
+                            className={`w-full text-left rounded-lg px-3 py-2 border ${sel ? 'border-blue-500/60 bg-blue-500/10' : 'border-transparent ' + t.cardHover}`}>
+                            <div className="grid grid-cols-[4.5rem_1fr] gap-x-2 items-center">
+                              <span className={`text-sm font-bold text-right tabular-nums shrink-0 ${pctColor(c.ztcPct, darkMode)}`} aria-hidden="true">{c.ztcPct == null ? '—' : c.ztcPct + '%'}</span>
+                              <span className="text-sm leading-snug min-w-0">
+                                <span className="font-mono font-semibold">{c.subject}-{c.number}</span>
+                                {title && <span className={`block text-[11px] ${t.textMuted} truncate`}>{title}</span>}
+                              </span>
+                            </div>
+                            <div className={`mt-1 ml-[5rem] h-1.5 rounded-full ${t.track} overflow-hidden`} aria-hidden="true">
+                              <div className={`h-full ${barColor(c.ztcPct)}`} style={{ width: (c.ztcPct || 0) + '%' }}></div>
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <div className={`p-3 space-y-2 border-b ${t.headerBorder}`}>
+                    <SidebarSearch value={search} onChange={setSearch} label="Search pathways" placeholder="Search pathways…" t={t} />
+                    <div className="flex gap-2">
+                      <ThemedSelect value={typeFilter} onChange={setTypeFilter}
+                        options={[{ value: 'all', label: 'All types' }, ...programTypes.map(tp => ({ value: tp, label: tp }))]}
+                        ariaLabel="Filter by type" t={t} dark={darkMode} className="flex-1 min-w-0"
+                        buttonClassName="text-xs py-1.5 px-2" menuClassName="w-56" />
+                      <ThemedSelect value={sortBy} onChange={setSortBy} options={SORT_BY_OPTIONS}
+                        ariaLabel="Sort pathways by" t={t} dark={darkMode}
+                        buttonClassName="text-xs py-1.5 px-2" menuClassName="w-32" />
+                    </div>
+                    <div className={`text-[11px] ${t.textMuted} px-1`} aria-live="polite">
+                      {filteredPrograms.length} of {programs.length} active pathways
+                      {pathwayAdoptionFilter !== 'all' && (
+                        <span className={`block ${t.faint} mt-0.5`}>Filter: {PATHWAY_ADOPTION_FILTER_LABELS[pathwayAdoptionFilter]}</span>
+                      )}
+                    </div>
+                  </div>
+                  <ul className="flex-1 overflow-auto p-2 space-y-1 list-none m-0">
+                    {filteredPrograms.map(p => {
+                      const a = programAdoption[p.name];
+                      const sel = p.name === selectedProgram;
+                      const pctLabel = a?.pct == null ? 'no data' : a.pct + '%';
+                      return (
+                        <li key={p.name}>
+                        <button type="button" onClick={() => setSelectedProgram(p.name)}
+                          aria-current={sel ? 'true' : undefined}
+                          aria-label={`${p.name}. ZTC adoption ${pctLabel}.`}
+                          className={`w-full text-left rounded-lg px-3 py-2 border ${sel ? 'border-blue-500/60 bg-blue-500/10' : 'border-transparent ' + t.cardHover}`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold w-11 text-right ${pctColor(a?.pct, darkMode)}`} aria-hidden="true">{a?.pct == null ? '—' : a.pct + '%'}</span>
+                            <span className="text-sm leading-snug line-clamp-2 flex-1">{p.name}</span>
+                          </div>
+                          <div className={`mt-1 ml-[52px] h-1.5 rounded-full ${t.track} overflow-hidden`} aria-hidden="true">
+                            <div className={`h-full ${barColor(a?.pct)}`} style={{ width: (a?.pct || 0) + '%' }}></div>
+                          </div>
+                        </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+              {savedAt && <div className={`px-3 py-2 text-[10px] ${t.faint} border-t ${t.headerBorder}`}>Data cached locally · {new Date(savedAt).toLocaleString()}</div>}
+              </div>
+              <div id="dashboard-panel" role="region" aria-labelledby="dashboard-panel-title"
+                className={`sidebar-pane sidebar-pane-dash${dashboardOpen ? '' : ' is-off is-inactive'}`}
+                aria-hidden={dashboardOpen ? undefined : 'true'}
+                {...(!dashboardOpen ? { inert: '' } : {})}>
+                {renderDashboard()}
+              </div>
+            </aside>
+
+            <main id="main-content" tabIndex={-1} data-reading-pane="true"
+              aria-label={primaryView === 'courses' ? 'Course details' : 'Pathway details'}
+              aria-hidden={dashboardOpen && isNarrowViewport ? 'true' : undefined}
+              {...(dashboardOpen && isNarrowViewport ? { inert: '' } : {})}
+              className="reading-pane flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden focus:outline-none">
+              {primaryView === 'courses' ? renderCourseView() : renderProgram()}
+            </main>
+          </div>
+
+          <AppFooter t={t} />
+
+          {dashboardModal && renderDashboardModal()}
+          {selectedCourse && renderCourseModal()}
+        </div>
+      );
+    };
+
+    if (!window.__ZTC_VENDOR_MISSING__) {
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        <AppErrorBoundary><App /></AppErrorBoundary>
+      );
+    }
+  </script>
+</body>
+</html>

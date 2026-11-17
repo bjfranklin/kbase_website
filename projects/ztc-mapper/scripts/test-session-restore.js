@@ -23,6 +23,7 @@ vm.runInNewContext(
 );
 
 const dataset = {
+  schemaVersion: 3,
   programs: [{ name: 'Example A.S.', type: 'Degree', areas: [] }],
   analytics: { index: { 'BUSL-400': {} } },
   terms: ['2026/FA', '2027/SP'],
@@ -31,7 +32,15 @@ const dataset = {
 };
 
 const normalized = context.validatePersistedDataset(dataset);
-assert.equal(normalized.schemaVersion, 1, 'schema-less v3 payloads must migrate in memory');
+assert.equal(normalized.schemaVersion, 3);
+// Schema 3 (v4.0): pathway structure comes from the catalog file, so schema-less
+// and earlier sessions cannot be reused and are rejected.
+const { schemaVersion: _omitted, ...schemaLess } = dataset;
+assert.throws(() => context.validatePersistedDataset(schemaLess), /unsupported schema version \(none\)/);
+assert.throws(
+  () => context.validatePersistedDataset({ ...dataset, schemaVersion: 2 }),
+  /unsupported schema version 2/
+);
 assert.equal(normalized.selectedTerm, '2026/FA');
 assert.equal(normalized.programs[0].type, 'Degree', 'a valid type string is kept as-is');
 
@@ -66,7 +75,7 @@ assert.equal(
 );
 
 assert.throws(
-  () => context.validatePersistedDataset({ programs: [], analytics: { index: {} }, terms: [] }),
+  () => context.validatePersistedDataset({ schemaVersion: 3, programs: [], analytics: { index: {} }, terms: [] }),
   /no active pathways/i
 );
 assert.throws(
@@ -85,6 +94,8 @@ assert.throws(
   /pathway data/i
 );
 
+// The academic year is restored by the app from the loaded catalogs and carried on the dataset.
+assert.equal(context.validatePersistedUiState({ schemaVersion: 1 }, { ...dataset, selectedYear: '2025-2026' }).selectedYear, '2025-2026');
 const restoredUi = context.validatePersistedUiState({
   schemaVersion: 1,
   selectedTerm: '2027/SP',

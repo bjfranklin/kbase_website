@@ -1,4 +1,29 @@
-# Accessibility Verification — v3.5.7
+# Accessibility Verification — v4.1.0
+
+> Sections below the first are the v3.5.x record, kept for history. They mention fixtures and a lab-reference state that were retired with the Program Summary datasource.
+
+## v4.1.0 (2026-11-15)
+
+Run with the checked-in sample dataset (`scripts/fixtures/ztc-course-dataset-sample.csv`) and the built-in catalogs:
+
+```bash
+python3 -m http.server 8767   # temporary — kill when done
+python3 scripts/run-axe-v3.py http://localhost:8767/index.html
+python3 scripts/test-dashboard-panel-ui.py
+```
+
+**Result (headless Chromium via Playwright, in the development sandbox):** **0 WCAG 2.1 AA violations** across **14 UI states**: landing, staged upload, Dashboard panel in both themes, Pathway and Courses views, the catalog note, course detail panel and modal, the academic-year view, and the “Unverified section” explainer dialog. The Dashboard geometry, keyboard and selection test also passed.
+
+New in v4.1.0 and covered by the run:
+
+- **Academic year / Term selector** — one labelled listbox control whose visible label and accessible name (“Select academic year” / “Select term”) change with the view.
+- **In progress** and survey completion — plain text beside the score, not colour alone.
+- **Unverified section** — an “i” button with an accessible name and hover text; it opens a labelled dialog that closes with Esc and returns focus.
+- **Either / Or groups** and “Choose N of M” — bordered groups with text labels; met / not met is stated in words.
+- **Pathway colours** (green 100%, yellow 75–99%, red below 75%) always appear with the percentage.
+
+Not yet done for v4.1.0: a manual screen-reader pass (JAWS/NVDA) and a check on the published site after release.
+
 
 > Historical v2.3 line-level audit: see vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-ACCESSIBILITY_VERIFICATION.md`.
 

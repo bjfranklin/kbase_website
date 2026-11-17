@@ -196,7 +196,7 @@ def main() -> int:
             heading = page.locator("#main-content h2").first
             heading.wait_for()
             initial_program = heading.inner_text().strip()
-            assert initial_program == "Alpha Biology A.S."
+            assert initial_program, "a catalog pathway is selected after restore"
 
             views = page.get_by_role("navigation", name="Views")
             assert (
@@ -328,10 +328,14 @@ def main() -> int:
             trend_dialog.locator("..").click(position={"x": 5, "y": 5})
             assert page.get_by_role("dialog", name="ZTC adoption trend").count() == 0
 
-            page.get_by_role(
-                "button",
-                name="Zeta Chemistry Certificate. ZTC adoption 0%. Open pathway view.",
-            ).click()
+            # Pathways come from the built-in catalog, so open whichever is listed first.
+            open_pathway = page.get_by_role(
+                "button", name=re.compile(r"ZTC adoption \d+%\. Open pathway view\.$")
+            ).first
+            opened_name = open_pathway.get_attribute("aria-label").split(
+                ". ZTC adoption"
+            )[0]
+            open_pathway.click()
             page.wait_for_timeout(250)
             assert (
                 page.get_by_role("button", name="Dashboard", exact=True).get_attribute(
@@ -341,7 +345,7 @@ def main() -> int:
             )
             assert (
                 page.locator("#main-content h2").first.inner_text().strip()
-                == "Zeta Chemistry Certificate"
+                == opened_name
             )
 
             page.get_by_role("button", name="Switch to light mode").click()

@@ -1,99 +1,116 @@
-# ZTC Pathway Mapper v3.5.7
+# ZTC Pathway Mapper v4.1.0
+
+> **v4.0 (2026-11-12): pathway structure now comes from the official catalog.** The Program Summary (CurriQunet custom report) upload is retired. The app needs one upload, the ZTC course dataset from Informer; pathway requirements are read from `data/catalog-<year>.js`, which is generated from the catalog's Degrees and Certificates export. The last two-CSV release is archived as `index.v3.5.7.html`. Sections below that describe the Program Summary upload, Group Title markers, or `Condition` rules document that archived version; the legacy builder code is still in `index.html` but no longer reachable from the UI and is scheduled for removal.
+
+## How v4 gets pathway structure
+
+1. `catalog/Chaffey_Catalog_2026-2027_Degrees_and_Certificates.md` is the catalog export (public information).
+2. `scripts/build-catalog-structure.py` parses it into requirement slots ("need N of these options", where an option is one course or a bundle of courses taken together) and writes `data/catalog-<year>.js` plus `data/catalog-<year>-reconciliation.json`.
+3. Every requirement block is **reconciled against the units the catalog prints for it**. Blocks that do not add up are kept but marked unverified, and the app shows an "Unverified structure" note on those pathways. Current build (2026–27): 201 pathways, 359 of 360 blocks verified, 1 pathway with an unverified block (see `catalog/OPEN-QUESTIONS.md`). No block is dropped from a pathway: one that cannot be read is listed with its courses and marked "listed but not scored".
+4. Catalog instruction rows are kept and shown under their block. An Either/Or entry is two options (the course alone, or the course with its lab). A laboratory section that re-lists courses (Cal-GETC "C - Laboratory Science") is its own requirement, met by any option above that includes a lab (*). A general-education placeholder row ("Area 5B: Biological Sciences") is one requirement, met by any ZTC course in the matching Cal-GETC area.
+
+**Academic years.** The Pathway view and the Dashboard are filtered by academic year (Fall → Spring → Summer, so 2026–27 is 2026/FA, 2027/SP, 2027/SU); the Courses view keeps the Term filter. Each year is scored against its own catalog: `catalog/Chaffey_Catalog_<year>_Degrees_and_Certificates.md` → `data/catalog-<year>.js` (2023–24 through 2026–27 are built in). For a year, a course is ZTC only if it meets 75%+ of sections in **every term it was offered**; the row shows the lowest term and names the terms below 75%. The year's survey completion is shown beside the score, and a year is labelled "In progress" while any of its three terms is missing from the dataset or below 90% survey completion. To add a year: put its catalog export in `catalog/`, run the builder with `--catalog-year`, add the `<script>` tag in `index.html`, and add its entry to `vendor/deps.json`.
+
+**Rust twin.** `../ztc-mapper-rs/` is kept at value-for-value parity. `scripts/dump-pathway-scores.js` writes every pathway score for every catalog year; CI fails if `../ztc-mapper-rs/fixtures/parity/production-scores.sample.json` is stale, so regenerate it (command in the twin README) and update the twin whenever scoring changes.
+
+**Rules the reader applies beyond the plain lists.**
+- Courses under "Strongly recommended:", "Recommended (Optional):", "Optional Course:" or "This course is recommended, but not required:" are listed and never counted.
+- "Choose one group:" followed by "Group 1 / Group 2" is one requirement; each group is an alternative (courses joined by AND are taken together).
+- "Any three courses (maximum of one from each category)" needs three of the categories, one course from each.
+- "... or any course not taken from List A" also counts the options List A leaves over once List A itself is met. A left-over course is claimed once: when List B and List C both borrow from List A, List B takes what it needs first.
+- "Any three courses from at least two of the following areas" and "from at least two different disciplines": courses from a single area (or subject) fill all but the places that must come from another.
+- A correction the reader makes to the catalog text (for example "ASTRON 27 OR ASTRON 27L", read as lecture with its lab) is shown on screen under that section as "Note from the app".
+- A noncredit certificate that prints hours only for the pathway is verified against the pathway total.
+- Several "Choose one group:" captions inside one section (older Automotive Technology certificates) are one requirement each; the group numbering restarts with each caption.
+- "N units from the following" needs the fewest courses that reach N units. Whole courses rarely add up to exactly N, so the section is verified when the catalog prints the range of totals a student can actually end with (Accounting: nine units from 3, 3, 4, 4 and 1.5-unit courses prints 9.5–11).
+- In a general-education pattern, an area with a plain list and no count is one course (IGETC Area 7).
+- "Required CSU only" (IGETC Area 1 Group C) is counted as a requirement and noted on screen; the printed unit range starts without it.
+- "Language Other Than English" as a general-education row can be met in high school: it is listed and not scored.
+
+**Reviewed sections.** A sign-off also covers another year's catalog when that year prints the same section of the same pathway word for word (same `sectionSha256`). The unit check is strict: a section is verified only when the units read match the units printed. When a person has checked a section that does not match, record it in `catalog/reviewed-sections.json` (pathway, section, who, when, why, and the `sectionSha256` from `data/catalog-<year>-reconciliation.json`). It then shows as "verified by review". The sign-off is tied to that section's catalog text: if the text changes in a later export, the build stops until the section is reviewed again.
+
+**Colour rule.** A course is ZTC at 75%+ of sections (unchanged). A pathway or section is green only at 100% of requirements, yellow at 75–99%, red below 75%. Chancellor's Office ZTC (at least one section) is shown for reporting only and never counts toward a pathway.
+4. `vendor/deps.json` pins the generated file's sha384 (`check-deps.py`), and CI rebuilds it from the catalog export and requires a byte-for-byte match.
+
+Refreshing for a new catalog year or addendum:
+
+```bash
+python3 scripts/build-catalog-structure.py catalog/<export>.md --catalog-year 2027-2028
+# review data/catalog-<year>-reconciliation.json, then update the sha384 in vendor/deps.json
+node scripts/test-catalog-structure.js
+```
+
+Scoring rules in v4: a required course is one requirement; "Choose one" (and Group N alternatives) is one requirement met by any one option; "Any N courses" is N requirements from the list; "N units from the following" needs the fewest courses that reach N units; a bundle (courses joined by AND) is met only when every course in it meets the 75% bar. Units shown are the catalog's printed units. Saved sessions store only the ZTC data and are rebuilt against the catalog file on load (dataset schema 3).
 
 Program-centric, term-aware Zero Textbook Cost (ZTC) analytics for active degree, certificate, and transfer pathways. Client-side single-file React app — no build step.
 
 ## Quick start
 
-**End users (recommended):** open the hosted app — **[chairmanx.tech/projects/ztc-mapper](https://www.chairmanx.tech/projects/ztc-mapper/)** (Chaffey College · GitHub Pages). No install; includes all `vendor/` assets.
+**End users (recommended):** open the hosted app — **[chairmanx.tech/projects/ztc-mapper](https://www.chairmanx.tech/projects/ztc-mapper/)** (Chaffey College · GitHub Pages). No install.
 
-**Maintainers / offline:** open `index.html` from the **full project folder** (must include `vendor/`). Sharing `index.html` alone will not run.
+**Maintainers / offline:** open `index.html` from the **full project folder** (it needs `vendor/` and `data/`). Sharing `index.html` alone will not run.
 
-1. Open the app (hosted URL above, or local folder).
-2. Upload **Program Summary** CSV and **Course Analytics** CSV (click or drag-and-drop onto each card).
+1. Open the app.
+2. Upload the **ZTC course dataset** CSV from Informer (click or drag-and-drop).
 3. Click **Build dashboard**.
 
-## Architecture (v3)
+## Architecture (v4)
 
 | Layer | Details |
 |-------|---------|
 | **Stack** | React **18.2.0**, Babel **7.23.5**, Chart.js **4.4.0**, jsPDF + AutoTable, Tailwind **3.4.17** — **vendored** under `vendor/`; zero external runtime deps |
-| **Data** | Two datasources joined on `SUBJECT-NUMBER`; Active programs only |
-| **Views** | Pathway (nested areas) and Courses (browse all courses) as primary reading views; Dashboard is a non-modal panel in the left navigation column |
-| **Persistence** | Validated dataset at `ztc-pathway-mapper-v3`; debounced navigation state at `ztc-pathway-mapper-v3-ui`; recoverable invalid-cache handling and reset |
-| **Exports** | Current pathway CSV/PDF with GE fidelity note; all-pathways summary CSV; spreadsheet-formula neutralization |
+| **Data** | Pathway structure from the built-in catalogs (`data/catalog-<year>.js`); one upload, the ZTC course dataset, joined on `SUBJECT-NUMBER` |
+| **Views** | Pathway (by academic year) and Courses (by term) as primary reading views; Dashboard is a non-modal panel in the left navigation column |
+| **Persistence** | The uploaded dataset at `ztc-pathway-mapper-v3` (pathways are always rebuilt from the catalog, never restored); navigation state at `ztc-pathway-mapper-v3-ui`; recoverable invalid-cache handling and reset |
+| **Exports** | Current pathway CSV/PDF; all-pathways summary CSV; spreadsheet-formula neutralization |
 
-### Datasources
-
-1. **Program Summary** — pathway structure (blocks, courses, units, choice vs all-required). Optional: `Header Identifier (*)`, `Group Title`, `Condition` for lab-reference re-lists and Either/Or/And option bundles.
-2. **IE ZTC Course Analytics** — per-course, per-term ZTC %, survey completion, section counts.
-
-Column headers are auto-detected via flexible name matching (`findIdx`). Full contract: vault `2-projects/ztc-pathway-mapper/ZTC-Pathway-Mapper-v3-CSV-Column-Contract.md`.
-
-### Landing upload (v3.4)
-
-- Each datasource card accepts **click-to-upload** or **drag-and-drop** (`.csv` only).
-- Drop success is announced via `aria-live="polite"`; invalid files surface `role="alert"` errors.
-- Shared `loadPendingCsv` pipeline for click and drop paths.
+The code that read the retired Program Summary export was removed in v4.1.0; `index.v3.5.7.html` is the last version that has it.
 
 ### Vendor dependencies
 
-Runtime assets are vendored locally (`vendor/`) with pinned versions in `vendor/deps.json`. Verify integrity:
+Runtime assets are vendored locally (`vendor/`) with pinned versions in `vendor/deps.json`, which also pins the generated catalog files. Verify integrity:
 
 ```bash
 python3 scripts/check-deps.py
 ```
 
-Re-fetch from upstream (after manifest edit):
-
-```bash
-./scripts/fetch-vendor.sh
-```
-
-Regenerate Tailwind CSS (maintainer only):
-
-```bash
-./scripts/generate-tailwind-css.sh
-```
-
-CI guardrail: `.github/workflows/ztc-mapper-guardrails.yml` runs dependency integrity, requirement scoring, FID-1, validated restore/persistence, export, Dashboard source/browser, Python lint, and axe WCAG regressions on `ztc-mapper/**` changes.
-
-For a local real-data comparison against the checked-in baseline, write the report only under the ignored Rust `target/` tree:
-
-```bash
-node scripts/compare-fid1.js \
-  --program-summary "/path/to/Program Summary.csv" \
-  --analytics "/path/to/Course Analytics.csv" \
-  --term 2026/FA \
-  --output ../ztc-mapper-rs/target/ztc-audit/fid1-comparison.json
-```
+Re-fetch from upstream (after manifest edit): `./scripts/fetch-vendor.sh`. Regenerate Tailwind CSS (maintainer only): `./scripts/generate-tailwind-css.sh`. Only classes present in `vendor/tailwind.min.css` work; use inline styles for anything else.
 
 **Note:** Runtime SRI `integrity=` attributes are intentionally omitted — they break `file://` opens (same as `crossorigin`). File tampering is caught by `check-deps` sha384 vs `deps.json`.
 
+### Tests
+
+```bash
+node scripts/test-catalog-structure.js     # reader rules and catalog-verified pathways
+node scripts/test-independent-count.js     # second reader, see below
+node scripts/test-academic-year.js         # year rule across all four catalogs
+node scripts/test-session-restore.js
+node scripts/test-exports.js
+node scripts/test-csv-and-defaults.js
+node scripts/test-dashboard-panel.js
+python3 scripts/test-dashboard-panel-ui.py # browser test, needs Playwright
+```
+
+`.github/workflows/ztc-mapper-guardrails.yml` runs all of these, the dependency check, the Rust parity fixture check, a byte-for-byte rebuild of every catalog, Python lint and the axe run.
+
+**Independent count.** The unit check catches a section whose units do not add up. It cannot catch a rule that was misread but still adds up. `test-independent-count.js` is a second, deliberately simple reader: it counts requirements straight from the catalog Markdown for every pathway made only of plain lists, "any N courses" lists and simple "Choose one" entries, and requires the app to score the same number. It covers a little over half of the pathways in each year (116 of 201 in 2026–27) and skips the rest instead of guessing.
+
 ### ZTC thresholds
 
-- **Chaffey ZTC (green):** ≥75% of sections zero textbook cost
+- **Chaffey ZTC (green):** 75%+ of sections zero textbook cost
 - **Partial:** 51–74%
-- **CO ZTC (purple):** ≥1 ZTC section (Chancellor's Office definition)
+- **CO ZTC (purple):** at least one ZTC section (Chancellor's Office definition; reporting only)
 
-Program adoption is **requirement-slot based**. A Choose-N block contributes N denominator slots; named subgroups retain their own quotas (for example, one Arts plus one Humanities); and every member of an AND bundle must meet the 75% bar. Required Core blocks continue to count every listed required course. Catalog requirements unavailable or unknown in the selected term remain in the denominator as unmet.
+For an academic year a course must be at 75%+ in **every term it was offered**; the app names the terms that missed. A year is labelled "In progress" while survey completion is under 90% or a term is not in the dataset yet.
 
-Required-unit minima use the same slot and subgroup constraints instead of selecting globally low-unit courses. Lab-reference re-lists remain outside adoption scoring. When the Program Summary lacks Header Identifier / Group Title / Condition evidence, the app reports the structural unit lower bound with `≥` and labels lab evidence **unverifiable**; it does not infer lab compliance.
+### Course catalog link
 
-### Course catalog link (v3.4)
+- **Courses tab:** the Chaffey catalog link is shown only when the selected term is one of the two most recent terms in the dataset.
+- **Pathway tab** course modal: the catalog link is always shown.
 
-- **Courses tab:** Chaffey catalog link shown only when the selected term is one of the **two most recent terms** in the analytics dataset (`getRecentTerms`).
-- Older terms show a muted availability note instead of the link.
-- **Pathway tab** course modal: catalog link always shown (unchanged).
+### Dashboard
 
-### Dashboard pullout and responsive hierarchy (v3.5.7)
-
-Dashboard is not a full-page destination or top-bar action. **Pathway** and **Courses** remain the only primary reading views. A graphite pullout with a blue edge indicator and directional chevron opens the Dashboard in the left navigation column. At 640px and above, the selected reading pane remains visible beside the bounded panel. Below 640px, Dashboard becomes the primary canvas while the selected pathway/course stays mounted, preserved, and temporarily `inert`/`aria-hidden`. Escape closes the panel and restores focus to the tab; the panel remains non-modal (no focus trap or backdrop).
-
-The compact Dashboard features average ZTC adoption as its headline, highlights pathways needing attention, retains filtered KPI drill-downs in a two-column grid, and replaces the sidebar chart with an accessible sparkline and term-over-term delta. “View trend details” opens the full chart in a labelled modal without losing the prior selection. Distribution and a five-item ranking use progressive disclosure; “View all pathways” returns to the existing adoption-sorted Pathway view.
-
-### Dashboard institution KPI actions
-
-The headline and four compact KPI actions open **Pathway** or **Courses** with filters applied:
+**Pathway** and **Courses** are the only primary reading views. A pullout opens the Dashboard in the left navigation column; under 640px it takes the main canvas. The headline and four KPI actions open Pathway or Courses with filters applied:
 
 | Tile | Opens | Filter |
 |------|-------|--------|
@@ -102,6 +119,8 @@ The headline and four compact KPI actions open **Pathway** or **Courses** with f
 | ≥75% ZTC-able | Pathway | ≥75% adoption |
 | Chaffey ZTC courses | Courses | ZTC status (≥75% sections) |
 | Chancellor's Office ZTC courses | Courses | CO ZTC (≥1 section) |
+
+"Needs attention" lists pathways below 75%.
 
 ### Accessibility
 
@@ -112,14 +131,7 @@ python3 -m http.server 8767   # temporary — kill when done
 python3 scripts/run-axe-v3.py http://localhost:8767/index.html
 ```
 
-Dashboard-panel regressions (no production CSVs required):
-
-```bash
-node scripts/test-dashboard-panel.js
-python3 scripts/test-dashboard-panel-ui.py
-```
-
-The axe harness covers **11 UI states**, including an explicit lab-reference pathway, using checked-in de-identified fixtures. Latest completed baseline: 2026-10-08 v3.5.7 run, 0 violations across all 11 states; re-run the harness after UI changes. Source, semantic-tree, keyboard, focus, and responsive geometry checks are recorded in `ACCESSIBILITY_VERIFICATION.md`.
+The axe harness covers **14 UI states** using the checked-in sample dataset. Latest run: 2026-11-15, 0 violations across all 14 states.
 
 ## Deferred (on stakeholder request)
 
@@ -153,6 +165,8 @@ Extended product spec and tracker: `kbase_professional/2-projects/ztc-pathway-ma
 
 | Version | Notes |
 |---------|-------|
+| **v4.1.0** | Academic Year filter on Pathway/Dashboard with one catalog per year (2023–24 to 2026–27); strict year rule (75%+ in every term offered) with missed terms named; survey completion and "In progress" label; pathway colours green 100% / yellow 75–99% / red <75%; Cal-GETC lab requirement, Either/Or options, GE placeholder rows and catalog instructions |
+| **v4.0.0** | Pathway structure from the official catalog export with unit reconciliation; single ZTC dataset upload; grouped choice display; unverified-structure note; faster CSV parser; current-term default; v3.5.7 archived as `index.v3.5.7.html` |
 | **v3.5.7** | Sub-640px primary-canvas Dashboard; headline hierarchy; quieter pullout; sparkline/delta; stacked distribution; short ranking and modal trend detail; explicit requirement-slot scoring, subgroup-aware units, program-wide course deduplication, and strict count parsing |
 | **v3.5.6** | Dashboard trigger moved from the top bar to an accessible vertical pullout tab on the left edge; bounded panel behavior remains unchanged |
 | **v3.5.5** | Bounded-sidebar Dashboard panel: Pathway/Courses stay the reading views; Dashboard replaces only the `w-72 lg:w-80` navigation column |

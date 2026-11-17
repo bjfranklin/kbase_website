@@ -75,6 +75,22 @@ def main() -> int:
         if rel not in index_html:
             errors.append(f"index.html does not reference {rel}")
 
+    # Generated data files (catalog structure) are pinned the same way as vendor files.
+    for item in manifest.get("data", []):
+        rel = item["file"]
+        path = ROOT / rel
+        if not path.is_file():
+            errors.append(f"missing data file: {rel}")
+            continue
+        actual = sha384_hex(path)
+        if actual != item.get("sha384", ""):
+            errors.append(
+                f"hash mismatch for {rel}: rebuild with scripts/build-catalog-structure.py "
+                "and update vendor/deps.json"
+            )
+        if rel not in index_html:
+            errors.append(f"index.html does not reference {rel}")
+
     for pattern in FLOATING_CDN_PATTERNS:
         if pattern.search(index_html):
             errors.append(

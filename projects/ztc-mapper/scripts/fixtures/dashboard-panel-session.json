@@ -1,6 +1,10 @@
 {
+  "schemaVersion": 3,
   "selectedTerm": "2026/FA",
-  "terms": ["2025/FA", "2026/FA"],
+  "terms": [
+    "2025/FA",
+    "2026/FA"
+  ],
   "savedAt": "2026-09-01T00:00:00.000Z",
   "analytics": {
     "index": {
@@ -71,73 +75,5 @@
         }
       }
     }
-  },
-  "programs": [
-    {
-      "name": "Alpha Biology A.S.",
-      "type": "Degree",
-      "areas": [
-        {
-          "id": "a0",
-          "title": "Required Core",
-          "requirement": { "choice": false, "n": null },
-          "isHeaderArea": false,
-          "subgroups": [
-            {
-              "id": "a0-0",
-              "title": null,
-              "requirement": { "choice": false, "n": null },
-              "options": null,
-              "isLabReference": false,
-              "courses": [
-                {
-                  "key": "BIOL-1",
-                  "subject": "BIOL",
-                  "number": "1",
-                  "courseTitle": "General Biology",
-                  "units": 4,
-                  "headerId": "",
-                  "groupTitle": "",
-                  "condition": ""
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Zeta Chemistry Certificate",
-      "type": "Certificate",
-      "areas": [
-        {
-          "id": "a0",
-          "title": "Required Core",
-          "requirement": { "choice": false, "n": null },
-          "isHeaderArea": false,
-          "subgroups": [
-            {
-              "id": "a0-0",
-              "title": null,
-              "requirement": { "choice": false, "n": null },
-              "options": null,
-              "isLabReference": false,
-              "courses": [
-                {
-                  "key": "CHEM-1",
-                  "subject": "CHEM",
-                  "number": "1",
-                  "courseTitle": "Introductory Chemistry",
-                  "units": 4,
-                  "headerId": "",
-                  "groupTitle": "",
-                  "condition": ""
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+  }
 }

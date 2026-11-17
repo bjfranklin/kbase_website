@@ -58,7 +58,12 @@ const view = {
 
 const csv = context.buildProgramCsv(program, view, '2026/FA');
 assert.match(csv, /Export Note/);
-assert.match(csv, /Source export may omit option nesting visible in the catalog/);
+// The Program Summary-era general-education note is gone; only the catalog caveat remains.
+assert.doesNotMatch(csv, /Source export may omit/);
+assert.match(
+  context.buildProgramCsv(program, { ...view, choiceCaveatAreas: 1 }, '2026-2027'),
+  /In 1 section the structure read from the catalog could not be confirmed/
+);
 assert.match(csv, /'=Example GE/);
 assert.match(csv, /"Example, Course"/);
 assert.equal(csv.trim().split('\n').length, 2);
@@ -66,6 +71,10 @@ assert.equal(csv.trim().split('\n').length, 2);
 assert.match(html, /doc\.splitTextToSize\(`Note: \$\{caveat\}`/);
 assert.match(html, /startY: caveat \? 38 : 28/);
 assert.match(html, /const programViewCache = useMemo/);
-assert.match(html, /<ul className="mt-2 space-y-2" aria-label="Laboratory courses/);
+// The retired Program Summary path is gone from the app.
+for (const retired of ['buildPrograms', 'buildRequirementPlan', 'isLabReference', 'LEGACY_STORAGE_KEY', 'Program Summary']) {
+  assert.equal(html.includes(retired), false, `${retired} must not come back`);
+}
+assert.match(csv.split('\n')[0], /Units,Lab \(\*\),Term,/, 'the lab marker has its own column');
 
-console.log('Export, lab semantics, and view-cache regression tests passed.');
+console.log('Export and view-cache regression tests passed.');

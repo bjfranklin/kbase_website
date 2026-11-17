@@ -18,6 +18,10 @@
   <script src="vendor/jspdf.umd.min.js"></script>
   <script src="vendor/jspdf.plugin.autotable.min.js"></script>
   <script src="vendor/chart.umd.min.js"></script>
+  <script src="data/catalog-2023-2024.js"></script>
+  <script src="data/catalog-2024-2025.js"></script>
+  <script src="data/catalog-2025-2026.js"></script>
+  <script src="data/catalog-2026-2027.js"></script>
 
   <script>
     // If index.html was opened without the vendor/ folder, show a clear error (not a blank page).
@@ -201,9 +205,8 @@
     // CO_MIN_SECTIONS = Chancellor's Office definition: ZTC-passing with >=1 ZTC section.
     const ZTC_THRESHOLDS = { ZTC_MIN: 75, PARTIAL_MIN: 51, CO_MIN_SECTIONS: 1 };
     const STORAGE_KEY = 'ztc-pathway-mapper-v3';
-    const LEGACY_STORAGE_KEY = 'ztc-pathway-mapper-v2';
     const UI_STORAGE_KEY = STORAGE_KEY + '-ui';
-    const DATASET_SCHEMA_VERSION = 1;
+    const DATASET_SCHEMA_VERSION = 3;
     const UI_SCHEMA_VERSION = 1;
     const COURSE_CATALOG_URL = 'https://colss-prod.ec.chaffey.edu/Student/Courses/Search?keyword=';
     const APP_HOSTED_URL = 'https://www.chairmanx.tech/projects/ztc-mapper/';
@@ -221,8 +224,10 @@
 
     const validatePersistedDataset = (value) => {
       if (!isPlainObject(value)) throw new Error('Saved data is not an object.');
-      if (value.schemaVersion !== undefined && value.schemaVersion !== DATASET_SCHEMA_VERSION) {
-        throw new Error(`Saved data uses unsupported schema version ${value.schemaVersion}.`);
+      // Schema 3 (v4.0): pathway structure comes from the official catalog files, so
+      // earlier and schema-less sessions must be reloaded.
+      if (value.schemaVersion !== DATASET_SCHEMA_VERSION) {
+        throw new Error(`Saved data uses unsupported schema version ${value.schemaVersion === undefined ? '(none)' : value.schemaVersion}. Load the ZTC dataset again.`);
       }
       if (!Array.isArray(value.programs) || value.programs.length === 0) {
         throw new Error('Saved data has no active pathways.');
@@ -265,6 +270,7 @@
       const validSorts = new Set([...SORT_BY_OPTIONS, ...COURSE_SORT_OPTIONS].map(option => option.value));
       const fallback = {
         selectedTerm: dataset.selectedTerm,
+        selectedYear: dataset.selectedYear || defaultYear(dataset.terms),
         selectedProgram: dataset.programs[0]?.name || null,
         selectedCourseKey: Array.from(courseKeys).sort()[0] || null,
         primaryView: 'program',
@@ -282,6 +288,7 @@
       const programTypes = new Set(dataset.programs.map(p => p.type));
       return {
         selectedTerm: dataset.terms.includes(value.selectedTerm) ? value.selectedTerm : fallback.selectedTerm,
+        selectedYear: fallback.selectedYear,
         selectedProgram: programNames.has(value.selectedProgram) ? value.selectedProgram : fallback.selectedProgram,
         selectedCourseKey: courseKeys.has(value.selectedCourseKey) ? value.selectedCourseKey : fallback.selectedCourseKey,
         primaryView: value.primaryView === 'courses' ? 'courses' : 'program',
@@ -300,24 +307,37 @@
       return /[",\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
     };
 
-    const programExportCaveat = (program) =>
-      program?.type === 'GE / Transfer Pattern'
-        ? 'Source export may omit option nesting visible in the catalog; verify catalog structure before decision-making.'
-        : '';
+    const CHOICE_CAVEAT_TEXT = 'the structure read from the catalog could not be confirmed against the units the catalog prints, so its requirements may be mis-scored or left out of the percentage. Check this pathway in the catalog.';
+    // Shown from the "i" beside every unverified-section note.
+    const UNVERIFIED_HINT = 'Unverified section: what the app read from the catalog for this section does not add up to the units the catalog prints for it. Select for details.';
+    const UNVERIFIED_EXPLAINER = {
+      title: 'Unverified section',
+      meaningTitle: 'What this means',
+      calculationTitle: 'How it is decided',
+      meaning: 'A section is one requirement block of a pathway in the catalog, such as "Required Core" or "List A". "Unverified" means the app could not confirm that it read that block\u2019s requirements correctly, so the pathway\u2019s percentage may be off. It says nothing about the courses themselves or their ZTC status.',
+      calculation: 'For every block, the app adds up the units of the requirements it read from the catalog export and compares the result with the units the catalog prints for that block. If the two do not match, or the catalog prints no units for the block, the section is marked unverified. It is still scored as read. A section marked "listed but not scored" could not be read into requirements at all: its courses are shown and it is left out of the percentage. Check the pathway in the catalog before relying on its score.'
+    };
+    const programExportCaveat = (program, view) => {
+      const notes = [];
+      if (view?.choiceCaveatAreas > 0) {
+        notes.push(`In ${view.choiceCaveatAreas} section${view.choiceCaveatAreas === 1 ? '' : 's'} ${CHOICE_CAVEAT_TEXT}`);
+      }
+      return notes.join(' ');
+    };
 
     const buildProgramCsv = (program, view, term) => {
       if (!program || !view) return '';
       const rows = [[
         'Program', 'Area', 'Sub-area', 'Option Group', 'Course', 'Course Title', 'Units',
-        'Header Identifier', 'Lab Reference', 'Term', 'ZTC %', 'Survey %',
+        'Lab (*)', 'Term', 'ZTC %', 'Survey %',
         'Chaffey ZTC (75%+)', 'CO ZTC (1+ section)', 'Status', 'Export Note'
       ]];
-      const caveat = programExportCaveat(program);
+      const caveat = programExportCaveat(program, view);
       const pushCourse = (area, subgroup, optionLabel, course) => {
         rows.push([
           program.name, area.title, subgroup.title || '', optionLabel || '',
           `${course.subject}-${course.number}`, course.courseTitle || course.analyticsTitle || '',
-          course.units ?? '', course.headerId || '', subgroup.isLabReference ? 'Yes' : 'No',
+          course.units ?? '', course.headerId || '',
           term, course.ztcPct ?? '', course.surveyPct ?? '',
           course.status === 'ztc' ? 'Yes' : 'No', course.coZtc ? 'Yes' : 'No',
           course.status, caveat
@@ -397,27 +417,54 @@
     const fmtUnits = (n) => (n === null || n === undefined) ? '' : (Math.round(n * 100) / 100).toString();
 
     // Robust CSV parser: handles quoted fields with embedded commas + newlines.
+    // Slices fields out of the source text instead of appending one character at a
+    // time; output is identical to the previous character-append parser.
     const parseCSV = (text) => {
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
-      text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
       const rows = [];
-      let row = [], field = '', inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (inQuotes) {
-          if (c === '"') {
-            if (text[i + 1] === '"') { field += '"'; i++; }
-            else inQuotes = false;
-          } else field += c;
+      let row = [];
+      const n = text.length;
+      let i = 0;
+      const pushRow = () => {
+        if (row.length > 1 || (row.length === 1 && row[0].trim() !== '')) rows.push(row);
+        row = [];
+      };
+      const isDelimiter = (c) => c === 44 || c === 10 || c === 13; // , \n \r
+      while (i < n) {
+        let field;
+        if (text.charCodeAt(i) === 34) { // field opens with a quote
+          let j = i + 1, start = j, parts = null;
+          for (;;) {
+            const q = text.indexOf('"', j);
+            if (q === -1) { j = n; break; }
+            if (text.charCodeAt(q + 1) === 34) { // escaped quote
+              (parts = parts || []).push(text.slice(start, q + 1));
+              start = j = q + 2;
+              continue;
+            }
+            j = q;
+            break;
+          }
+          field = parts ? parts.join('') + text.slice(start, j) : text.slice(start, j);
+          i = j + 1;
+          let k = i; // lenient: text after the closing quote stays in the field
+          while (k < n && !isDelimiter(text.charCodeAt(k))) k++;
+          if (k > i) { field += text.slice(i, k).replace(/"/g, ''); i = k; }
         } else {
-          if (c === '"') inQuotes = true;
-          else if (c === ',') { row.push(field); field = ''; }
-          else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-          else field += c;
+          let k = i;
+          while (k < n && !isDelimiter(text.charCodeAt(k))) k++;
+          field = text.slice(i, k);
+          i = k;
         }
+        if (field.indexOf('\r') !== -1) field = field.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        row.push(field);
+        const c = text.charCodeAt(i);
+        if (c === 44) { i++; if (i === n) { row.push(''); pushRow(); } continue; }
+        if (c === 13) { i += text.charCodeAt(i + 1) === 10 ? 2 : 1; pushRow(); continue; }
+        if (c === 10) { i++; pushRow(); continue; }
       }
-      if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
-      return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
+      if (row.length) pushRow();
+      return rows;
     };
 
     // Term ordering: YYYY/SP, YYYY/SU, YYYY/FA
@@ -429,6 +476,120 @@
     };
     const sortTerms = (terms) => terms.slice().sort((a, b) => termRank(a) - termRank(b));
     const getRecentTerms = (terms, count = 2) => sortTerms(terms).slice(-count);
+    // Jan-May = SP, Jun-Jul = SU, Aug-Dec = FA.
+    const currentTermCode = (now = new Date()) => {
+      const month = now.getMonth() + 1;
+      const sem = month <= 5 ? 'SP' : (month <= 7 ? 'SU' : 'FA');
+      return `${now.getFullYear()}/${sem}`;
+    };
+    // Open on the latest term that is not in the future; fall back to the latest term.
+    const defaultTerm = (terms, now = new Date()) => {
+      const sorted = sortTerms(terms || []);
+      const current = termRank(currentTermCode(now));
+      let pick = '';
+      for (const term of sorted) {
+        const rank = termRank(term);
+        if (rank !== -1 && rank <= current) pick = term;
+      }
+      return pick || sorted[sorted.length - 1] || '';
+    };
+
+    // ---- Academic years ----
+    // Pathways are scored over an academic year (Fall -> Spring -> Summer) against that
+    // year's catalog. "2026-2027" is 2026/FA, 2027/SP and 2027/SU.
+    const ACADEMIC_YEAR_SURVEY_MIN = 90;
+    const isYearKey = (value) => /^\d{4}-\d{4}$/.test(String(value || ''));
+    const yearLabel = (yearKey) => isYearKey(yearKey) ? `${yearKey.slice(0, 4)}\u2013${yearKey.slice(7)}` : String(yearKey || '');
+    const periodLabel = (value) => isYearKey(value) ? yearLabel(value) : String(value || '');
+    const academicYearTerms = (yearKey) => {
+      const [start, end] = String(yearKey).split('-');
+      return [`${start}/FA`, `${end}/SP`, `${end}/SU`];
+    };
+    const yearOfTerm = (term) => {
+      const m = String(term || '').trim().match(/^(\d{4})\/(SP|SU|FA)$/i);
+      if (!m) return '';
+      const year = parseInt(m[1], 10);
+      return m[2].toUpperCase() === 'FA' ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+    };
+    const loadedCatalogs = () => (typeof window !== 'undefined' && window.ZTC_CATALOGS) || {};
+    const catalogYears = () => Object.keys(loadedCatalogs()).filter(isYearKey).sort();
+    const catalogsSha = () => catalogYears().map(y => loadedCatalogs()[y]?.meta?.sourceSha256 || '').join(':') || null;
+    // Open on the academic year of the default term when its catalog is loaded; else the latest.
+    const defaultYear = (terms, now = new Date()) => {
+      const years = catalogYears();
+      const wanted = yearOfTerm(defaultTerm(terms, now));
+      return years.includes(wanted) ? wanted : (years[years.length - 1] || '');
+    };
+    // A course's record for an academic year. Departments commit at the section level
+    // for each term, so the year is only as good as its weakest term: `ztcPct` is the
+    // lowest term percentage, which makes the 75% rule mean "75%+ in every term offered".
+    const yearRecordCache = new WeakMap();
+    const yearRecord = (rec, yearKey) => {
+      let byYear = yearRecordCache.get(rec);
+      if (!byYear) { byYear = {}; yearRecordCache.set(rec, byYear); }
+      if (yearKey in byYear) return byYear[yearKey];
+      const offered = academicYearTerms(yearKey).filter(term => rec.terms[term]).map(term => ({ term, ...rec.terms[term] }));
+      let record = null;
+      if (offered.length) {
+        const sum = (field) => offered.every(x => x[field] === null || x[field] === undefined)
+          ? null : offered.reduce((total, x) => total + (x[field] || 0), 0);
+        const totalSec = sum('totalSec');
+        const surveysSub = sum('surveysSub');
+        let surveyPct = null;
+        if (totalSec && surveysSub !== null) surveyPct = Math.round((surveysSub / totalSec) * 10000) / 100;
+        else {
+          const known = offered.filter(x => x.surveyPct !== null && x.surveyPct !== undefined);
+          if (known.length) surveyPct = Math.round((known.reduce((a, x) => a + x.surveyPct, 0) / known.length) * 100) / 100;
+        }
+        record = {
+          ztcPct: Math.min(...offered.map(x => x.ztcPct === null || x.ztcPct === undefined ? 0 : x.ztcPct)),
+          surveyPct,
+          surveysSub,
+          surveysPend: sum('surveysPend'),
+          totalSec,
+          ztcSec: sum('ztcSec'),
+          ztca: null, ztcc: null, ztce: null, ztcf: null, ztcg: null, lct: null,
+          yearTerms: offered.map(x => ({ term: x.term, ztcPct: x.ztcPct, totalSec: x.totalSec, ztcSec: x.ztcSec, surveyPct: x.surveyPct })),
+          missedTerms: offered.filter(x => !(x.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN)).map(x => x.term)
+        };
+      }
+      byYear[yearKey] = record;
+      return record;
+    };
+    // Survey completion for a year and whether it is still in progress: a term that is
+    // missing from the dataset, or below 90% survey completion, keeps the year open.
+    const yearStatus = (analytics, datasetTerms, yearKey) => {
+      const have = new Set(datasetTerms || []);
+      let allSections = 0, allSubmitted = 0;
+      const terms = academicYearTerms(yearKey).map(term => {
+        if (!have.has(term)) return { term, present: false, surveyPct: null };
+        let sections = 0, submitted = 0, pctSum = 0, pctCount = 0, counted = true;
+        for (const rec of Object.values(analytics.index)) {
+          const m = rec.terms[term];
+          if (!m) continue;
+          if (m.totalSec === null || m.totalSec === undefined || m.surveysSub === null || m.surveysSub === undefined) counted = false;
+          sections += m.totalSec || 0;
+          submitted += m.surveysSub || 0;
+          if (m.surveyPct !== null && m.surveyPct !== undefined) { pctSum += m.surveyPct; pctCount += 1; }
+        }
+        const surveyPct = counted && sections > 0
+          ? Math.round((submitted / sections) * 100)
+          : (pctCount ? Math.round(pctSum / pctCount) : null);
+        if (counted) { allSections += sections; allSubmitted += submitted; }
+        return { term, present: true, surveyPct };
+      });
+      const present = terms.filter(x => x.present);
+      const surveyPct = allSections > 0
+        ? Math.round((allSubmitted / allSections) * 100)
+        : (present.length && present.every(x => x.surveyPct !== null)
+          ? Math.round(present.reduce((a, x) => a + x.surveyPct, 0) / present.length) : null);
+      const open = terms.filter(x => !x.present || x.surveyPct === null || x.surveyPct < ACADEMIC_YEAR_SURVEY_MIN);
+      return {
+        yearKey, terms, surveyPct,
+        inProgress: open.length > 0,
+        reason: open.map(x => x.present ? `${x.term} surveys at ${x.surveyPct === null ? 'unknown' : x.surveyPct + '%'}` : `${x.term} not in the dataset yet`).join('; ')
+      };
+    };
 
     // Normalize a SUBJECT-NUMBER join key
     const normKey = (subject, number) => {
@@ -484,6 +645,25 @@
       if (pct >= ZTC_THRESHOLDS.PARTIAL_MIN) return 'bg-amber-500';
       return 'bg-red-500';
     };
+    // Pathways (and their sections) follow a stricter rule than courses: green only when
+    // every requirement can be met with a Chaffey ZTC course (100%), yellow at 75-99%,
+    // red below 75%. Course-level colours above are unchanged.
+    const PATHWAY_HIGH_MIN = 75;
+    const pathwayTone = (pct) => {
+      if (pct === null || pct === undefined) return 'none';
+      if (pct >= 100) return 'full';
+      return pct >= PATHWAY_HIGH_MIN ? 'high' : 'low';
+    };
+    const pathwayPctColor = (pct, dark = true) => ({
+      none: dark ? 'text-zinc-400' : 'text-gray-600',
+      full: dark ? 'text-green-400' : 'text-green-800',
+      high: dark ? 'text-amber-400' : 'text-amber-800',
+      low: dark ? 'text-red-400' : 'text-red-800'
+    })[pathwayTone(pct)];
+    const pathwayRingColor = (pct) =>
+      ({ none: '#64748b', full: '#22c55e', high: '#f59e0b', low: '#ef4444' })[pathwayTone(pct)];
+    const pathwayBarColor = (pct) =>
+      ({ none: 'bg-slate-500', full: 'bg-green-500', high: 'bg-amber-500', low: 'bg-red-500' })[pathwayTone(pct)];
     // Border + tint for the big stat card, keyed on ZTC status (no-data renders red, matching legacy behavior).
     const statusBorderCls = (pct) => {
       const s = ztcStatus(pct);
@@ -529,189 +709,87 @@
       return 'Other';
     };
 
-    // FID-1 TEST START: option event helpers
-    // ---- Block-title parsing: requirement + area grouping ----
-    const cleanTitle = (t) => String(t || '').replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim();
-
-    const parseRequirement = (title) => {
-      const s = (title || '').toLowerCase();
-      const numWord = { one: 1, two: 2, three: 3, four: 4, 'a minimum of one': 1 };
-      let m = s.match(/\b(one|two|three|four)\s+courses?\b/);
-      if (!m) m = s.match(/\b(?:choose|select|complete)\s+(one|two|three|four)\b/);
-      if (!m) m = s.match(/\bat least\s+(one|two|three|four)\b/);
-      if (m) return { choice: true, n: numWord[m[1]] || 1 };
-      const md = s.match(/\b(\d+)\s+courses?\b/);
-      if (md) return { choice: true, n: parseInt(md[1], 10) };
-      // "Required" / "Required Core" => all listed courses required
-      if (/required|core/.test(s)) return { choice: false, n: null };
-      return { choice: null, n: null }; // unknown -> inherit / default all
-    };
-
-    // Empty CurriQunet blocks that re-list lab courses marked with Header Identifier (*)
-    const isLabReferenceTitle = (title) => {
-      const s = cleanTitle(title).toLowerCase();
-      if (!s) return false;
-      if (/laboratory\s+(science|activity)\b/.test(s)) return true;
-      if (/^[a-z0-9]+\s*-\s*laboratory\b/.test(s)) return true;
-      return false;
-    };
-    const hasLabAsterisk = (headerId) => String(headerId || '').includes('*');
-    const normGroupLabel = (gt) => cleanTitle(gt).toLowerCase();
-    const isGroupNLabel = (gt) => /^group\s*\d+/.test(normGroupLabel(gt));
-    const isChooseOneGroupLabel = (gt) => {
-      const s = normGroupLabel(gt);
-      return s === 'choose one group' || s.startsWith('required core - choose one group');
-    };
-
-    const isChooseOneLabel = (gt) => {
-      const s = normGroupLabel(gt);
-      return s === 'choose' || s === 'choose one' || s.startsWith('choose one') || s === 'choose both' || s.startsWith('choose both');
-    };
-    const isEitherOrLabel = (gt) => {
-      const s = normGroupLabel(gt);
-      return s === 'either' || s === 'or';
-    };
-
-    // FID-1: collapse only identical marker rows that are adjacent in a block's event stream.
-    const appendMarkerEvent = (events, groupTitle, condition) => {
-      const tail = events[events.length - 1];
-      if (tail && tail.type === 'marker' && tail.groupTitle === groupTitle) return;
-      events.push({ type: 'marker', groupTitle, condition });
-    };
-
-    // Split a labeled course bucket into options using Condition and/or.
-    // Group N / choose-one-group: courses stay in one option (all members of that group).
-    const splitBucketIntoOptions = (label, courseEvents) => {
-      const opts = [];
-      let cur = null;
-      const groupBundle = label && (isGroupNLabel(label) || isChooseOneGroupLabel(label));
-      for (const ev of courseEvents) {
-        const cond = String(ev.condition || '').trim().toLowerCase();
-        if (groupBundle) {
-          if (cond === 'or' && cur && cur.courses.length) {
-            cur = { label, courses: [ev.course] };
-            opts.push(cur);
-          } else {
-            if (!cur) { cur = { label, courses: [] }; opts.push(cur); }
-            cur.courses.push(ev.course);
-          }
-          continue;
-        }
-        if (cond === 'and' && cur) {
-          cur.courses.push(ev.course);
-        } else if (cond === 'or') {
-          cur = { label: label || 'Or', courses: [ev.course] };
-          opts.push(cur);
-        } else {
-          cur = { label: label || null, courses: [ev.course] };
-          opts.push(cur);
-        }
+    // ---- v4: pathway structure from the official catalog ----
+    // `window.ZTC_CATALOGS[year]` is generated by scripts/build-catalog-structure.py from the
+    // catalog's Degrees and Certificates export. Each block is reconciled against the
+    // units the catalog prints; blocks that do not reconcile are shown as unverified.
+    // 'optional' sections are listed but never required; 'reviewed' ones were signed off by a
+    // person in catalog/reviewed-sections.json.
+    const CATALOG_VERIFIED = ['reconciled', 'approximated', 'no-courses', 'optional', 'reviewed'];
+    const programsFromCatalog = (catalog) => {
+      if (!catalog || !Array.isArray(catalog.programs) || !catalog.programs.length) {
+        throw new Error('The catalog structure files (data/catalog-<year>.js) are missing or empty. Open the app from its full folder.');
       }
-      return opts;
-    };
-
-    // Build Either/Or/And option bundles from block event stream (markers + courses).
-    // CurriQunet META exports markers before their courses in file order; reverse options for catalog display.
-    const buildOptionsFromEvents = (events) => {
-      if (!events || !events.length) return null;
-      let label = null;
-      let bucket = [];
-      const options = [];
-      // Consecutive Either:/Or: markers with no courses between — apply to the following cluster.
-      let eitherOrQueue = [];
-
-      const flush = (overrideLabel) => {
-        if (!bucket.length) {
-          eitherOrQueue = [];
-          return;
-        }
-        const useLabel = overrideLabel !== undefined ? overrideLabel : label;
-        if (eitherOrQueue.length > 1) {
-          // Build in catalog order (Either before Or, lecture before lab), then append
-          // reversed so the shared final reverse matches other option streams.
-          const labelsCat = eitherOrQueue.slice().reverse();
-          eitherOrQueue = [];
-          const coursesCat = bucket.map(ev => ev.course).reverse();
-          bucket = [];
-          const built = [];
-          let i = 0;
-          let li = 0;
-          while (i < coursesCat.length && li < labelsCat.length) {
-            const c0 = coursesCat[i];
-            const c1 = coursesCat[i + 1];
-            const n0 = String(c0.number || '').toUpperCase();
-            const n1 = c1 ? String(c1.number || '').toUpperCase() : '';
-            const labPair = c1 && (n1 === n0 + 'L' || n0 === n1 + 'L');
-            const lecture = labPair && n0.endsWith('L') ? c1 : c0;
-            const lab = labPair && n0.endsWith('L') ? c0 : c1;
-            if (labPair && li + 1 < labelsCat.length) {
-              built.push({ label: labelsCat[li], courses: [lecture] });
-              built.push({ label: labelsCat[li + 1], courses: [lecture, lab] });
-              i += 2;
-              li += 2;
-            } else {
-              built.push({ label: labelsCat[li], courses: [c0] });
-              i += 1;
-              li += 1;
-            }
-          }
-          while (i < coursesCat.length) {
-            built.push({ label: null, courses: [coursesCat[i]] });
-            i += 1;
-          }
-          for (let bi = built.length - 1; bi >= 0; bi--) {
-            const o = built[bi];
-            options.push({
-              label: o.label,
-              // file order within AND-bundle so final courses.reverse() yields lecture then lab
-              courses: o.courses.length > 1 ? o.courses.slice().reverse() : o.courses.slice()
-            });
-          }
-          return;
-        }
-        eitherOrQueue = [];
-        for (const o of splitBucketIntoOptions(useLabel, bucket)) options.push(o);
-        bucket = [];
-      };
-
-      for (const ev of events) {
-        if (ev.type === 'marker') {
-          const gt = ev.groupTitle;
-          // FID-1: flush preceding courses unchanged; the marker labels following courses.
-          if (isChooseOneLabel(gt) && bucket.length && !isChooseOneGroupLabel(gt)) {
-            flush();
-            label = cleanTitle(gt);
-            continue;
-          }
-          if (bucket.length) flush();
-          if (isChooseOneGroupLabel(gt)) {
-            if (!label || !isGroupNLabel(label)) label = cleanTitle(gt);
-            continue;
-          }
-          if (isEitherOrLabel(gt)) {
-            eitherOrQueue.push(cleanTitle(gt));
-            label = cleanTitle(gt);
-            continue;
-          }
-          eitherOrQueue = [];
-          label = cleanTitle(gt);
-          continue;
-        }
-        bucket.push(ev);
-      }
-      flush();
-
-      const cleaned = options.filter(o => o.courses && o.courses.length > 0);
-      if (!cleaned.length) return null;
-      const hasStructure = cleaned.some(o => o.label || o.courses.length > 1);
-      if (!hasStructure) return null;
-      // Reverse to approximate catalog / CurriQunet UI order.
-      return cleaned.reverse().map(o => ({
-        label: o.label,
-        courses: o.courses.slice().reverse()
+      return catalog.programs.map(program => ({
+        ...program,
+        type: programType(program.name)
       }));
     };
-    // FID-1 TEST END: option event helpers
+    // How many of a slot's options count toward it.
+    //  - "from at least two areas": options from a single area can fill all but the
+    //    places that must come from another area.
+    //  - "or any course not taken from List A": options List A leaves over once it has
+    //    used the ones it needs also count. `spareUsed` remembers what earlier sections
+    //    of the same pathway have already claimed, so a left-over course counts once.
+    const slotQualifying = (sg, slot, spareUsed) => {
+      const ztc = slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk);
+      let own = ztc.length;
+      if (slot.distinct) {
+        const keyOf = (optionIndex) => slot.distinct.by === 'subject'
+          ? (sg.options[optionIndex].courses[0] || {}).subject
+          : sg.options[optionIndex].label;
+        const missing = Math.max(0, slot.distinct.min - new Set(ztc.map(keyOf)).size);
+        own = Math.max(0, Math.min(own, slot.need - missing));
+      }
+      const spare = (slot.spare || []).map(group => ({
+        from: group.from,
+        source: group.source,
+        left: Math.max(0,
+          group.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length
+          - group.used - (spareUsed.get(group.source) || 0))
+      }));
+      let shortfall = Math.max(0, slot.need - own);
+      for (const group of spare) {
+        const claimed = Math.min(group.left, shortfall);
+        if (claimed > 0) spareUsed.set(group.source, (spareUsed.get(group.source) || 0) + claimed);
+        shortfall -= claimed;
+      }
+      return { qualifying: own + spare.reduce((sum, group) => sum + group.left, 0), spare };
+    };
+    const catalogRequirementPlan = (subgroups, spareUsed = new Map()) =>
+      subgroups.flatMap(sg => {
+        const slots = (sg.slots || []).map((slot, index) => ({ slot, index, ...slotQualifying(sg, slot, spareUsed) }));
+        // Shown beside the slot: what each named section leaves over for it.
+        sg.spareLeft = Object.fromEntries(slots.filter(entry => entry.spare.length).map(entry => [entry.index, entry.spare]));
+        if (sg.slotsNeeded && slots.length > sg.slotsNeeded) {
+          // "Any three courses (maximum of one from each category)": each category is a
+          // choice of one, and only `slotsNeeded` of the categories are required.
+          return [{
+            id: `${sg.id}-choice-any`,
+            requiredCount: sg.slotsNeeded,
+            candidates: slots.map(entry => ({
+              id: `${sg.id}-slot-${entry.index}`,
+              courses: [],
+              ztcOk: entry.qualifying >= entry.slot.need
+            }))
+          }];
+        }
+        return slots.map(entry => ({
+          id: `${sg.id}-${entry.slot.pool ? 'choice' : 'required'}-${entry.index}`,
+          requiredCount: entry.slot.need,
+          qualifying: entry.qualifying,
+          candidates: entry.slot.options.map(optionIndex => ({
+            id: `${sg.id}-option-${optionIndex}`,
+            courses: sg.options[optionIndex].courses,
+            ztcOk: sg.options[optionIndex].ztcOk
+          }))
+        }));
+      });
+    const fmtUnitRange = (range) =>
+      range[0] === range[1] ? fmtUnits(range[0]) : `${fmtUnits(range[0])}–${fmtUnits(range[1])}`;
+
+    const cleanTitle = (t) => String(t || '').replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim();
+    const hasLabAsterisk = (headerId) => String(headerId || '').includes('*');
 
     // A multi-course option is completable only when every member is offered
     // in the selected term and meets the ZTC threshold.
@@ -723,86 +801,25 @@
         c.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN
       );
 
-    const courseIsZtc = (course) =>
-      course.offered &&
-      course.ztcPct !== null &&
-      course.ztcPct >= ZTC_THRESHOLDS.ZTC_MIN;
-
-    const candidateOptions = (sg) => {
-      if (sg.options && sg.options.length) {
-        return sg.options.map((option, index) => ({
-          id: `${sg.id}-option-${index}`,
-          courses: option.courses,
-          ztcOk: option.ztcOk
-        }));
-      }
-      return sg.courses.map((course, index) => ({
-        id: `${sg.id}-course-${index}`,
-        courses: [course],
-        ztcOk: courseIsZtc(course)
-      }));
-    };
-
-    const allRequiredGroups = (sg, candidates) =>
-      candidates.map((candidate, index) => ({
-        id: `${sg.id}-required-${index}`,
-        requiredCount: 1,
-        candidates: [candidate]
-      }));
-
-    const choiceGroup = (sg, candidates, requiredCount) => [{
-      id: `${sg.id}-choice`,
-      requiredCount: Math.max(0, requiredCount || 0),
-      candidates
-    }];
-
-    const isRequiredComponent = (area, sg) =>
-      !!(area.isHeaderArea && sg.title && sg.requirement?.choice === false && !/\bcore\b/i.test(sg.title));
-
-    // Build explicit requirement-slot groups. A group with requiredCount=N represents
-    // N distinct slots sharing one candidate pool; separate groups enforce subgroup quotas.
-    const buildRequirementPlan = (area, scoredSubgroups) => {
-      const areaReq = area.requirement || { choice: null, n: null };
-      const namedSubgroups = scoredSubgroups.filter(sg => sg.title);
-      const useSubgroupQuotas = namedSubgroups.length > 1;
-
-      if (useSubgroupQuotas) {
-        return scoredSubgroups.flatMap(sg => {
-          const candidates = candidateOptions(sg);
-          const req = sg.requirement || { choice: null, n: null };
-          if (req.choice === true) return choiceGroup(sg, candidates, req.n || 1);
-          if (isRequiredComponent(area, sg)) return choiceGroup(sg, candidates, 1);
-          return allRequiredGroups(sg, candidates);
-        });
-      }
-
-      const candidates = scoredSubgroups.flatMap(candidateOptions);
-      const base = scoredSubgroups[0] || { id: `${area.id}-empty`, title: null, requirement: areaReq };
-      if (areaReq.choice === true) return choiceGroup(base, candidates, areaReq.n || 1);
-      if (isRequiredComponent(area, base)) return choiceGroup(base, candidates, 1);
-      return allRequiredGroups(base, candidates);
-    };
-
     const optionUnitSum = (candidate) => {
       if (!candidate.courses.length || candidate.courses.some(c => c.units === null || c.units === undefined)) return null;
       return candidate.courses.reduce((sum, course) => sum + course.units, 0);
     };
 
-    const scoreRequirementPlan = (groups, { contentFloor = null } = {}) => {
+    const scoreRequirementPlan = (groups) => {
       let reqTotal = 0, reqZtc = 0, ztcCount = 0, displayTotal = 0;
       let unitsMin = 0, unitsMax = 0;
       let unitsVerifiable = true;
 
       for (const group of groups) {
         const required = group.requiredCount;
-        const qualifying = group.candidates.filter(candidate => candidate.ztcOk).length;
+        const qualifying = group.qualifying ?? group.candidates.filter(candidate => candidate.ztcOk).length;
         reqTotal += required;
         reqZtc += Math.min(required, qualifying);
         ztcCount += qualifying;
         displayTotal += group.candidates.length;
 
-        let unitSums = group.candidates.map(optionUnitSum).filter(sum => sum !== null);
-        if (contentFloor !== null) unitSums = unitSums.filter(sum => sum >= contentFloor);
+        const unitSums = group.candidates.map(optionUnitSum).filter(sum => sum !== null);
         unitSums.sort((a, b) => a - b);
         if (required === 0) continue;
         if (unitSums.length < required) {
@@ -825,62 +842,6 @@
         unitsMax,
         unitsVerifiable
       };
-    };
-
-    // Kept as a small compatibility seam for focused helper tests.
-    const scoreAreaRequirements = (allCourses, structuredOpts, isChoice, requiredCount = 1) => {
-      const candidates = structuredOpts.length
-        ? structuredOpts.map((option, index) => ({ id: `option-${index}`, courses: option.courses || [], ztcOk: option.ztcOk }))
-        : allCourses.map((course, index) => ({ id: `course-${index}`, courses: [course], ztcOk: courseIsZtc(course) }));
-      const groups = isChoice
-        ? [{ id: 'choice', requiredCount, candidates }]
-        : candidates.map((candidate, index) => ({ id: `required-${index}`, requiredCount: 1, candidates: [candidate] }));
-      return scoreRequirementPlan(groups);
-    };
-
-    // ---- Area ordering / nesting helpers ----
-    const looksLikeArea = (title) => /^area\b/i.test(cleanTitle(title));
-    // A bare sub-item like "A - Arts", "1A - ...", "B2 - ..." (not an "AREA n" header)
-    const looksLikeSubItem = (title) => {
-      const s = cleanTitle(title);
-      if (looksLikeArea(s)) return false;
-      return /^(\d+)?[A-Za-z]\b\s*[-:]/.test(s) || /^(\d+)[A-Za-z]\b/.test(s);
-    };
-    // Numeric/letter ordering key for a top-level AREA (null if not an AREA header)
-    const areaNumKey = (title) => {
-      const s = cleanTitle(title);
-      let m = s.match(/^AREA\s+(\d+)/i); if (m) return parseInt(m[1], 10);
-      m = s.match(/^AREA\s+([A-Z])\b/i); if (m) return m[1].toUpperCase().charCodeAt(0) - 64;
-      return null;
-    };
-    // Ordering key for a sub-group title (1A/3B -> by letter; A/B/C -> by letter)
-    const subOrderKey = (title) => {
-      if (!title) return null;
-      const s = cleanTitle(title);
-      let m = s.match(/^(\d+)([A-Z])\b/i); if (m) return parseInt(m[1], 10) * 100 + (m[2].toUpperCase().charCodeAt(0) - 64);
-      m = s.match(/^([A-Z])\b\s*[-:]/i); if (m) return m[1].toUpperCase().charCodeAt(0) - 64;
-      m = s.match(/^(\d+)\b/); if (m) return parseInt(m[1], 10);
-      return null;
-    };
-    // Stable sort by key, but only reorder when EVERY item has a key (else keep order)
-    const sortByKey = (arr, keyFn) => {
-      const wk = arr.map((a, i) => ({ a, i, k: keyFn(a) }));
-      if (wk.every(x => x.k !== null)) wk.sort((x, y) => (x.k - y.k) || (x.i - y.i));
-      return wk.map(x => x.a);
-    };
-
-    // Extract a grouping token used to nest leaf blocks under area headers
-    const areaGroupToken = (title) => {
-      const s = cleanTitle(title);
-      let m = s.match(/^AREA\s+([A-Z0-9]+)/i);
-      if (m) return 'G' + m[1].toUpperCase();
-      m = s.match(/^(\d+)[A-Z]\b/);            // 1A, 3B
-      if (m) return 'G' + m[1];
-      m = s.match(/^([A-Z])\d\b/);             // C2, B1
-      if (m) return 'G' + m[1].toUpperCase();
-      m = s.match(/^(\d+)\b/);                 // leading number
-      if (m) return 'G' + m[1];
-      return null;
     };
 
     // ============================================================
@@ -938,278 +899,19 @@
       return { index, terms: sortTerms(Array.from(termSet)) };
     };
 
-    // Programs: active only -> nested areas -> subgroups -> courses (+ option bundles)
-    const buildPrograms = (rows) => {
-      const headers = rows[0];
-      const data = rows.slice(1);
-      const I = {
-        title: findIdx(headers, ['program entity title']),
-        status: findIdx(headers, ['program status']),
-        subj: findIdx(headers, ['program_course block_course block item course subject code', 'course subject code']),
-        num: findIdx(headers, ['program_course block_course block item course number', 'course block item course number']),
-        cTitle: findIdx(headers, ['program_course block_course block item course title', 'course block item course title']),
-        block: findIdx(headers, ['course block title']),
-        minU: findIdx(headers, ['min units']),
-        headerId: findIdx(headers, ['header identifier (*)', 'header identifier']),
-        groupTitle: findIdx(headers, ['group title']),
-        condition: findIdx(headers, ['condition'])
-      };
-      if (I.title === -1 || I.subj === -1 || I.num === -1 || I.block === -1) {
-        throw new Error('Program Summary file is missing required columns (Program Entity Title, Subject Code, Course Number, Course Block Title).');
-      }
-      // group rows by program (active only), preserving block + course + marker order
-      const progMap = new Map();
-      for (const r of data) {
-        const status = (I.status !== -1 ? r[I.status] : 'Active') || '';
-        if (status.trim().toLowerCase() !== 'active') continue;
-        const pname = (r[I.title] || '').trim();
-        if (!pname) continue;
-        const blockRaw = (r[I.block] || '').trim();
-        const key = normKey(r[I.subj], r[I.num]);
-        const groupTitle = I.groupTitle !== -1 ? String(r[I.groupTitle] || '').trim() : '';
-        const condition = I.condition !== -1 ? String(r[I.condition] || '').trim() : '';
-        const headerId = I.headerId !== -1 ? String(r[I.headerId] || '').trim() : '';
-        if (!progMap.has(pname)) progMap.set(pname, { name: pname, blockOrder: [], blocks: new Map() });
-        const prog = progMap.get(pname);
-        const bClean = cleanTitle(blockRaw) || '(Untitled block)';
-        if (!prog.blocks.has(bClean)) {
-          prog.blocks.set(bClean, {
-            title: bClean,
-            raw: blockRaw,
-            courses: [],
-            courseKeys: new Set(),
-            events: [],
-            isLabReference: isLabReferenceTitle(bClean)
-          });
-          prog.blockOrder.push(bClean);
-        }
-        const blk = prog.blocks.get(bClean);
-
-        // Group Title marker row (no course): Either / Or / Choose one / Group N
-        if (groupTitle && !key) {
-          appendMarkerEvent(blk.events, groupTitle, condition);
-          continue;
-        }
-
-        if (key && !blk.courseKeys.has(key)) {
-          blk.courseKeys.add(key);
-          const course = {
-            key,
-            subject: String(r[I.subj] || '').trim(),
-            number: String(r[I.num] || '').trim(),
-            courseTitle: I.cTitle !== -1 ? (r[I.cTitle] || '').trim() : '',
-            units: I.minU !== -1 ? parseUnits(r[I.minU]) : null,
-            headerId,
-            groupTitle: groupTitle || '',
-            condition
-          };
-          blk.courses.push(course);
-          blk.events.push({ type: 'course', course, condition, groupTitle });
-        } else if (key && condition && blk.courseKeys.has(key)) {
-          // Outcome-duplicate row may carry Condition — keep first non-empty on the course
-          const existing = blk.courses.find(c => c.key === key);
-          if (existing && !existing.condition && condition) existing.condition = condition;
-        }
-      }
-
-      // Attach option bundles derived from Group Title + Condition events
-      for (const prog of progMap.values()) {
-        for (const blk of prog.blocks.values()) {
-          blk.options = buildOptionsFromEvents(blk.events);
-        }
-      }
-
-      // Build areas from ordered blocks. When adjacency=true, bare-letter sub-items
-      // (e.g. "A - Arts") are buffered and attached to the next area header.
-      // Lab-reference empty blocks (C - Laboratory Science) buffer too — not dropped.
-      const buildAreas = (blocksInOrder, adjacency) => {
-        const isHeaderOnly = b => b.courses.length === 0;
-        const headersByGroup = new Map(); // group token -> header block title (no courses)
-        for (const b of blocksInOrder) {
-          if (isHeaderOnly(b) && looksLikeArea(b.title)) {
-            const g = areaGroupToken(b.title);
-            if (g && !headersByGroup.has(g)) headersByGroup.set(g, b.title);
-          }
-        }
-        const areas = [];
-        const areaByTitle = new Map();
-        const ensureArea = (title) => {
-          if (!areaByTitle.has(title)) {
-            const node = { id: 'a' + areas.length, title, requirement: parseRequirement(title), subgroups: [], isHeaderArea: true };
-            areas.push(node); areaByTitle.set(title, node);
-          }
-          return areaByTitle.get(title);
-        };
-        const makeSubgroup = (area, b, req) => ({
-          id: area.id + '-' + area.subgroups.length,
-          title: b.title,
-          requirement: req,
-          courses: b.courses.slice(),
-          options: b.options || null,
-          isLabReference: !!b.isLabReference
-        });
-        const standalone = (b, req) => {
-          const node = {
-            id: 'a' + areas.length,
-            title: b.title,
-            requirement: req,
-            subgroups: [{
-              id: 'a' + areas.length + '-0',
-              title: null,
-              requirement: req,
-              courses: b.courses.slice(),
-              options: b.options || null,
-              isLabReference: !!b.isLabReference
-            }],
-            isHeaderArea: false
-          };
-          areas.push(node); areaByTitle.set(b.title, node);
-        };
-        const attach = (area, b, leafReq) => {
-          const req = leafReq.choice === null ? area.requirement : leafReq;
-          area.subgroups.push(makeSubgroup(area, b, req));
-        };
-        let buffer = [];
-        // Prefer attaching buffered sub-items to a matching AREA header (handles reverse
-        // CurriQunet order where 1A/1B/1C appear after AREA 1 was already seen).
-        const flushStandalone = () => {
-          for (const o of buffer) {
-            const g = areaGroupToken(o.b.title);
-            const parentTitle = g ? headersByGroup.get(g) : null;
-            if (parentTitle && parentTitle !== o.b.title) attach(ensureArea(parentTitle), o.b, o.req);
-            else standalone(o.b, o.req);
-          }
-          buffer = [];
-        };
-        for (const b of blocksInOrder) {
-          const labRef = !!b.isLabReference || isLabReferenceTitle(b.title);
-          if (isHeaderOnly(b)) {
-            // AREA headers flush buffer; lab-ref / bare-letter empties buffer as sub-items
-            if (looksLikeArea(b.title)) {
-              const area = ensureArea(b.title);
-              for (const o of buffer) attach(area, o.b, o.req);
-              buffer = [];
-              continue;
-            }
-            if (adjacency && (looksLikeSubItem(b.title) || labRef)) {
-              b.isLabReference = labRef;
-              buffer.push({ b, req: parseRequirement(b.title) });
-              continue;
-            }
-            // Non-adjacency: keep lab-ref as standalone empty (filled later if nested fails)
-            if (labRef) {
-              b.isLabReference = true;
-              flushStandalone();
-              standalone(b, parseRequirement(b.title));
-              continue;
-            }
-            const area = ensureArea(b.title);
-            for (const o of buffer) attach(area, o.b, o.req);
-            buffer = [];
-            continue;
-          }
-          const g = areaGroupToken(b.title);
-          const leafReq = parseRequirement(b.title);
-          const parentTitle = g ? headersByGroup.get(g) : null;
-          if (parentTitle && parentTitle !== b.title) { flushStandalone(); attach(ensureArea(parentTitle), b, leafReq); }
-          else if (adjacency && (looksLikeSubItem(b.title) || labRef)) {
-            b.isLabReference = labRef;
-            buffer.push({ b, req: leafReq });
-          }
-          else { flushStandalone(); standalone(b, leafReq); }
-        }
-        flushStandalone();
-
-        // Fill lab-reference subgroups from sibling * courses in the same area
-        for (const area of areas) {
-          const labRefs = area.subgroups.filter(sg => sg.isLabReference);
-          if (!labRefs.length) continue;
-          const starred = [];
-          const seen = new Set();
-          for (const sg of area.subgroups) {
-            if (sg.isLabReference) continue;
-            for (const c of sg.courses) {
-              if (hasLabAsterisk(c.headerId) && c.key && !seen.has(c.key)) {
-                seen.add(c.key);
-                starred.push({ ...c });
-              }
-            }
-          }
-          for (const lr of labRefs) {
-            lr.courses = starred.map(c => ({ ...c }));
-            lr.options = null; // flat re-list
-          }
-        }
-
-        // Keep areas that have courses, or lab-ref subgroups that received * courses
-        return areas.filter(a => a.subgroups.some(sg => sg.courses.length > 0 || sg.isLabReference));
-      };
-
-      // Only reorder/nest when the result is a clean, uniquely-numbered AREA set
-      // (e.g. Cal-GETC: AREA 1..6). Otherwise keep the original layout untouched.
-      const isCleanNumbered = (areas) => {
-        if (areas.length < 2) return false;
-        const keys = areas.map(a => areaNumKey(a.title));
-        if (keys.some(k => k === null)) return false;
-        return new Set(keys).size === keys.length;
-      };
-
-      const fillLabRefsFromProgram = (areas) => {
-        const allStarred = [];
-        const seen = new Set();
-        for (const area of areas) {
-          for (const sg of area.subgroups) {
-            if (sg.isLabReference) continue;
-            for (const c of sg.courses) {
-              if (hasLabAsterisk(c.headerId) && c.key && !seen.has(c.key)) {
-                seen.add(c.key);
-                allStarred.push({ ...c });
-              }
-            }
-          }
-        }
-        for (const area of areas) {
-          for (const sg of area.subgroups) {
-            if (!sg.isLabReference) continue;
-            if (sg.courses.length === 0 && allStarred.length) {
-              sg.courses = allStarred.map(c => ({ ...c }));
-            }
-          }
-        }
-        return areas.filter(a => a.subgroups.some(sg => sg.courses.length > 0));
-      };
-
-      const programs = [];
-      for (const prog of progMap.values()) {
-        const blocksInOrder = prog.blockOrder.map(t => prog.blocks.get(t));
-        const areasNew = buildAreas(blocksInOrder, true);
-        let areas;
-        if (isCleanNumbered(areasNew)) {
-          areas = sortByKey(areasNew, a => areaNumKey(a.title));
-          for (const a of areas) a.subgroups = sortByKey(a.subgroups, sg => subOrderKey(sg.title));
-        } else {
-          areas = buildAreas(blocksInOrder, false);
-        }
-        areas = fillLabRefsFromProgram(areas);
-        programs.push({ name: prog.name, type: programType(prog.name), areas });
-      }
-      programs.sort((a, b) => a.name.localeCompare(b.name));
-      return programs;
-    };
-
     // ============================================================
     // PROGRAM METRIC COMPUTATION (per selected term)
     // ============================================================
     const courseMetrics = (analytics, key, term) => {
       const rec = analytics.index[key];
       if (!rec) return { found: false, offered: false, m: null, title: '' };
-      const m = rec.terms[term];
+      const m = isYearKey(term) ? yearRecord(rec, term) : rec.terms[term];
       if (!m) return { found: true, offered: false, m: null, title: rec.title };
       return { found: true, offered: true, m, title: rec.title };
     };
 
     // Merge per-term analytics into a course descriptor. `base` carries whatever
-    // is already known (subject/number/title/units from the Program Summary file).
+    // is already known (subject/number/title/units from the catalog).
     const enrichCourse = (base, analytics, term) => {
       const cm = courseMetrics(analytics, base.key, term);
       const pct = cm.offered ? cm.m.ztcPct : null;
@@ -1236,58 +938,36 @@
       let unitsRequired = 0;
       let unitsRequiredUnverifiable = false;
 
+      // Left-over options already claimed by an earlier section of this pathway.
+      const spareUsed = new Map();
       const areas = program.areas.map(area => {
         const subgroups = area.subgroups.map(sg => {
           const courses = sg.courses.map(c => enrichCourse(c, analytics, term));
-          let options = null;
-          if (sg.options && sg.options.length) {
-            options = sg.options.map(opt => {
+          const options = sg.options && sg.options.length
+            ? sg.options.map(opt => {
               const oCourses = opt.courses.map(c => enrichCourse(c, analytics, term));
               return {
                 label: opt.label,
                 courses: oCourses,
-                ztcOk: optionIsZtc(oCourses)
+                ztcOk: optionIsZtc(oCourses),
+                ...(opt.choice ? { choice: opt.choice } : {})
               };
-            });
-          }
+            })
+            : null;
           return { ...sg, courses, options };
         });
 
-        // Lab-reference subgroups are display-only (re-list of * courses) — exclude from rollup
-        const scoredSubgroups = subgroups.filter(sg => !sg.isLabReference);
-        const req = area.requirement || { choice: null, n: null };
-        const isChoice = req.choice === true;
-
-        // Denominators come from the catalog requirement structure, not only
-        // courses offered in the selected term. Unavailable or unknown courses
-        // remain unmet requirements and therefore cannot inflate adoption.
-        const requirementPlan = buildRequirementPlan(area, scoredSubgroups);
-        const hasLabConstraint = subgroups.some(sg => sg.isLabReference);
-        const score = scoreRequirementPlan(
-          requirementPlan,
-          { contentFloor: hasLabConstraint ? 3 : null }
-        );
+        // Denominators come from the catalog requirement structure, not only courses
+        // offered in the selected period. Unavailable or unknown courses remain unmet
+        // requirements and therefore cannot inflate adoption.
+        const score = scoreRequirementPlan(catalogRequirementPlan(subgroups, spareUsed));
         const { anyZtc, ztcCount, reqTotal: aReqTotal, reqZtc: aReqZtc } = score;
         reqTotal += aReqTotal; reqZtc += aReqZtc;
 
-        let unitsMin = score.unitsMin;
-        let unitsMax = score.unitsMax;
-        let unitsUnverifiable = !score.unitsVerifiable;
-        if (hasLabConstraint) {
-          // The title proves a lab component exists, but without Header Identifier
-          // the qualifying course cannot be identified. Add only the smallest
-          // observable supplemental-unit floor and keep compliance unverifiable.
-          const supplementalUnits = scoredSubgroups
-            .flatMap(sg => sg.courses)
-            .filter(c => c.units !== null && c.units > 0 && (c.units < 3 || /L$/i.test(c.number || '')))
-            .map(c => c.units)
-            .sort((a, b) => a - b);
-          if (supplementalUnits.length) {
-            unitsMin += supplementalUnits[0];
-            unitsMax += supplementalUnits[0];
-          }
-          unitsUnverifiable = true;
-        }
+        // The catalog's printed units are authoritative; fall back to the listed courses.
+        const unitsMin = area.catalogUnits ? area.catalogUnits[0] : score.unitsMin;
+        const unitsMax = area.catalogUnits ? area.catalogUnits[1] : score.unitsMax;
+        const unitsUnverifiable = !area.catalogUnits && !score.unitsVerifiable;
         unitsRequired += unitsMin;
         unitsRequiredUnverifiable = unitsRequiredUnverifiable || unitsUnverifiable;
         const unitsLabel = unitsMin <= 0
@@ -1296,21 +976,23 @@
             ? `≥${fmtUnits(unitsMin)}`
             : (unitsMin === unitsMax ? fmtUnits(unitsMin) : `${fmtUnits(unitsMin)}–${fmtUnits(unitsMax)}`));
 
-        const dataCount = score.displayTotal;
-        const areaPct = aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null;
+        const req = area.requirement || { choice: null, n: null };
         return {
           ...area, subgroups,
-          isChoice, requiredCount: req.n,
-          unitsLabel, anyZtc, ztcCount, dataCount,
+          isChoice: req.choice === true, requiredCount: req.n,
+          unitsLabel, anyZtc, ztcCount, dataCount: score.displayTotal,
           requirementSlots: score.groups,
+          // The structure read from the catalog could not be confirmed against its printed units.
+          choiceCaveat: !CATALOG_VERIFIED.includes(area.reconciliation),
+          unscored: area.reconciliation === 'unscored',
           unitsUnverifiable,
-          areaPct,
-          satisfiable: aReqTotal > 0 && aReqZtc === aReqTotal && !hasLabConstraint
+          areaPct: aReqTotal > 0 ? Math.round((aReqZtc / aReqTotal) * 100) : null,
+          satisfiable: aReqTotal > 0 && aReqZtc === aReqTotal
         };
       });
 
       // Course-summary metrics are program-wide unique-course metrics. A course
-      // appearing in multiple areas or in a lab-reference re-list counts once.
+      // appearing in more than one section counts once.
       let coursesWithData = 0, coursesTotal = 0;
       let surveySum = 0, surveyN = 0;
       let coCount = 0;
@@ -1334,8 +1016,11 @@
         areas, adoptionPct, reqTotal, reqZtc,
         coursesWithData, coursesTotal, avgSurvey, coCount,
         unitsRequired: Math.round(unitsRequired * 100) / 100,
+        choiceCaveatAreas: areas.filter(area => area.choiceCaveat).length,
         unitsRequiredUnverifiable,
-        unitsRequiredLabel: `${unitsRequiredUnverifiable ? '≥' : ''}${fmtUnits(unitsRequired)}`
+        unitsRequiredLabel: program.catalogTotalUnits
+          ? fmtUnitRange(program.catalogTotalUnits)
+          : `${unitsRequiredUnverifiable ? '≥' : ''}${fmtUnits(unitsRequired)}`
       };
     };
 
@@ -1374,13 +1059,14 @@
       </section>
     );
 
-    const DashboardInfoButton = ({ label, onClick, t }) => (
+    // `hint` is the hover text; `compact` fits the button into a line of small text.
+    const DashboardInfoButton = ({ label, onClick, t, hint, compact = false }) => (
       <button type="button" onClick={onClick}
         aria-label={`Explain ${label}`}
-        title={`Explain ${label}`}
-        style={{ width: '28px', height: '28px' }}
-        className={`flex-shrink-0 rounded-full border ${t.cardBorder} ${t.card} ${t.cardHover} inline-flex items-center justify-center text-sm font-bold leading-none`}>
-        <span aria-hidden="true">!</span>
+        title={hint || `Explain ${label}`}
+        style={compact ? { width: '24px', height: '24px', verticalAlign: 'middle' } : { width: '28px', height: '28px' }}
+        className={`flex-shrink-0 rounded-full border ${t.cardBorder} ${t.card} ${t.cardHover} inline-flex items-center justify-center ${compact ? 'text-xs' : 'text-sm'} font-bold leading-none`}>
+        <span aria-hidden="true" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>i</span>
       </button>
     );
 
@@ -1417,11 +1103,11 @@
         <svg width={size} height={size} className="flex-shrink-0" role="img"
           aria-label={`${label || 'ZTC adoption'}: ${text}`}>
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(148,163,184,0.25)" strokeWidth={stroke} />
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ringColor(pct)} strokeWidth={stroke}
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={pathwayRingColor(pct)} strokeWidth={stroke}
             strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round"
             transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: 'stroke-dashoffset 0.4s ease' }} />
           <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle"
-            fill={ringColor(pct)} fontSize={size * 0.26} fontWeight="700">
+            fill={pathwayRingColor(pct)} fontSize={size * 0.26} fontWeight="700">
             {pct === null || pct === undefined ? '—' : pct + '%'}
           </text>
         </svg>
@@ -1550,8 +1236,11 @@
     const CourseRow = ({ c, t, dark, selectedTerm, onOpen, showLabStar = true }) => {
       const title = c.courseTitle || c.analyticsTitle || '';
       const labStar = showLabStar && hasLabAsterisk(c.headerId);
+      const byYear = isYearKey(selectedTerm);
+      const missed = (byYear && c.metrics && c.metrics.missedTerms) || [];
       const label = `${c.subject}-${c.number}${labStar ? ' (lab asterisk)' : ''}, ${title}. ` +
-        (c.offered ? `ZTC adoption ${c.ztcPct === null ? 'no data' : c.ztcPct + '%'}, survey completion ${c.surveyPct === null ? 'no data' : c.surveyPct + '%'}, status ${c.status}.` : `Not offered in ${selectedTerm}.`) +
+        (c.offered ? `${byYear ? 'Lowest term ZTC adoption' : 'ZTC adoption'} ${c.ztcPct === null ? 'no data' : c.ztcPct + '%'}, survey completion ${c.surveyPct === null ? 'no data' : c.surveyPct + '%'}, status ${c.status}.` : `Not offered in ${periodLabel(selectedTerm)}.`) +
+        (missed.length ? ` Below 75% in ${missed.join(', ')}.` : '') +
         (c.coZtc ? ' Chancellor\u2019s Office ZTC.' : '') +
         (c.found ? ' Activate for details.' : '');
       const inner = (
@@ -1568,7 +1257,8 @@
             <div className="text-sm line-clamp-2 sm:truncate">{title}</div>
             <div className={`text-[11px] ${t.faint}`}>
               {c.units !== null ? `${fmtUnits(c.units)} units` : ''}
-              {!c.offered && <span className="ml-1">· not offered {selectedTerm}</span>}
+              {!c.offered && <span className="ml-1">· not offered {periodLabel(selectedTerm)}</span>}
+              {missed.length > 0 && <span className={`ml-1 font-semibold ${dark ? 'text-red-400' : 'text-red-800'}`} data-missed-terms="true">· below 75% in {missed.join(', ')}</span>}
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3 justify-end flex-shrink-0">
@@ -1577,7 +1267,7 @@
               <div className="text-xs font-semibold">{c.surveyPct === null ? '—' : c.surveyPct + '%'}</div>
             </div>
             <div className="text-right w-12">
-              <div className={`text-[10px] ${t.faint} leading-none`}>ZTC</div>
+              <div className={`text-[10px] ${t.faint} leading-none`}>{byYear ? 'low term' : 'ZTC'}</div>
               <div className={`text-sm font-bold ${pctColor(c.ztcPct, dark)}`}>{c.ztcPct === null ? '—' : c.ztcPct + '%'}</div>
             </div>
             {c.coZtc && <CoBadge small dark={dark} />}
@@ -1614,29 +1304,121 @@
       );
     };
 
-    // Pathway subgroup: flat ZTC decision list; soft choice bands only when export provides them
+    // Pathway subgroup: its requirements, or its courses when the block is listed but not scored
     const SubgroupCourses = ({ sg, t, dark, selectedTerm, onOpen }) => {
       const open = (course, el) => onOpen(course, el);
 
-      if (sg.isLabReference) {
+      if (sg.slots && sg.slots.length) {
+        const renderOption = (optionIndex, keyPrefix) => {
+          const opt = sg.options[optionIndex];
+          const multi = opt.courses.length > 1;
+          return (
+            <div key={keyPrefix + '-' + optionIndex} className={multi ? `space-y-1 rounded-lg border px-2.5 py-2 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}` : 'space-y-2 min-w-0'}>
+              {opt.courses.map((c, ci) => (
+                <React.Fragment key={keyPrefix + '-' + optionIndex + '-' + ci}>
+                  {ci > 0 && (
+                    <div className={`text-[10px] font-semibold uppercase tracking-wider px-1 my-1 ${t.faint}`} aria-hidden="true">and</div>
+                  )}
+                  <CourseRow c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
+                </React.Fragment>
+              ))}
+            </div>
+          );
+        };
+        // "... or any course not taken from List A": what that section leaves over for this one.
+        const spareNote = (slotIndex) => ((sg.spareLeft || {})[slotIndex] || []).map((group, gi) => (
+          <p key={sg.id + '-spare-' + slotIndex + '-' + gi} className={`text-xs leading-snug px-0.5 ${t.textMuted}`} role="note" data-spare-note="true">
+            Also counts: any course not taken from {group.from}
+            {' '}({group.left} ZTC option{group.left === 1 ? '' : 's'} left over once {group.from} and any earlier list are met).
+          </p>
+        ));
         return (
-          <div
-            className={`rounded-lg border border-dashed px-3 py-2.5 ${dark ? 'border-zinc-500 bg-zinc-800/60' : 'border-gray-400 bg-gray-100'}`}
-            role="note"
-          >
-            <p className={`text-xs leading-snug ${dark ? 'text-zinc-200' : 'text-gray-800'}`}>
-              <span className="font-semibold">Lab reference — informational (not scored).</span>
-              {' '}Satisfied by any course in this area with a laboratory (*). Listed below for ZTC reference only.
-            </p>
-            {sg.courses.length > 0 && (
-              <ul className="mt-2 space-y-2" aria-label="Laboratory courses in this area (informational)">
-                {sg.courses.map((c, i) => (
-                  <li key={sg.id + '-lab-' + i}>
-                    <CourseRow c={c} t={t} dark={dark} selectedTerm={selectedTerm} onOpen={open} />
-                  </li>
-                ))}
-              </ul>
+          <div className="space-y-3 min-w-0" role="list" aria-label="Requirements">
+            {sg.slotsNeeded && sg.slots.length > sg.slotsNeeded && (
+              <p className={`text-xs leading-snug px-0.5 ${t.textMuted}`} role="note" data-slots-needed="true">
+                Any {sg.slotsNeeded} of these {sg.slots.length} groups, one course from each.
+              </p>
             )}
+            {sg.slots.map((slot, si) => {
+              const key = sg.id + '-slot-' + si;
+              if (slot.summary) {
+                // Met by any course of a large pool listed elsewhere: show the rule, not the list.
+                const meeting = slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length;
+                const met = meeting >= slot.need;
+                return (
+                  <div key={key} role="listitem"
+                    className={`rounded-lg border px-3 py-2.5 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}`}>
+                    {slot.label && <div className="text-sm font-medium leading-snug">{slot.label}</div>}
+                    <div className={`text-xs leading-snug ${t.textMuted}`}>{slot.summaryLabel}</div>
+                    <div className="text-xs mt-1">
+                      <span className={`font-semibold ${met ? (dark ? 'text-green-400' : 'text-green-800') : (dark ? 'text-red-400' : 'text-red-800')}`}>
+                        {met ? 'Met' : 'Not met'}
+                      </span>
+                      <span className={t.textMuted}> · {meeting} of {slot.options.length} qualifying {slot.options.length === 1 ? 'option meets' : 'options meet'} the Chaffey ZTC threshold in {periodLabel(selectedTerm)}</span>
+                    </div>
+                  </div>
+                );
+              }
+              const isChoice = !slot.pool && slot.options.length > 1;
+              if (!isChoice) {
+                // Inside a longer list the catalog prints some entries as "Either ... Or ...".
+                // Each alternative is its own option; show them together with the "or".
+                const runs = [];
+                for (const optionIndex of slot.options) {
+                  const choice = sg.options[optionIndex].choice || null;
+                  const last = runs[runs.length - 1];
+                  if (choice && last && last.choice === choice) last.options.push(optionIndex);
+                  else runs.push({ choice, options: [optionIndex] });
+                }
+                const soleName = sg.slotsNeeded && !slot.pool && slot.label ? slot.label : '';
+                return (
+                  <div key={key} role="listitem" className="space-y-2 min-w-0">
+                    {soleName && <div className={`text-[11px] font-semibold px-0.5 ${t.textMuted}`}>{soleName}</div>}
+                    {runs.map((run, ri) => (run.choice && run.options.length > 1) ? (
+                      <div key={key + '-either-' + ri} role="group" data-either-or="true"
+                        aria-label={`${formatGroupLabel(sg.options[run.options[0]].label) || 'Either'}: ${run.options.length} alternatives`}
+                        className={`rounded-lg border px-2.5 py-2 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}`}>
+                        <ChoiceBand label={sg.options[run.options[0]].label || 'Either'}
+                          ztcOk={run.options.some(optionIndex => sg.options[optionIndex].ztcOk)} dark={dark} />
+                        <div className="space-y-2 min-w-0">
+                          {run.options.map((optionIndex, oi) => (
+                            <React.Fragment key={key + '-either-' + ri + '-' + oi}>
+                              {oi > 0 && (
+                                <div className={`text-[10px] font-semibold uppercase tracking-wider px-1 ${t.faint}`}>or</div>
+                              )}
+                              {renderOption(optionIndex, key)}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    ) : run.options.map(optionIndex => renderOption(optionIndex, key)))}
+                    {spareNote(si)}
+                  </div>
+                );
+              }
+              const qualifying = slot.options.filter(optionIndex => sg.options[optionIndex].ztcOk).length;
+              // A named group ("Combatives") keeps its name in front of the rule.
+              const groupName = slot.label && !/^(choose|either|or|select|any)\b/i.test(slot.label) ? `${slot.label} · ` : '';
+              const label = slot.unitsTarget
+                ? `${groupName}${fmtUnitRange(slot.unitsTarget)} units from these`
+                : `${groupName}choose ${slot.need} of ${slot.options.length}`.replace(/^c/, 'C');
+              return (
+                <div key={key} role="listitem"
+                  className={`rounded-lg border px-2.5 py-2 min-w-0 ${dark ? 'border-zinc-700/80 bg-zinc-950/25' : 'border-gray-200 bg-gray-50/70'}`}>
+                  <ChoiceBand label={label} ztcOk={qualifying >= slot.need} dark={dark} />
+                  <div className="space-y-2 min-w-0">
+                    {slot.options.map((optionIndex, oi) => (
+                      <React.Fragment key={key + '-alt-' + oi}>
+                        {oi > 0 && (
+                          <div className={`text-[10px] font-semibold uppercase tracking-wider px-1 ${t.faint}`} aria-hidden="true">or</div>
+                        )}
+                        {renderOption(optionIndex, key)}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       }
@@ -1782,7 +1564,7 @@
           </h3>
           {programsForCourse.length === 0 ? (
             <div className="space-y-1">
-              <p className={`text-xs ${t.faint}`}>Not listed in any active pathway in the Program Summary.</p>
+              <p className={`text-xs ${t.faint}`}>Not listed in any pathway of this catalog year.</p>
               <p className={`text-[11px] ${t.faint}`}>Deactivated programs in the export are not listed.</p>
             </div>
           ) : (
@@ -1804,7 +1586,7 @@
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="text-sm font-semibold line-clamp-2 min-w-0">{p.name}</div>
-                        <span className={`font-semibold tabular-nums text-sm flex-shrink-0 ${pctColor(p.pct, dark)}`}>
+                        <span className={`font-semibold tabular-nums text-sm flex-shrink-0 ${pathwayPctColor(p.pct, dark)}`}>
                           {p.pct === null || p.pct === undefined ? '—' : p.pct + '%'}
                         </span>
                       </div>
@@ -1831,7 +1613,7 @@
             <>
               <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-6 text-center ${mb}`}>
                 <Icons.AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-400" aria-hidden="true" />
-                <p className={`text-sm ${t.textMuted}`}>{c.found ? `No analytics for ${selectedTerm}. This course was not offered (or not reported) in the selected term.` : 'This course was not found in the Course Analytics datasource.'}</p>
+                <p className={`text-sm ${t.textMuted}`}>{c.found ? `No analytics for ${periodLabel(selectedTerm)}. This course was not offered (or not reported) in the selected period.` : 'This course was not found in the Course Analytics datasource.'}</p>
               </div>
               {showProgramMembership && programMembership}
             </>
@@ -1932,7 +1714,6 @@
       clearAndReload = () => {
         try {
           localStorage.removeItem(STORAGE_KEY);
-          localStorage.removeItem(LEGACY_STORAGE_KEY);
           localStorage.removeItem(UI_STORAGE_KEY);
         } finally {
           window.location.reload();
@@ -1967,7 +1748,9 @@
       const [programs, setPrograms] = useState(null);
       const [analytics, setAnalytics] = useState(null); // { index, terms }
       const [terms, setTerms] = useState([]);
-      const [selectedTerm, setSelectedTerm] = useState('');
+      // Courses are read one term at a time; pathways and the Dashboard one academic year.
+      const [courseTerm, setSelectedTerm] = useState('');
+      const [selectedYear, setSelectedYear] = useState('');
       const [selectedProgram, setSelectedProgram] = useState(null);
       const [search, setSearch] = useState('');
       const [typeFilter, setTypeFilter] = useState('all');
@@ -1975,6 +1758,9 @@
       const [sortBy, setSortBy] = useState('adoption');
       const [primaryView, setPrimaryView] = useState('program'); // 'program' | 'courses'
       const [dashboardOpen, setDashboardOpen] = useState(false);
+      const yearMode = primaryView !== 'courses' || dashboardOpen;
+      const selectedTerm = yearMode ? selectedYear : courseTerm;
+      const periodWord = yearMode ? 'Academic year' : 'Term';
       const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
         typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
       );
@@ -1983,7 +1769,8 @@
       const [selectedCourse, setSelectedCourse] = useState(null);
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState('');
-      const [pendingProgRows, setPendingProgRows] = useState(null);
+      const loadedYears = catalogYears();
+      const catalogMeta = loadedYears.length ? window.ZTC_CATALOGS[loadedYears[loadedYears.length - 1]].meta : null;
       const [pendingAnalRows, setPendingAnalRows] = useState(null);
       const [savedAt, setSavedAt] = useState(null);
       const [exportOpen, setExportOpen] = useState(false);
@@ -2012,9 +1799,23 @@
       // ---- persistence ----
       useEffect(() => {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+          const raw = localStorage.getItem(STORAGE_KEY);
           if (raw) {
-            const d = validatePersistedDataset(JSON.parse(raw));
+            const parsed = JSON.parse(raw);
+            const catalogSha = catalogsSha();
+            if (parsed && parsed.catalogSha && catalogSha && parsed.catalogSha !== catalogSha) {
+              throw new Error('Saved data was built with a different set of catalog files. Load the ZTC dataset again.');
+            }
+            let savedYear = '';
+            try {
+              savedYear = JSON.parse(localStorage.getItem(UI_STORAGE_KEY) || '{}')?.selectedYear || '';
+            } catch (yearError) { savedYear = ''; }
+            const restoreYear = catalogYears().includes(savedYear) ? savedYear : defaultYear(parsed?.terms || []);
+            // Pathway structure is never stored (it would not fit the browser quota next to
+            // the ZTC data); it is always rebuilt from the built-in catalog of the saved year.
+            if (parsed) parsed.programs = programsFromCatalog(window.ZTC_CATALOGS?.[restoreYear]);
+            const d = validatePersistedDataset(parsed);
+            d.selectedYear = restoreYear;
             let uiRaw = null;
             try {
               const storedUi = localStorage.getItem(UI_STORAGE_KEY);
@@ -2027,6 +1828,7 @@
             setAnalytics(d.analytics);
             setTerms(d.terms);
             setSelectedTerm(ui.selectedTerm);
+            setSelectedYear(ui.selectedYear);
             setSelectedProgram(ui.selectedProgram);
             setSelectedCourseKey(ui.selectedCourseKey);
             setPrimaryView(ui.primaryView);
@@ -2055,7 +1857,8 @@
           try {
             localStorage.setItem(UI_STORAGE_KEY, JSON.stringify({
               schemaVersion: UI_SCHEMA_VERSION,
-              selectedTerm,
+              selectedTerm: courseTerm,
+              selectedYear,
               selectedProgram,
               selectedCourseKey,
               primaryView,
@@ -2080,7 +1883,7 @@
           window.removeEventListener('pagehide', persist);
         };
       }, [
-        programs, analytics, selectedTerm, selectedProgram, selectedCourseKey, primaryView,
+        programs, analytics, courseTerm, selectedYear, selectedProgram, selectedCourseKey, primaryView,
         search, typeFilter, pathwayAdoptionFilter, courseStatusFilter, sortBy, dashboardOpen
       ]);
 
@@ -2191,17 +1994,17 @@
           return;
         }
         setAnnounce(dashboardOpen
-          ? `Dashboard panel opened. Institution-wide ZTC adoption, term ${selectedTerm}. ${primaryView === 'courses' ? (selectedCourseKey || 'No course selected') : (selectedProgram || 'No pathway selected')} ${isNarrowViewport ? 'is preserved while the reading pane is temporarily hidden.' : 'remains visible.'}`
+          ? `Dashboard panel opened. Institution-wide ZTC adoption, ${periodWord.toLowerCase()} ${periodLabel(selectedTerm)}. ${primaryView === 'courses' ? (selectedCourseKey || 'No course selected') : (selectedProgram || 'No pathway selected')} ${isNarrowViewport ? 'is preserved while the reading pane is temporarily hidden.' : 'remains visible.'}`
           : primaryView === 'courses'
-            ? `Courses, ${selectedCourseKey || 'none selected'}, term ${selectedTerm}`
-            : `${selectedProgram || 'no pathway'}, term ${selectedTerm}`);
+            ? `Courses, ${selectedCourseKey || 'none selected'}, ${periodWord.toLowerCase()} ${periodLabel(selectedTerm)}`
+            : `${selectedProgram || 'no pathway'}, ${periodWord.toLowerCase()} ${periodLabel(selectedTerm)}`);
       }, [selectedProgram, selectedCourseKey, selectedTerm, primaryView, dashboardOpen, isNarrowViewport, programs]);
 
       const persist = (progs, anal, termList, term) => {
         try {
           const payload = {
             schemaVersion: DATASET_SCHEMA_VERSION,
-            programs: progs,
+            catalogSha: catalogsSha(),
             analytics: anal,
             terms: termList,
             selectedTerm: term,
@@ -2229,7 +2032,7 @@
       };
 
       const loadPendingCsv = async (slot, file) => {
-        const label = slot === 'prog' ? 'Program Summary' : 'Course Analytics';
+        const label = 'ZTC course dataset';
         if (!file || !isCsvFile(file)) {
           setError(`${label} must be a .csv file.`);
           return;
@@ -2237,19 +2040,13 @@
         try {
           setError('');
           const rows = await readFile(file);
-          if (slot === 'prog') setPendingProgRows(rows);
-          else setPendingAnalRows(rows);
+          setPendingAnalRows(rows);
           setLandingAnnounce(`${label} loaded, ${rows.length - 1} rows.`);
         } catch (err) {
           setError(`Could not read ${label} file.`);
         }
       };
 
-      const handleProgFile = async (e) => {
-        const f = e.target.files[0];
-        if (f) await loadPendingCsv('prog', f);
-        e.target.value = '';
-      };
       const handleAnalFile = async (e) => {
         const f = e.target.files[0];
         if (f) await loadPendingCsv('anal', f);
@@ -2279,22 +2076,26 @@
       };
 
       const buildDataset = () => {
-        if (!pendingProgRows || !pendingAnalRows) return;
+        if (!pendingAnalRows) return;
         setLoading(true); setError('');
         try {
           const anal = buildAnalytics(pendingAnalRows);
-          const progs = buildPrograms(pendingProgRows);
-          if (progs.length === 0) throw new Error('No active programs found in the Program Summary file.');
-          const term = anal.terms[anal.terms.length - 1] || '';
+          const year = defaultYear(anal.terms);
+          const progs = programsFromCatalog(window.ZTC_CATALOGS?.[year]);
+          const term = defaultTerm(anal.terms);
           setAnalytics({ index: anal.index });
           setTerms(anal.terms);
           setSelectedTerm(term);
+          setSelectedYear(year);
           setPrograms(progs);
-          setSelectedProgram(progs[0].name);
+          const builtAnalytics = { index: anal.index };
+          const firstByAdoption = progs
+            .map(program => ({ program, pct: computeProgramView(program, builtAnalytics, year).adoptionPct }))
+            .sort((x, y) => cmpNullLast(x.pct, y.pct, () => x.program.name.localeCompare(y.program.name)))[0];
+          setSelectedProgram(firstByAdoption.program.name);
           setSelectedCourseKey(Object.keys(anal.index).sort()[0] || null);
           setPrimaryView('program');
           setDashboardOpen(false);
-          setPendingProgRows(null);
           setPendingAnalRows(null);
           persist(progs, { index: anal.index }, anal.terms, term);
         } catch (err) {
@@ -2305,23 +2106,45 @@
       };
 
       const resetData = () => {
-        if (!confirm('Clear the loaded datasets and start over?')) return;
+        if (!confirm('Clear the loaded ZTC dataset and start over?')) return;
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
         localStorage.removeItem(UI_STORAGE_KEY);
-        setPrograms(null); setAnalytics(null); setTerms([]); setSelectedTerm('');
-        setSelectedProgram(null); setSelectedCourseKey(null); setPendingProgRows(null); setPendingAnalRows(null); setSavedAt(null);
+        setPrograms(null); setAnalytics(null); setTerms([]); setSelectedTerm(''); setSelectedYear('');
+        setSelectedProgram(null); setSelectedCourseKey(null); setPendingAnalRows(null); setSavedAt(null);
         setSearch(''); setTypeFilter('all'); setPathwayAdoptionFilter('all'); setCourseStatusFilter('all');
         setSortBy('adoption'); setPrimaryView('program'); setDashboardOpen(false); setRestoreError('');
       };
 
       const clearRejectedSession = () => {
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
         localStorage.removeItem(UI_STORAGE_KEY);
         setRestoreError('');
-        setLandingAnnounce('Saved session cleared. Load both source CSV files to continue.');
+        setLandingAnnounce('Saved session cleared. Load the ZTC course dataset to continue.');
       };
+
+      // Each academic year is scored against its own catalog.
+      const changeYear = (year) => {
+        if (year === selectedYear || !window.ZTC_CATALOGS?.[year]) return;
+        const progs = programsFromCatalog(window.ZTC_CATALOGS[year]);
+        setSelectedYear(year);
+        setPrograms(progs);
+        if (!progs.some(p => p.name === selectedProgram)) {
+          setSelectedProgram(progs.slice().sort((a, b) => a.name.localeCompare(b.name))[0]?.name || null);
+        }
+        setTypeFilter(current => current === 'all' || progs.some(p => p.type === current) ? current : 'all');
+      };
+      const yearInfo = useMemo(
+        () => (analytics && selectedYear ? yearStatus(analytics, terms, selectedYear) : null),
+        [analytics, terms, selectedYear]
+      );
+      const yearNote = yearInfo && (
+        <span>
+          Academic year {yearLabel(selectedYear)} (Fall, Spring, Summer) · survey completion {yearInfo.surveyPct === null ? 'unknown' : yearInfo.surveyPct + '%'}
+          {yearInfo.inProgress && (
+            <span className={darkMode ? 'text-amber-400' : 'text-amber-800'}> · <span className="font-semibold">In progress</span>: {yearInfo.reason}</span>
+          )}
+        </span>
+      );
 
       // ---- derived ----
       const activeProgram = useMemo(
@@ -2329,17 +2152,24 @@
         [programs, selectedProgram]
       );
       const programViewCache = useMemo(() => {
-        const cache = new Map();
-        if (!programs || !analytics) return cache;
-        for (const term of terms) {
-          for (const program of programs) {
-            cache.set(`${program.name}\u0000${term}`, computeProgramView(program, analytics, term));
-          }
-        }
-        return cache;
+        // Filled on demand: one term costs ~200 views; all terms x pathways is ~4,000.
+        return new Map();
       }, [programs, analytics, terms]);
-      const cachedProgramView = (program, term) =>
-        program ? programViewCache.get(`${program.name}\u0000${term}`) || null : null;
+      const cachedProgramView = (program, term) => {
+        if (!program || !analytics) return null;
+        const cacheKey = `${program.name}\u0000${term}`;
+        let view = programViewCache.get(cacheKey);
+        if (!view) {
+          view = computeProgramView(program, analytics, term);
+          programViewCache.set(cacheKey, view);
+        }
+        return view;
+      };
+      // The institution trend needs every term x pathway view; defer it until the
+      // Dashboard is first opened (it stays available afterwards).
+      const institutionTrendWantedRef = useRef(false);
+      if (dashboardOpen) institutionTrendWantedRef.current = true;
+      const institutionTrendWanted = institutionTrendWantedRef.current;
       const programView = useMemo(
         () => cachedProgramView(activeProgram, selectedTerm),
         [activeProgram, selectedTerm, programViewCache]
@@ -2368,7 +2198,8 @@
           out[p.name] = {
             pct: v.adoptionPct, reqTotal: v.reqTotal, reqZtc: v.reqZtc,
             units: v.unitsRequired, survey: v.avgSurvey, coCount: v.coCount,
-            coursesWithData: v.coursesWithData, coursesTotal: v.coursesTotal
+            coursesWithData: v.coursesWithData, coursesTotal: v.coursesTotal,
+            choiceCaveat: v.choiceCaveatAreas > 0
           };
         }
         return out;
@@ -2455,11 +2286,22 @@
         return { ...base, chaffeyZtcCourses, coZtcCourses, coursesOffered };
       }, [programs, programAdoption, analytics, selectedTerm]);
 
+      const choiceCaveatPathways = useMemo(
+        () => (programs || []).filter(p => programAdoption[p.name]?.choiceCaveat).length,
+        [programs, programAdoption]
+      );
+      const needsAttentionTotal = useMemo(() => {
+        if (!programs) return 0;
+        return programs.filter(p => {
+          const pct = programAdoption[p.name]?.pct;
+          return pct !== null && pct !== undefined && pct < PATHWAY_HIGH_MIN;
+        }).length;
+      }, [programs, programAdoption]);
       const needsAttention = useMemo(() => {
         if (!programs) return [];
         return programs
           .map(p => ({ name: p.name, type: p.type, ...programAdoption[p.name] }))
-          .filter(p => p.pct !== null && p.pct !== undefined && p.pct < ZTC_THRESHOLDS.PARTIAL_MIN)
+          .filter(p => p.pct !== null && p.pct !== undefined && p.pct < PATHWAY_HIGH_MIN)
           .sort((a, b) => a.pct - b.pct)
           .slice(0, 5);
       }, [programs, programAdoption]);
@@ -2478,7 +2320,7 @@
 
       // Trend: institution-wide average ZTC adoption + survey completion (all pathways)
       const institutionTrend = useMemo(() => {
-        if (!programs || !analytics || !terms.length) return null;
+        if (!institutionTrendWanted || !programs || !analytics || !terms.length) return null;
         const avg = [], survey = [], scored = [];
         for (const tm of terms) {
           let ztcSum = 0, ztcN = 0, surveySum = 0, surveyN = 0;
@@ -2492,7 +2334,7 @@
           scored.push(ztcN);
         }
         return { labels: terms, avg, survey, scored };
-      }, [programs, analytics, terms, programViewCache]);
+      }, [programs, analytics, terms, programViewCache, institutionTrendWanted]);
 
       const switchPrimaryView = (next) => {
         if (next !== 'program' && next !== 'courses') return;
@@ -2608,6 +2450,8 @@
               for (const c of sg.courses || []) add(c.key, prog, placement);
               if (sg.options) {
                 for (const opt of sg.options) {
+                  // A general-education area pool is not a listing of this pathway's courses.
+                  if (opt.pooled) continue;
                   for (const c of opt.courses || []) add(c.key, prog, placement);
                 }
               }
@@ -2632,7 +2476,7 @@
       }).join('; ');
 
       // ============================================================
-      // LANDING (two-source loader)
+      // LANDING (ZTC course dataset upload)
       // ============================================================
       if (!programs || !analytics) {
         return (
@@ -2643,9 +2487,18 @@
                 <Icons.Landmark className={`w-8 h-8 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />
                 <h1 className="text-3xl font-bold">ZTC Pathway Mapper</h1>
               </div>
-              <p className={`${t.textMuted} mb-8`}>
-                Load two datasources to map Zero Textbook Cost adoption across every active degree, certificate, and transfer pathway.
+              <p className={`${t.textMuted} mb-3`}>
+                Load the ZTC course dataset to map Zero Textbook Cost adoption across every degree, certificate, and transfer pathway in the official catalog.
               </p>
+              {loadedYears.length > 0 ? (
+                <p className={`text-sm ${t.textMuted} mb-8`} data-catalog-years="true">
+                  <span className="font-semibold">Academic catalog years included:</span> {loadedYears.map(yearLabel).join(', ')}
+                </p>
+              ) : (
+                <p className={`text-sm font-medium mb-8 ${darkMode ? 'text-red-400' : 'text-red-700'}`} role="alert">
+                  Catalog structure files not found. Open the app from its full folder (including data/).
+                </p>
+              )}
 
               {(error || restoreError) && (
                 <div role="alert" className={`mb-6 flex items-start gap-2 rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm ${darkMode ? 'text-red-300' : 'text-red-800'}`}>
@@ -2664,22 +2517,11 @@
 
               <div className="sr-only" role="status" aria-live="polite">{landingAnnounce}</div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label {...uploadDropHandlers('prog')}
-                  className={`cursor-pointer rounded-xl border-2 border-dashed ${uploadCardCls('prog', pendingProgRows)} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
-                  {pendingProgRows ? <Icons.CheckCircle className={`w-8 h-8 mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`} aria-hidden="true" /> : <Icons.BookOpen className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />}
-                  <div className="font-semibold mb-1">1. Program Summary</div>
-                  <div className={`text-xs ${t.textMuted} mb-3`}>Program / certificate / degree structure (course blocks &amp; units)</div>
-                  <div className={`text-xs font-medium ${pendingProgRows ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-blue-400' : 'text-blue-700')}`}>
-                    {pendingProgRows ? `Loaded · ${pendingProgRows.length - 1} rows` : 'Choose CSV or drop file…'}
-                  </div>
-                  <input type="file" accept=".csv,text/csv" className="sr-only" aria-label="Upload Program Summary CSV" onChange={handleProgFile} />
-                </label>
-
+              <div>
                 <label {...uploadDropHandlers('anal')}
                   className={`cursor-pointer rounded-xl border-2 border-dashed ${uploadCardCls('anal', pendingAnalRows)} ${t.card} p-6 flex flex-col items-center text-center transition-colors`}>
                   {pendingAnalRows ? <Icons.CheckCircle className={`w-8 h-8 mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`} aria-hidden="true" /> : <Icons.BarChart3 className={`w-8 h-8 mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`} aria-hidden="true" />}
-                  <div className="font-semibold mb-1">2. Course Analytics</div>
+                  <div className="font-semibold mb-1">ZTC course dataset</div>
                   <div className={`text-xs ${t.textMuted} mb-3`}>ZTC adoption % &amp; survey completion by course &amp; term</div>
                   <div className={`text-xs font-medium ${pendingAnalRows ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-blue-400' : 'text-blue-700')}`}>
                     {pendingAnalRows ? `Loaded · ${pendingAnalRows.length - 1} rows` : 'Choose CSV or drop file…'}
@@ -2690,8 +2532,8 @@
 
               <button type="button"
                 onClick={buildDataset}
-                disabled={!pendingProgRows || !pendingAnalRows || loading}
-                className={`mt-6 w-full rounded-lg px-4 py-3 font-semibold transition-colors flex items-center justify-center gap-2 ${(!pendingProgRows || !pendingAnalRows || loading) ? (darkMode ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' : 'bg-gray-300 text-gray-600 cursor-not-allowed') : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                disabled={!pendingAnalRows || !catalogMeta || loading}
+                className={`mt-6 w-full rounded-lg px-4 py-3 font-semibold transition-colors flex items-center justify-center gap-2 ${(!pendingAnalRows || !catalogMeta || loading) ? (darkMode ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' : 'bg-gray-300 text-gray-600 cursor-not-allowed') : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
                 {loading ? <><Icons.Refresh className="w-5 h-5 animate-spin" aria-hidden="true" /> Building…</> : <>Build dashboard <Icons.ChevronRight className="w-5 h-5" aria-hidden="true" /></>}
               </button>
 
@@ -2712,8 +2554,8 @@
         if (!institution) return null;
         const distro = [
           { label: 'Fully ZTC-able', range: '100%', hint: 'All requirements met with ZTC', n: institution.full, color: 'bg-green-600' },
-          { label: 'High', range: '75–99%', hint: 'Most requirements met with ZTC', n: institution.high - institution.full, color: 'bg-green-400' },
-          { label: 'Partial', range: '51–74%', hint: 'Some requirements met with ZTC', n: institution.partial, color: 'bg-amber-500' },
+          { label: 'High', range: '75–99%', hint: 'Most requirements met with ZTC', n: institution.high - institution.full, color: 'bg-amber-500' },
+          { label: 'Partial', range: '51–74%', hint: 'Some requirements met with ZTC', n: institution.partial, color: 'bg-red-500' },
           { label: 'Low', range: '0–50%', hint: 'Few requirements met with ZTC', n: institution.low, color: 'bg-red-600' }
         ];
         const rankedAll = programs
@@ -2721,23 +2563,23 @@
           .filter(p => p.pct !== null && p.pct !== undefined)
           .sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
         const ranked = rankedAll.slice(0, 5);
-        const instSub = `Term ${selectedTerm}`;
+        const instSub = `${periodWord} ${periodLabel(selectedTerm)}`;
         const headlineAction = { view: 'program', pathwayAdoptionFilter: 'all', sortBy: 'name' };
         const overviewKpis = [
-          { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' }, meaning: 'Active pathways where every scored catalog requirement can be completed with a qualifying ZTC option.', calculation: `Counts scored pathways whose requirement-based ZTC adoption is 100% for ${selectedTerm}. Unavailable or unknown required courses remain in the denominator as unmet.` },
-          { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' }, meaning: 'Active pathways where at least three quarters of scored catalog requirements can be completed with qualifying ZTC options.', calculation: `Counts scored pathways with requirement-based ZTC adoption of 75% or higher for ${selectedTerm}; the count includes pathways at 100%.` },
-          { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' }, meaning: 'Courses offered in the selected term that meet Chaffey’s ZTC threshold.', calculation: `Counts offered courses whose Course Analytics ZTC percentage is 75% or higher for ${selectedTerm}. The denominator shown is all courses reported as offered that term.` },
-          { label: "Chancellor's Office ZTC courses", val: institution.coZtcCourses, sub: `≥1 ZTC section · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-violet-200' : 'text-violet-800', title: "Courses offered this term with at least one zero textbook cost section (Chancellor's Office ZTC threshold).", action: { view: 'courses', courseStatusFilter: 'co' }, meaning: 'Courses offered in the selected term with at least one section reported as zero textbook cost.', calculation: `Counts offered courses with one or more ZTC sections in Course Analytics for ${selectedTerm}. The denominator shown is all courses reported as offered that term.` }
+          { label: 'Fully ZTC-able', val: institution.full, sub: '100% of requirements', color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Pathways where every scored requirement can be met with ZTC courses.', action: { view: 'program', pathwayAdoptionFilter: 'full', sortBy: 'adoption' }, meaning: 'Active pathways where every scored catalog requirement can be completed with a qualifying ZTC option.', calculation: `Counts scored pathways whose requirement-based ZTC adoption is 100% for ${periodLabel(selectedTerm)}. Unavailable or unknown required courses remain in the denominator as unmet.` },
+          { label: '≥75% ZTC-able', val: institution.high, sub: institution.full > 0 ? `${institution.full} at 100%` : 'requirement-based', color: darkMode ? 'text-amber-400' : 'text-amber-800', title: 'Pathways at or above the 75% requirement-based adoption threshold.', action: { view: 'program', pathwayAdoptionFilter: 'high', sortBy: 'adoption' }, meaning: 'Active pathways where at least three quarters of scored catalog requirements can be completed with qualifying ZTC options.', calculation: `Counts scored pathways with requirement-based ZTC adoption of 75% or higher for ${periodLabel(selectedTerm)}; the count includes pathways at 100%.` },
+          { label: 'Chaffey ZTC courses', val: institution.chaffeyZtcCourses, sub: `≥75% sections · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-green-400' : 'text-green-700', title: 'Courses offered this term where at least 75% of sections are zero textbook cost (Chaffey ZTC threshold).', action: { view: 'courses', courseStatusFilter: 'ztc' }, meaning: 'Courses offered in the selected term that meet Chaffey’s ZTC threshold.', calculation: `Counts offered courses whose Course Analytics ZTC percentage is 75% or higher for ${periodLabel(selectedTerm)}. The denominator shown is all courses reported as offered that term.` },
+          { label: "Chancellor's Office ZTC courses", val: institution.coZtcCourses, sub: `≥1 ZTC section · of ${institution.coursesOffered} offered`, color: darkMode ? 'text-violet-200' : 'text-violet-800', title: "Courses offered this term with at least one zero textbook cost section (Chancellor's Office ZTC threshold).", action: { view: 'courses', courseStatusFilter: 'co' }, meaning: 'Courses offered in the selected term with at least one section reported as zero textbook cost.', calculation: `Counts offered courses with one or more ZTC sections in Course Analytics for ${periodLabel(selectedTerm)}. The denominator shown is all courses reported as offered that term.` }
         ];
         const averageExplainer = {
           title: 'Average ZTC adoption',
           meaning: 'The institution-wide mean of active pathways’ requirement-based ZTC adoption for the selected term.',
-          calculation: `For ${selectedTerm}, the app calculates each pathway’s percentage of catalog requirements that can be met with qualifying ZTC options, averages the scored pathway percentages, and rounds to the nearest whole percent. Pathways with no scored requirements are excluded.`
+          calculation: `For ${periodLabel(selectedTerm)}, the app calculates each pathway’s percentage of catalog requirements that can be met with qualifying ZTC options, averages the scored pathway percentages, and rounds to the nearest whole percent. Pathways with no scored requirements are excluded.`
         };
         const attentionExplainer = {
           title: 'Needs attention',
           meaning: 'The lowest-adoption active pathways below the partial-adoption threshold.',
-          calculation: `Filters scored pathways below 51% requirement-based ZTC adoption for ${selectedTerm}, sorts them from lowest to highest, and displays up to five. Unavailable or unknown required courses remain in each pathway denominator as unmet.`
+          calculation: `Filters scored pathways below 75% requirement-based ZTC adoption for ${periodLabel(selectedTerm)}, sorts them from lowest to highest, and displays up to five. Unavailable or unknown required courses remain in each pathway denominator as unmet.`
         };
         const trendExplainer = {
           title: 'Adoption trend',
@@ -2780,7 +2622,7 @@
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 id="dashboard-panel-title" className="text-sm font-bold tracking-tight">Dashboard</h2>
-                  <p className={`text-xs ${t.textMuted} mt-0.5`}>Institution-wide ZTC · {programs.length} pathways · {selectedTerm}</p>
+                  <p className={`text-xs ${t.textMuted} mt-0.5`}>Institution-wide ZTC · {programs.length} pathways · {periodLabel(selectedTerm)}</p>
                 </div>
                 <button type="button" onClick={() => closeDashboard({ restoreToggle: true })}
                   aria-label="Close Dashboard"
@@ -2797,17 +2639,25 @@
                     aria-label={`Average ZTC adoption: ${institution.avg === null ? 'no scored data' : institution.avg + '%'}. ${institution.scored} of ${institution.total} active pathways scored. Open Pathway view.`}
                     className={`w-full rounded-xl border ${darkMode ? 'border-blue-500/45 bg-blue-500/10' : 'border-blue-300 bg-blue-50'} p-3 text-left ${t.cardHover}`}>
                     <span className={`block text-xs font-semibold uppercase tracking-wide ${t.textMuted}`}>Average ZTC adoption</span>
-                    <span className={`block text-3xl font-bold mt-1 ${institution.avg === null ? t.faint : (darkMode ? 'text-green-300' : 'text-green-800')}`}>
+                    <span className={`block text-3xl font-bold mt-1 ${institution.avg === null ? t.faint : pathwayPctColor(institution.avg, darkMode)}`}>
                       {institution.avg === null ? '—' : institution.avg + '%'}
                     </span>
                     <span className={`block text-xs mt-1 ${t.textMuted}`}>{institution.scored} of {institution.total} active pathways scored</span>
+                    {yearNote && <span className={`block text-xs mt-1 ${t.textMuted}`}>{yearNote}</span>}
                   </button>
+                  {choiceCaveatPathways > 0 && (
+                    <p className={`flex items-center gap-2 text-xs mt-2 px-1 ${darkMode ? 'text-amber-400' : 'text-amber-800'}`} data-unverified-note="dashboard">
+                      <span>{choiceCaveatPathways} pathway{choiceCaveatPathways === 1 ? ' includes' : 's include'} an unverified section</span>
+                      <DashboardInfoButton label="Unverified section" hint={UNVERIFIED_HINT} compact t={t}
+                        onClick={() => openDashboardExplainer(UNVERIFIED_EXPLAINER)} />
+                    </p>
+                  )}
                 </div>
               </DashboardSection>
 
               {needsAttention.length > 0 && (
                 <div className={`rounded-xl border ${darkMode ? 'border-red-400/45 bg-red-500/10' : 'border-red-300 bg-red-50'} p-3`}>
-                  <DashboardSection compact title="Needs attention" subtitle="Below 51% ZTC adoption"
+                  <DashboardSection compact title="Needs attention" subtitle={`${needsAttentionTotal} of ${programs.length} below 75% ZTC`}
                     badge={<DashboardInfoButton label="Needs attention" t={t} onClick={() => openDashboardExplainer(attentionExplainer)} />}>
                     <div className="space-y-1.5">
                       {needsAttention.map(p => (
@@ -2815,7 +2665,7 @@
                           onClick={() => selectProgramFromDashboard(p.name)}
                           aria-label={`${p.name}. ZTC adoption ${p.pct}%. Open pathway view.`}
                           className={`w-full min-h-[44px] flex items-center gap-2 rounded-lg border ${t.cardBorder} ${t.card} px-2.5 py-2 text-sm text-left ${t.cardHover} transition-colors`}>
-                          <span className={`font-bold w-10 text-right tabular-nums flex-shrink-0 ${pctColor(p.pct, darkMode)}`}>{p.pct}%</span>
+                          <span className={`font-bold w-10 text-right tabular-nums flex-shrink-0 ${pathwayPctColor(p.pct, darkMode)}`}>{p.pct}%</span>
                           <span className="truncate">{p.name}</span>
                         </button>
                       ))}
@@ -2847,7 +2697,7 @@
                 {institution.noData > 0 && (
                   <p className={`text-xs ${t.textMuted} flex items-start gap-1.5`}>
                     <Icons.AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <span>{institution.noData} pathway{institution.noData !== 1 ? 's' : ''} ha{institution.noData !== 1 ? 've' : 's'} no scored requirements for {selectedTerm} (excluded from averages).</span>
+                    <span>{institution.noData} pathway{institution.noData !== 1 ? 's' : ''} ha{institution.noData !== 1 ? 've' : 's'} no scored requirements for {periodLabel(selectedTerm)} (excluded from averages).</span>
                   </p>
                 )}
               </DashboardSection>
@@ -2858,7 +2708,7 @@
                   <div className={`rounded-xl border ${t.cardBorder} ${t.card} p-3`}>
                     <div className="flex items-end justify-between gap-3">
                       <div>
-                        <p className={`text-xs ${t.textMuted}`}>{selectedTerm}</p>
+                        <p className={`text-xs ${t.textMuted}`}>{periodLabel(selectedTerm)}</p>
                         <p className="text-2xl font-bold">{trendCurrent === null ? '—' : trendCurrent + '%'}</p>
                       </div>
                       <p className={`text-xs text-right ${trendDelta === null ? t.textMuted : (trendDelta >= 0 ? (darkMode ? 'text-green-300' : 'text-green-800') : (darkMode ? 'text-red-300' : 'text-red-800'))}`}>
@@ -2922,7 +2772,7 @@
                       <p className={`text-xs ${t.textMuted} mb-2`}>Select a pathway to open it</p>
                       <div className="space-y-1">
                         {ranked.length === 0 ? (
-                          <p className={`text-sm ${t.textMuted} px-1 py-3`}>No scored pathways for {selectedTerm}.</p>
+                          <p className={`text-sm ${t.textMuted} px-1 py-3`}>No scored pathways for {periodLabel(selectedTerm)}.</p>
                         ) : ranked.map((p, i) => {
                           const surveyLabel = p.survey === null ? 'no survey data' : p.survey + '% survey completion';
                           return (
@@ -2932,7 +2782,7 @@
                               className={`w-full min-h-[44px] text-left flex items-center gap-2 rounded-lg px-2 py-2 ${t.cardHover} transition-colors ${p.name === selectedProgram ? (darkMode ? 'bg-blue-500/10 border border-blue-500/40' : 'bg-blue-50 border border-blue-200') : 'border border-transparent'}`}>
                               <span className={`text-xs font-bold w-4 flex-shrink-0 ${t.faint}`} aria-hidden="true">{i + 1}</span>
                               <span className="truncate text-sm flex-1 min-w-0">{p.name}</span>
-                              <span className={`text-sm font-bold tabular-nums flex-shrink-0 ${pctColor(p.pct, darkMode)}`} aria-hidden="true">{p.pct}%</span>
+                              <span className={`text-sm font-bold tabular-nums flex-shrink-0 ${pathwayPctColor(p.pct, darkMode)}`} aria-hidden="true">{p.pct}%</span>
                             </button>
                           );
                         })}
@@ -2997,11 +2847,11 @@
                 ) : (
                   <div className="space-y-4">
                     <section>
-                      <h3 className="text-sm font-semibold">What this metric means</h3>
+                      <h3 className="text-sm font-semibold">{dashboardModal.meaningTitle || 'What this metric means'}</h3>
                       <p className={`text-sm leading-relaxed mt-1 ${t.textMuted}`}>{dashboardModal.meaning}</p>
                     </section>
                     <section>
-                      <h3 className="text-sm font-semibold">How it is calculated</h3>
+                      <h3 className="text-sm font-semibold">{dashboardModal.calculationTitle || 'How it is calculated'}</h3>
                       <p className={`text-sm leading-relaxed mt-1 ${t.textMuted}`}>{dashboardModal.calculation}</p>
                     </section>
                   </div>
@@ -3029,14 +2879,22 @@
                   <p className={`text-sm ${t.textMuted} mt-1`}>
                     <span className={`font-semibold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>{programView.reqZtc}</span> of <span className="font-semibold">{programView.reqTotal}</span> requirements can be met with zero textbook cost
                   </p>
+                  {yearNote && <p className={`text-xs leading-snug mt-2 ${t.textMuted}`} role="note" data-year-note="true">{yearNote}</p>}
+                  {programView.choiceCaveatAreas > 0 && (
+                    <p className={`text-xs leading-snug mt-2 ${darkMode ? 'text-amber-400' : 'text-amber-800'}`} role="note" data-unverified-note="pathway">
+                      <span className="font-semibold">{programView.choiceCaveatAreas} unverified section{programView.choiceCaveatAreas === 1 ? '' : 's'}</span>
+                      <span style={{ margin: '0 6px' }}>
+                        <DashboardInfoButton label="Unverified section" hint={UNVERIFIED_HINT} compact t={t}
+                          onClick={() => openDashboardExplainer(UNVERIFIED_EXPLAINER)} />
+                      </span>
+                      In {programView.choiceCaveatAreas === 1 ? 'that section' : 'those sections'} {CHOICE_CAVEAT_TEXT}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <div className={`text-[10px] uppercase ${t.faint}`}>Required units</div>
                     <div className="text-xl font-bold">{programView.unitsRequiredLabel}</div>
-                    {programView.unitsRequiredUnverifiable && (
-                      <div className={`text-[10px] ${t.faint}`}>Lab evidence unverifiable</div>
-                    )}
                   </div>
                   <div>
                     <div className={`text-[10px] uppercase ${t.faint}`}>Courses w/ data</div>
@@ -3062,7 +2920,7 @@
                 </div>
                 {showTrend && (
                   <>
-                    <p className={`text-xs ${t.textMuted} mb-3`}>This pathway across all terms. Selected term: <span className="font-semibold">{selectedTerm}</span></p>
+                    <p className={`text-xs ${t.textMuted} mb-3`}>This pathway term by term, scored against the {yearLabel(selectedYear)} catalog. Selected academic year: <span className="font-semibold">{periodLabel(selectedTerm)}</span></p>
                     <TrendChart dark={darkMode} height={220}
                       ariaLabel={`Line chart: ZTC adoption and average survey completion by term for ${activeProgram.name}`}
                       summary={'By term: ' + trendSummary(programTrend.labels, [
@@ -3084,7 +2942,7 @@
               <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
                 <div className="flex items-center gap-2">
                   <dt><StatusBadge status="ztc" small dark={darkMode} /></dt>
-                  <dd className={t.textMuted}>Chaffey ZTC — 75%+ of sections are zero textbook cost</dd>
+                  <dd className={t.textMuted}>Chaffey ZTC — 75%+ of sections are zero textbook cost, in every term the course is offered this academic year</dd>
                 </div>
                 <div className="flex items-center gap-2">
                   <dt><CoBadge small dark={darkMode} /></dt>
@@ -3095,7 +2953,7 @@
 
             {activeProgram.type === 'GE / Transfer Pattern' && (
               <p className={`text-xs leading-snug mb-5 px-0.5 ${t.textMuted}`} role="note">
-                Choice groups (Either / Or / Choose one) appear only when present in the Program Summary export. The catalog may show additional groupings not included in this file.
+                General education patterns are scored by area as the catalog lists them. Where the catalog lists a laboratory requirement, it counts as its own requirement.
               </p>
             )}
 
@@ -3107,8 +2965,21 @@
                     <div className="min-w-0">
                       <div className="font-bold text-sm sm:text-base truncate">{area.title}</div>
                       <div className={`text-[11px] ${t.textMuted}`}>
-                        {area.isChoice ? `Choose ${area.requiredCount || 1}` : 'All required'}
+                        {area.ruleLabel || (area.isChoice ? `Choose ${area.requiredCount || 1}` : 'All required')}
                         {area.dataCount > 0 && <span> · {area.ztcCount}/{area.dataCount} options ZTC</span>}
+                        {area.reconciliation === 'optional' && <span> · optional, not scored</span>}
+                        {area.review && (
+                          <span title={area.review.basis} data-reviewed-note="true"> · verified by review ({area.review.decidedBy}, {area.review.decidedOn})</span>
+                        )}
+                        {area.choiceCaveat && (
+                          <span className={darkMode ? 'text-amber-400' : 'text-amber-800'} data-unverified-note="section">
+                            {' '}· {area.unscored ? 'unverified section, listed but not scored' : 'unverified section'}
+                            <span style={{ marginLeft: '6px' }}>
+                              <DashboardInfoButton label="Unverified section" hint={UNVERIFIED_HINT} compact t={t}
+                                onClick={() => openDashboardExplainer(UNVERIFIED_EXPLAINER)} />
+                            </span>
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
@@ -3119,19 +2990,24 @@
                       {area.areaPct !== null && (
                         area.satisfiable
                           ? <span className={`inline-flex items-center gap-1 rounded-full bg-green-500/20 ${darkMode ? 'text-green-300' : 'text-green-800'} border border-green-500/40 px-2.5 py-1 text-xs font-semibold`}><Icons.Check className="w-3.5 h-3.5" aria-hidden="true" />ZTC path</span>
-                          : <span className={`text-sm font-bold ${pctColor(area.areaPct, darkMode)}`}>{area.areaPct}%</span>
+                          : <span className={`text-sm font-bold ${pathwayPctColor(area.areaPct, darkMode)}`}>{area.areaPct}%</span>
                       )}
                     </div>
                   </div>
                   <div className="p-3 space-y-3">
+                    {(area.notes || []).map((note, ni) => (
+                      <p key={area.id + '-note-' + ni} className={`text-xs leading-snug px-0.5 ${t.textMuted}`} role="note">{note}</p>
+                    ))}
                     {area.subgroups.map((sg) => (
                       <div key={sg.id}>
                         {sg.title && sg.title !== area.title && (
                           <div className={`text-xs font-semibold px-0.5 mb-1.5 ${t.textMuted}`}>
                             {sg.title}
-                            {sg.isLabReference && <span className={`ml-2 font-medium ${t.faint}`}>· informational</span>}
                           </div>
                         )}
+                        {(sg.notes || []).map((note, ni) => (
+                          <p key={sg.id + '-note-' + ni} className={`text-xs leading-snug px-0.5 mb-1.5 ${t.textMuted}`} role="note">{note}</p>
+                        ))}
                         <SubgroupCourses
                           sg={sg}
                           t={t}
@@ -3156,7 +3032,7 @@
         if (!filteredCourses.length) {
           return (
             <div className="p-6 pb-10">
-              <p className={`text-sm ${t.textMuted}`}>No courses match the current filters for term {selectedTerm}.</p>
+              <p className={`text-sm ${t.textMuted}`}>No courses match the current filters for {periodWord.toLowerCase()} {periodLabel(selectedTerm)}.</p>
             </div>
           );
         }
@@ -3169,7 +3045,7 @@
                 <div className="min-w-0">
                   <h2 className="text-2xl font-bold">{c.subject}-{c.number}</h2>
                   <p className={`text-sm ${t.textMuted} mt-1`}>{c.courseTitle || c.analyticsTitle}</p>
-                  <p className={`text-xs ${t.faint} mt-0.5`}>Term: {selectedTerm}</p>
+                  <p className={`text-xs ${t.faint} mt-0.5`}>{periodWord}: {periodLabel(selectedTerm)}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={c.status} dark={darkMode} />
@@ -3202,7 +3078,7 @@
                   <div>
                     <h3 id="course-modal-title" className="text-2xl font-bold">{c.subject}-{c.number}</h3>
                     <p className={`text-sm ${t.textMuted}`}>{c.courseTitle || c.analyticsTitle}</p>
-                    <p className={`text-xs ${t.faint} mt-0.5`}>Term: {selectedTerm}{c.units !== null ? ` · ${fmtUnits(c.units)} units` : ''}</p>
+                    <p className={`text-xs ${t.faint} mt-0.5`}>{periodWord}: {periodLabel(selectedTerm)}{c.units !== null ? ` · ${fmtUnits(c.units)} units` : ''}</p>
                   </div>
                   <button type="button" onClick={() => setSelectedCourse(null)} aria-label="Close course details" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.X className="w-5 h-5" aria-hidden="true" /></button>
                 </div>
@@ -3251,8 +3127,8 @@
         const doc = new jsPDF();
         doc.setFontSize(14); doc.text(activeProgram.name, 14, 16);
         doc.setFontSize(10); doc.setTextColor(120);
-        doc.text(`${activeProgram.type} · Term ${selectedTerm} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${programView.unitsRequiredLabel} units${programView.unitsRequiredUnverifiable ? ' (lab evidence unverifiable)' : ''}`, 14, 22);
-        const caveat = programExportCaveat(activeProgram);
+        doc.text(`${activeProgram.type} · ${periodWord} ${periodLabel(selectedTerm)} · ZTC adoption ${programView.adoptionPct ?? '—'}% (${programView.reqZtc}/${programView.reqTotal} requirements) · ${programView.unitsRequiredLabel} units${programView.unitsRequiredUnverifiable ? ' (lab evidence unverifiable)' : ''}`, 14, 22);
+        const caveat = programExportCaveat(activeProgram, programView);
         if (caveat) {
           doc.setFontSize(8);
           doc.text(doc.splitTextToSize(`Note: ${caveat}`, 180), 14, 27);
@@ -3260,7 +3136,7 @@
         const body = [];
         const pushPdf = (area, sg, optLabel, c) => {
           const courseLabel = `${c.subject}-${c.number}${hasLabAsterisk(c.headerId) ? '*' : ''}`;
-          const sub = [sg.title, optLabel, sg.isLabReference ? 'Lab ref' : ''].filter(Boolean).join(' · ').slice(0, 28);
+          const sub = [sg.title, optLabel].filter(Boolean).join(' · ').slice(0, 28);
           body.push([
             area.title.slice(0, 22),
             sub,
@@ -3315,11 +3191,18 @@
             </nav>
             <div className="flex-1"></div>
             <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold ${t.textMuted} hidden sm:inline`}>Term</span>
-              <ThemedSelect value={selectedTerm} onChange={setSelectedTerm}
-                options={terms.map(tm => ({ value: tm, label: tm }))}
-                ariaLabel="Select term" t={t} dark={darkMode} align="right"
-                buttonClassName="font-semibold text-sm py-1.5 px-2.5 min-w-[5.5rem]" menuClassName="w-36" />
+              <span className={`text-xs font-semibold ${t.textMuted} hidden sm:inline`}>{yearMode ? 'Academic year' : 'Term'}</span>
+              {yearMode ? (
+                <ThemedSelect key="year" value={selectedYear} onChange={changeYear}
+                  options={loadedYears.map(year => ({ value: year, label: yearLabel(year) }))}
+                  ariaLabel="Select academic year" t={t} dark={darkMode} align="right"
+                  buttonClassName="font-semibold text-sm py-1.5 px-2.5 min-w-[5.5rem]" menuClassName="w-36" />
+              ) : (
+                <ThemedSelect key="term" value={courseTerm} onChange={setSelectedTerm}
+                  options={terms.map(tm => ({ value: tm, label: tm }))}
+                  ariaLabel="Select term" t={t} dark={darkMode} align="right"
+                  buttonClassName="font-semibold text-sm py-1.5 px-2.5 min-w-[5.5rem]" menuClassName="w-36" />
+              )}
             </div>
             <div className="relative">
               <button type="button" ref={exportBtnRef} onClick={() => setExportOpen(o => !o)} aria-haspopup="menu" aria-expanded={exportOpen}
@@ -3336,7 +3219,7 @@
             <button type="button" onClick={() => setDarkMode(d => !d)} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} className={`p-2 rounded-lg ${t.cardHover}`}>
               {darkMode ? <Icons.Sun className="w-5 h-5" aria-hidden="true" /> : <Icons.Moon className="w-5 h-5" aria-hidden="true" />}
             </button>
-            <button type="button" onClick={resetData} aria-label="Load new data" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.Refresh className="w-5 h-5" aria-hidden="true" /></button>
+            <button type="button" onClick={resetData} aria-label="Load new data" title="Load new data (clears the saved session)" className={`p-2 rounded-lg ${t.cardHover}`}><Icons.Refresh className="w-5 h-5" aria-hidden="true" /></button>
           </header>
 
           <div className={`app-layout flex-1 flex min-h-0${dashboardOpen && isNarrowViewport ? ' dashboard-primary-canvas' : ''}`}>
@@ -3438,11 +3321,11 @@
                           aria-label={`${p.name}. ZTC adoption ${pctLabel}.`}
                           className={`w-full text-left rounded-lg px-3 py-2 border ${sel ? 'border-blue-500/60 bg-blue-500/10' : 'border-transparent ' + t.cardHover}`}>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold w-11 text-right ${pctColor(a?.pct, darkMode)}`} aria-hidden="true">{a?.pct == null ? '—' : a.pct + '%'}</span>
+                            <span className={`text-sm font-bold w-11 text-right ${pathwayPctColor(a?.pct, darkMode)}`} aria-hidden="true">{a?.pct == null ? '—' : a.pct + '%'}</span>
                             <span className="text-sm leading-snug line-clamp-2 flex-1">{p.name}</span>
                           </div>
                           <div className={`mt-1 ml-[52px] h-1.5 rounded-full ${t.track} overflow-hidden`} aria-hidden="true">
-                            <div className={`h-full ${barColor(a?.pct)}`} style={{ width: (a?.pct || 0) + '%' }}></div>
+                            <div className={`h-full ${pathwayBarColor(a?.pct)}`} style={{ width: (a?.pct || 0) + '%' }}></div>
                           </div>
                         </button>
                         </li>

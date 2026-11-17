@@ -12,16 +12,10 @@ from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8767/index.html"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-PROG_CSV = Path(
-    os.environ.get(
-        "ZTC_PROG_CSV",
-        FIXTURES / "calculation-integrity-program-summary.csv",
-    )
-)
 ANAL_CSV = Path(
     os.environ.get(
         "ZTC_ANAL_CSV",
-        FIXTURES / "calculation-integrity-course-analytics.csv",
+        FIXTURES / "ztc-course-dataset-sample.csv",
     )
 )
 AXE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
@@ -72,12 +66,11 @@ def run_axe(page, label: str) -> dict:
 
 
 def main() -> None:
-    if not PROG_CSV.is_file() or not ANAL_CSV.is_file():
+    if not ANAL_CSV.is_file():
         print(
             json.dumps(
                 {
-                    "error": "CSV fixtures not found",
-                    "prog": str(PROG_CSV),
+                    "error": "ZTC dataset fixture not found",
                     "anal": str(ANAL_CSV),
                 }
             )
@@ -96,15 +89,12 @@ def main() -> None:
         page.wait_for_timeout(300)
         report.append(run_axe(page, "Landing (light)"))
 
-        page.locator('input[aria-label="Upload Program Summary CSV"]').set_input_files(
-            str(PROG_CSV)
-        )
         page.locator('input[aria-label="Upload Course Analytics CSV"]').set_input_files(
             str(ANAL_CSV)
         )
-        page.get_by_text("Loaded ·", exact=False).nth(1).wait_for(timeout=120_000)
+        page.get_by_text("Loaded ·", exact=False).first.wait_for(timeout=120_000)
         page.wait_for_timeout(500)
-        report.append(run_axe(page, "Landing (both CSVs staged, light)"))
+        report.append(run_axe(page, "Landing (ZTC dataset staged, light)"))
 
         page.get_by_role("button", name="Build dashboard").click()
         page.get_by_role("navigation", name="Views").get_by_role(
@@ -124,14 +114,39 @@ def main() -> None:
         page.wait_for_timeout(500)
         report.append(run_axe(page, "Pathway view"))
 
-        lab_pathway = page.get_by_role(
-            "button", name="Lab Constraint Curriculum", exact=False
+        choice_pathway = page.get_by_role(
+            "button", name="Business Administration 2.0", exact=False
         )
-        if lab_pathway.count():
-            lab_pathway.first.click()
-            page.wait_for_timeout(400)
-            page.get_by_text("Lab reference — informational", exact=False).wait_for()
-            report.append(run_axe(page, "Pathway view (lab-reference list)"))
+        choice_pathway.first.click()
+        page.wait_for_timeout(400)
+        page.get_by_text("Choose 1 of", exact=False).first.wait_for()
+        report.append(run_axe(page, "Pathway view (catalog choice groups)"))
+
+        unverified_pathway = page.get_by_role(
+            "button", name="Biology for Transfer", exact=False
+        )
+        unverified_pathway.first.click()
+        page.wait_for_timeout(400)
+        page.locator('[data-unverified-note="pathway"]').first.wait_for()
+        report.append(run_axe(page, "Pathway view (unverified section note)"))
+        page.locator('[data-unverified-note="pathway"]').get_by_role(
+            "button", name="Explain Unverified section"
+        ).click()
+        page.get_by_role("dialog").get_by_text("What this means").wait_for()
+        page.wait_for_timeout(
+            500
+        )  # let the dialog finish fading in before measuring contrast
+        report.append(run_axe(page, "Unverified section explainer"))
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(300)
+
+        page.get_by_role("button", name="Select academic year").click()
+        page.wait_for_timeout(200)
+        page.locator(
+            'ul[role="listbox"][aria-label="Select academic year"] button[role="option"]'
+        ).first.click()
+        page.wait_for_timeout(700)
+        report.append(run_axe(page, "Pathway view (oldest academic year)"))
 
         page.get_by_role("navigation", name="Views").get_by_role(
             "button", name="Courses", exact=True
